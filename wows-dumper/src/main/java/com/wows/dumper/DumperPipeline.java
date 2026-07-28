@@ -28,6 +28,9 @@ public final class DumperPipeline {
 
     private final Path gameDataBase;
 
+    /** Shared LRU cache for loaded game data across dumps. */
+    private static final GameDataCache CACHE = GameDataCache.withMaxSize(4);
+
     public DumperPipeline(Path gameDataBase) {
         this.gameDataBase = gameDataBase;
     }
@@ -56,20 +59,20 @@ public final class DumperPipeline {
         // Find game data directory for this version
         Path gameData = findGameData(replay);
 
-        // Load constants.json if available
+        // Load constants.json (explicit path overrides cache)
         JsonConstantsProvider constants = null;
         if (options.constantsFile != null && Files.exists(options.constantsFile)) {
             constants = JsonConstantsProvider.fromFile(options.constantsFile);
         } else if (gameData != null) {
-            var cf = gameData.resolve("constants.json");
-            if (Files.exists(cf)) constants = JsonConstantsProvider.fromFile(cf);
+            var ver = GameDataCache.VersionKey.from(gameData);
+            constants = CACHE.constants(ver, gameData);
         }
 
-        // Load wowsinfo.json for GameParam ID→name resolution
+        // Load wowsinfo.json via cache for GameParam ID→name resolution
         WowsInfoExtractor gameParams = null;
         if (gameData != null) {
-            var wi = gameData.resolve("app/data/wowsinfo.json");
-            if (Files.exists(wi)) gameParams = new WowsInfoExtractor(wi);
+            var ver = GameDataCache.VersionKey.from(gameData);
+            gameParams = CACHE.wowsInfo(ver, gameData);
         }
 
         // Run the analyzer with optional providers
