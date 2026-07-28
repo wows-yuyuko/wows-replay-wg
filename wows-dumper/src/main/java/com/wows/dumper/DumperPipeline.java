@@ -1,8 +1,5 @@
 package com.wows.dumper;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.wows.replay.analyzer.BattleReport;
 import com.wows.replay.analyzer.ReplayAnalyzer;
 import com.wows.replay.analyzer.ReplayAnalyzerConfig;
@@ -10,14 +7,13 @@ import com.wows.replay.core.JsonConstantsProvider;
 import com.wows.replay.core.JsonMapper;
 import com.wows.replay.core.ReplayException;
 import com.wows.replay.core.ReplayFile;
-import com.wows.replay.spec.spi.GameParamProvider;
+import com.wows.replay.core.json.JNode;
+import com.wows.replay.core.json.JObject;
 import com.wows.replay.spec.types.Version;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Replay → JSON pipeline, mirroring Rust replay-dumper's output format.
@@ -71,8 +67,7 @@ public final class DumperPipeline {
 
         // Run the analyzer
         var analyzerConfig = ReplayAnalyzerConfig.builder()
-            .minimap(options.minimap)
-            .minimapStep(options.minimapStep)
+            .minimap(options.minimap, options.minimapStep)
             .build();
         var analyzer = ReplayAnalyzer.builder()
             .config(analyzerConfig)
@@ -81,13 +76,13 @@ public final class DumperPipeline {
         var report = analyzer.buildReport(replay);
 
         // Build JSON in replay-dumper format
-        return buildJson(replay, report, constants);
+        return buildJson(replay, report);
     }
 
     // ── Game data discovery ──────────────────────────────────────────────────
 
     /** Find the data-{version}/live/ directory matching the replay version. */
-    Path findGameData(ReplayFile replay) {
+    public Path findGameData(ReplayFile replay) {
         var ver = replay.meta().clientVersionFromExe().replace(',', '.');
         var version = Version.fromClientExe(replay.meta().clientVersionFromExe());
 
@@ -124,15 +119,12 @@ public final class DumperPipeline {
 
     // ── JSON builder ─────────────────────────────────────────────────────────
 
-    private String buildJson(ReplayFile replay, BattleReport report,
-                             JsonConstantsProvider constants) throws IOException {
-        var mapper = JsonMapper.pretty();
-        var root = mapper.createObjectNode();
-
+    private String buildJson(ReplayFile replay, BattleReport report) throws IOException {
+        var root = JsonMapper.createObject();
         var meta = replay.meta();
 
         // Top-level fields matching replay-dumper output
-        root.put("arena_id", meta.mapId()); // approximate
+        root.put("arena_id", meta.mapId());
         root.put("date_time", meta.dateTime());
         root.put("version", meta.clientVersionFromExe().replace(',', '.'));
         root.put("map_id", meta.mapId());
@@ -142,29 +134,35 @@ public final class DumperPipeline {
         root.put("match_group", meta.matchGroup());
 
         // Meta section (full metadata)
-        root.set("meta", mapper.valueToTree(report.meta()));
+        root.set("meta", treeNode(report.meta()));
 
         // Summary
-        root.set("summary", mapper.valueToTree(report.summary()));
+        root.set("summary", treeNode(report.summary()));
 
         // Packet stats
-        root.set("packets", mapper.valueToTree(report.packets()));
+        root.set("packets", treeNode(report.packets()));
 
         // Entity events
         if (report.entities() != null) {
-            root.set("entities", mapper.valueToTree(report.entities()));
+            root.set("entities", treeNode(report.entities()));
         }
 
         // Resolved vehicles
         if (report.resolvedVehicles() != null) {
-            root.set("vehicles_resolved", mapper.valueToTree(report.resolvedVehicles()));
+            root.set("vehicles_resolved", treeNode(report.resolvedVehicles()));
         }
 
         // Minimap
         if (report.minimap() != null) {
-            root.set("minimap", mapper.valueToTree(report.minimap()));
+            root.set("minimap", treeNode(report.minimap()));
         }
 
-        return mapper.writeValueAsString(JsonMapper.mapper().readTree(root.toString()));
+        // Serialize JObject builder to JSON string
+        return JsonMapper.toJson(root);
+    }
+
+    /** Convert any Java object to a JNode via JSON round-trip. */
+    private JNode treeNode(Object obj) throws IOException {
+        return JsonMapper.readTree(JsonMapper.toJson(obj));
     }
 }

@@ -202,9 +202,7 @@ public final class ReplayFile {
         }
 
         // Parse metadata JSON
-        ReplayMeta   meta = JsonMapper.mapper()
-                    .readerFor(ReplayMeta.class)
-                    .readValue(rawMeta);
+        ReplayMeta   meta = JsonMapper.fromJson(rawMeta, ReplayMeta.class);
         return new ReplayFile(meta, rawMeta, packetData);
     }
 
@@ -263,9 +261,7 @@ public final class ReplayFile {
             channel.read(metaBuf);
             String rawMeta = new String(metaBuf.array(), StandardCharsets.UTF_8);
 
-            return JsonMapper.mapper()
-                    .readerFor(ReplayMeta.class)
-                    .readValue(rawMeta);
+            return JsonMapper.fromJson(rawMeta, ReplayMeta.class);
         }
     }
 

@@ -122,9 +122,12 @@ public final class ReplayAnalyzer {
      * Analyze a replay and return the JSON report.
      */
     public String analyze(ReplayFile replay) throws ReplayException {
-        var mapper = config.prettyPrint() ? JsonMapper.pretty() : JsonMapper.mapper();
         var report = buildReport(replay);
-        return mapper.writeValueAsString(report);
+        try {
+            return config.prettyPrint() ? JsonMapper.toPrettyJson(report) : JsonMapper.toJson(report);
+        } catch (IOException e) {
+            throw new ReplayException("Failed to serialize battle report", e);
+        }
     }
 
     /**
