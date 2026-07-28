@@ -1,0 +1,15 @@
+package com.wows.replay.spec.types;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * 2D vector (f32 × 2).
+ * Mirrors Rust's {@code wowsunpack::game_types::Vec2}.
+ */
+public record Vec2(
+    @JsonProperty("x") float x,
+    @JsonProperty("y") float y
+) {
+
+    public static final Vec2 ZERO = new Vec2(0f, 0f);
+}
