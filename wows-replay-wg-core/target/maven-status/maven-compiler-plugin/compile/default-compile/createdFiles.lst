@@ -1,8 +1,0 @@
-com\wows\replay\core\JsonMapper.class
-com\wows\replay\core\ReplayMeta$VehicleInfoMeta.class
-com\wows\replay\core\ReplayMeta.class
-com\wows\replay\core\ReplayException.class
-com\wows\replay\core\PacketTypeId.class
-com\wows\replay\core\RawPacketIterator.class
-com\wows\replay\core\RawPacket.class
-com\wows\replay\core\ReplayFile.class
