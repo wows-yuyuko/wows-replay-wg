@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * <p>Mirrors the replay-dumper JSON output structure.</p>
  */
-@JsonPropertyOrder({"meta", "summary", "packets", "entities", "vehicles", "chat", "damage", "minimap"})
+@JsonPropertyOrder({"meta", "summary", "packets", "entities", "vehicles", "vehicles_resolved", "chat", "damage", "minimap"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record BattleReport(
 
@@ -40,7 +40,10 @@ public record BattleReport(
     @JsonProperty("damage") DamageSection damage,
 
     /** Minimap position timeline (minimap=true) */
-    @JsonProperty("minimap") MinimapSection minimap
+    @JsonProperty("minimap") MinimapSection minimap,
+
+    /** GameParam ID → name resolution for vehicle/equipment IDs (replay-dumper style). */
+    @JsonProperty("vehicles_resolved") List<ResolvedVehicle> resolvedVehicles
 ) {
 
     // ── Sub-sections ────────────────────────────────────────────────────────
@@ -135,5 +138,17 @@ public record BattleReport(
         @JsonProperty("y") float y,
         @JsonProperty("rotation") float rotation,
         @JsonProperty("team") int team
+    ) {}
+
+    /**
+     * Resolved GameParamId → name mapping for a vehicle.
+     * Mirrors replay-dumper's {@code player_json.vehicle} block.
+     */
+    public record ResolvedVehicle(
+        @JsonProperty("ship_id") long shipId,
+        @JsonProperty("ship_name") String shipName,
+        @JsonProperty("ship_index") String shipIndex,
+        @JsonProperty("relation") int relation,
+        @JsonProperty("player_name") String playerName
     ) {}
 }

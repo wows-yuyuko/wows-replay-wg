@@ -2,6 +2,8 @@ package com.wows.replay.spec.spi;
 
 import com.wows.replay.spec.types.GameParamId;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -24,6 +26,12 @@ public interface GameParamProvider {
      * Get the numeric index for a game parameter.
      */
     Optional<Integer> paramIndexById(GameParamId id);
+
+    /**
+     * All GameParamId → index mappings for ID resolution in reports.
+     * Mirrors replay-dumper's {@code param_names: HashMap<u64, String>}.
+     */
+    default Map<Long, String> paramNames() { return Collections.emptyMap(); }
 
     /**
      * Empty provider — all lookups return empty.

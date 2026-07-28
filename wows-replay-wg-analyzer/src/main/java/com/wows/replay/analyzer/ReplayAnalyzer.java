@@ -210,6 +210,9 @@ public final class ReplayAnalyzer {
             minimapTickCounter++;
         }
 
+        // Resolve vehicle names via GameParamProvider
+        var resolvedVehicles = resolveVehicleNames(replay);
+
         // Build report sections
         return new BattleReport(
                 BattleReport.MetaSection.from(replay.meta()),
@@ -223,8 +226,41 @@ public final class ReplayAnalyzer {
                 null, // vehicle events (placeholder)
                 chatMessages.isEmpty() ? null : chatMessages,
                 null, // damage section (placeholder)
-                minimapFrames.isEmpty() ? null : new BattleReport.MinimapSection(minimapStep, minimapFrames)
+                minimapFrames.isEmpty() ? null : new BattleReport.MinimapSection(minimapStep, minimapFrames),
+                resolvedVehicles.isEmpty() ? null : resolvedVehicles
         );
+    }
+
+    // ── Vehicle name resolution ──────────────────────────────────────────────
+
+    /**
+     * Resolve vehicle IDs from metadata to human-readable names using
+     * the configured {@link GameParamProvider}.
+     * Mirrors replay-dumper's {@code param_names} + {@code resolve_ids}.
+     */
+    private List<BattleReport.ResolvedVehicle> resolveVehicleNames(ReplayFile replay) {
+        var meta = replay.meta();
+        var vehicles = meta.vehicles();
+        if (vehicles == null || vehicles.isEmpty()) return List.of();
+
+        var names = paramProvider != null
+            ? paramProvider.paramNames()
+            : java.util.Collections.<Long, String>emptyMap();
+
+        return vehicles.stream()
+            .map(v -> {
+                var id = v.shipId().value();
+                return new BattleReport.ResolvedVehicle(
+                    id,
+                    names.getOrDefault(id, String.valueOf(id)),
+                    paramProvider != null
+                        ? paramProvider.paramIndexById(v.shipId())
+                            .map(Object::toString).orElse(String.valueOf(id))
+                        : String.valueOf(id),
+                    v.relation(),
+                    v.name());
+            })
+            .toList();
     }
 
     // ── Minimap ─────────────────────────────────────────────────────────────
