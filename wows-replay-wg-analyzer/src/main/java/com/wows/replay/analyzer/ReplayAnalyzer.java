@@ -10,36 +10,18 @@ import com.wows.replay.spec.spi.GameConstantsProvider;
 import com.wows.replay.spec.types.GameClock;
 import com.wows.replay.core.JsonMapper;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
- * Main entry point for replay analysis.
+ * 回放分析入口，对标 wows-toolkit 的 replay-dumper 管线。
  *
- * <p>Processes a {@link ReplayFile} end-to-end, collecting statistics,
- * decoding packets (optionally with entity specs), and producing a
- * {@link BattleReport} that can be serialized to JSON.</p>
- *
- * <h3>Usage</h3>
- * <pre>{@code
- * ReplayFile replay = ReplayFile.fromFile(Path.of("replay.wowsreplay"));
- *
- * // Quick: no packet decoding (fast, no game data needed)
- * String json = ReplayAnalyzer.quick(replay);
- *
- * // Full: with entity specs and game constants
- * ReplayAnalyzer analyzer = ReplayAnalyzer.builder()
- *     .specProvider(mySpecProvider)
- *     .constantsProvider(myConstantsProvider)
- *     .config(ReplayAnalyzerConfig.builder()
- *         .minimap(true)
- *         .decodePackets(true)
- *         .build())
- *     .build();
- * String json = analyzer.analyze(replay);
- * }</pre>
+ * <p>遍历回放的所有数据包，解码、统计并生成 {@link BattleReport}。可选注入
+ * {@link EntitySpecProvider}（实体属性解码）和 {@link GameConstantsProvider}
+ * （常量名称解析）。</p>
  */
 public final class ReplayAnalyzer {
 
@@ -55,76 +37,49 @@ public final class ReplayAnalyzer {
         this.config = config;
     }
 
-    // ── Quick API ───────────────────────────────────────────────────────────
+    // ── 快捷 API ─────────────────────────────────────────────────────────────
 
-    /**
-     * Quick analysis without any providers or packet decoding.
-     * Fast and works without game data. Provides metadata + packet statistics.
-     */
+    /** 快速分析（无实体规范、无包解码），只输出元数据 + 包类型统计。 */
     public static String quick(ReplayFile replay) throws ReplayException {
-        if (replay == null) throw new ReplayException("replay must not be null");
+        if (replay == null) throw new ReplayException("replay 不能为 null");
         var analyzer = new ReplayAnalyzer(null, null, ReplayAnalyzerConfig.DEFAULT);
         return analyzer.analyze(replay);
     }
 
-    /**
-     * Quick analysis from a file path.
-     */
+    /** 从文件路径快速分析。 */
     public static String quick(Path replayPath) throws ReplayException, IOException {
         return quick(ReplayFile.fromFile(replayPath));
     }
 
-    // ── Builder ─────────────────────────────────────────────────────────────
+    // ── 构建器 ───────────────────────────────────────────────────────────────
 
-    public static Builder builder() {
-        return new Builder();
-    }
+    public static Builder builder() { return new Builder(); }
 
     public static final class Builder {
         private EntitySpecProvider specProvider;
         private GameConstantsProvider constantsProvider;
         private ReplayAnalyzerConfig config = ReplayAnalyzerConfig.DEFAULT;
 
-        public Builder specProvider(EntitySpecProvider p) {
-            specProvider = p;
-            return this;
-        }
-
-        public Builder constantsProvider(GameConstantsProvider p) {
-            constantsProvider = p;
-            return this;
-        }
-
-        public Builder config(ReplayAnalyzerConfig c) {
-            config = c;
-            return this;
-        }
-
-        public ReplayAnalyzer build() {
-            return new ReplayAnalyzer(specProvider, constantsProvider, config);
-        }
+        public Builder specProvider(EntitySpecProvider p) { specProvider = p; return this; }
+        public Builder constantsProvider(GameConstantsProvider p) { constantsProvider = p; return this; }
+        public Builder config(ReplayAnalyzerConfig c) { config = c; return this; }
+        public ReplayAnalyzer build() { return new ReplayAnalyzer(specProvider, constantsProvider, config); }
     }
 
-    // ── Analysis ────────────────────────────────────────────────────────────
+    // ── 分析 ─────────────────────────────────────────────────────────────────
 
-    /**
-     * Analyze a replay and return the JSON report.
-     */
+    /** 分析回放并返回 JSON 报告。 */
     public String analyze(ReplayFile replay) throws ReplayException {
         var report = buildReport(replay);
         return config.prettyPrint() ? JsonMapper.toPrettyJson(report) : JsonMapper.toJson(report);
     }
 
-    /**
-     * Analyze a replay and return the structured {@link BattleReport}.
-     */
+    /** 分析回放并返回结构化 {@link BattleReport}。 */
     public BattleReport buildReport(ReplayFile replay) {
-        // Packet parser (optional, depends on specProvider)
         var parser = (specProvider != null && config.decodePackets())
                 ? new PacketParser(specProvider, replay.version())
                 : new PacketParser();
 
-        // Statistics accumulators
         var packetCounts = new LinkedHashMap<String, Integer>();
         int unknownCount = 0;
         int invalidCount = 0;
@@ -141,18 +96,15 @@ public final class ReplayAnalyzer {
         GameClock battleStart = replay.battleStartClock();
         GameClock lastClock = GameClock.ZERO;
 
-        // Walk all packets
         var iter = replay.packetIterator();
         while (iter.hasNext()) {
             var raw = iter.next();
             lastClock = raw.clock();
 
-            // Packet type statistics
             String typeName = raw.packetType() != null ? raw.packetType().displayName() : "unknown";
             packetCounts.merge(typeName, 1, Integer::sum);
             if (raw.isUnknown()) unknownCount++;
 
-            // Track specific packet types for summary
             if (raw.packetType() != null) {
                 switch (raw.packetType()) {
                     case POSITION -> positionCount++;
@@ -161,35 +113,26 @@ public final class ReplayAnalyzer {
                 }
             }
 
-            // Decode packet if configured
             if (config.decodePackets()) {
                 var packet = parser.parse(raw);
                 Object payload = packet.payload();
+                if (payload instanceof Packet.InvalidPayload) invalidCount++;
 
-                if (payload instanceof Packet.InvalidPayload) {
-                    invalidCount++;
-                }
-
-                // Entity events
                 if (payload instanceof EntityCreatePacket ecp) {
                     entityEvents.add(new BattleReport.EntityEvent(
                             raw.clock().seconds(), "create", ecp.entityId().value(),
-                            ecp.entityType(), ecp.vehicleId().value()
-                    ));
+                            ecp.entityType(), ecp.vehicleId().value()));
                 } else if (payload instanceof EntityEnterPacket eep) {
                     entityEvents.add(new BattleReport.EntityEvent(
                             raw.clock().seconds(), "enter", eep.entityId().value(),
-                            null, eep.vehicleId().value()
-                    ));
+                            null, eep.vehicleId().value()));
                 } else if (payload instanceof EntityLeavePacket elp) {
                     entityEvents.add(new BattleReport.EntityEvent(
                             raw.clock().seconds(), "leave", elp.entityId().value(),
-                            null, 0
-                    ));
+                            null, 0));
                 }
             }
 
-            // Minimap extraction
             if (config.minimap() && minimapTickCounter % minimapStep == 0) {
                 if (raw.packetType() == PacketTypeId.POSITION && raw.clock().seconds() >= battleStart.seconds()) {
                     extractMinimapFrame(raw, minimapFrames);
@@ -198,63 +141,48 @@ public final class ReplayAnalyzer {
             minimapTickCounter++;
         }
 
-        // Resolve vehicle names via GameParamProvider
         var resolvedVehicles = resolveVehicleNames(replay);
 
-        // Build report sections
         return new BattleReport(
                 BattleReport.MetaSection.from(replay.meta()),
                 new BattleReport.SummarySection(
                         packetCounts.values().stream().mapToInt(Integer::intValue).sum(),
                         battleStart.seconds(), lastClock.seconds(),
-                        positionCount, entityCreateCount, entityMethodCount
-                ),
+                        positionCount, entityCreateCount, entityMethodCount),
                 new BattleReport.PacketsSection(packetCounts, unknownCount, invalidCount),
                 entityEvents.isEmpty() ? null : entityEvents,
-                null, // vehicle events (placeholder)
-                chatMessages.isEmpty() ? null : chatMessages,
-                null, // damage section (placeholder)
+                null, chatMessages.isEmpty() ? null : chatMessages,
+                null,
                 minimapFrames.isEmpty() ? null : new BattleReport.MinimapSection(minimapStep, minimapFrames),
-                resolvedVehicles.isEmpty() ? null : resolvedVehicles
-        );
+                resolvedVehicles.isEmpty() ? null : resolvedVehicles);
     }
 
-    // ── Vehicle name resolution ──────────────────────────────────────────────
-
-    /** Collect vehicle entries from replay metadata. */
+    /** 从回放元数据中提取车辆列表。 */
     private List<BattleReport.ResolvedVehicle> resolveVehicleNames(ReplayFile replay) {
         var vehicles = replay.meta().vehicles();
         if (vehicles == null || vehicles.isEmpty()) return List.of();
-
         return vehicles.stream()
-            .map(v -> new BattleReport.ResolvedVehicle(
-                v.shipId().value(), v.relation(), v.name()))
+            .map(v -> new BattleReport.ResolvedVehicle(v.shipId().value(), v.relation(), v.name()))
             .toList();
     }
 
-    // ── Minimap ─────────────────────────────────────────────────────────────
+    // ── 小地图 ───────────────────────────────────────────────────────────────
 
     private void extractMinimapFrame(RawPacket raw, List<BattleReport.MinimapFrame> frames) {
         try {
             var buf = java.nio.ByteBuffer.wrap(raw.payload()).order(java.nio.ByteOrder.LITTLE_ENDIAN);
-            if (buf.remaining() < 41) return; // Minimal Position packet: entityId+spaceId+Vec3+Vec3+Rot3+bool
+            if (buf.remaining() < 41) return;
 
             int entityId = buf.getInt();
-            // Skip spaceId (4 bytes)
-            buf.getInt();
+            buf.getInt(); // spaceId
             float x = buf.getFloat();
             float y = buf.getFloat();
             buf.getFloat(); // z
-            // Skip direction Vec3
-            buf.getFloat();
-            buf.getFloat();
-            buf.getFloat();
+            buf.getFloat(); buf.getFloat(); buf.getFloat(); // direction
             float yaw = buf.getFloat(); // rotation.yaw
 
             var entity = new BattleReport.MinimapEntity(entityId, x, y, yaw, 0);
             frames.add(new BattleReport.MinimapFrame(raw.clock().seconds(), List.of(entity)));
-        } catch (Exception ignored) {
-            // Skip malformed position packets in minimap extraction
-        }
+        } catch (Exception ignored) {}
     }
 }

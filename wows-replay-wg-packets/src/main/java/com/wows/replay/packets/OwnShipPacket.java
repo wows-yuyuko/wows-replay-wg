@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.spec.types.EntityId;
 
 /**
- * Packet 0x20: Links Avatar to its owned ship entity.
+ * 0x20: 将 Avatar 关联到其控制的舰船实体。
  */
 public record OwnShipPacket(
     @JsonProperty("entity_id") EntityId entityId

@@ -6,53 +6,62 @@ import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
-
+ * 全局 JSON 工具类，基于 Jackson 3 的 {@link ObjectMapper}。
  */
 public final class JsonMapper {
 
+    private JsonMapper() {}
 
-    private JsonMapper() {
-    }
-
-    /** Get the current provider. */
-    private static final ObjectMapper provider = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     static {
-        provider.isEnabled(SerializationFeature.INDENT_OUTPUT);
+        MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
+    /** 获取底层 {@link ObjectMapper} 实例（流式解析等高级场景）。 */
     public static ObjectMapper getMapper() {
-        return provider;
+        return MAPPER;
     }
 
-    // ── Convenience shortcuts ────────────────────────────────────────────────
+    // ── 快捷方法 ────────────────────────────────────────────────────────────
 
+    /** 从字节数组解析 JSON 树。 */
     public static JsonNode readTree(byte[] bytes) {
-        return provider.readValue(bytes, JsonNode.class);
+        try { return MAPPER.readTree(bytes); }
+        catch (Exception e) { throw new RuntimeException(e); }
     }
 
+    /** 从字符串解析 JSON 树。 */
     public static JsonNode readTree(String json) {
-        return provider.readTree(json);
+        try { return MAPPER.readTree(json); }
+        catch (Exception e) { throw new RuntimeException(e); }
     }
 
+    /** JSON 字符串 → Java 对象。 */
     public static <T> T fromJson(String json, Class<T> type) {
-        return provider.readValue(json, type);
+        try { return MAPPER.readValue(json, type); }
+        catch (Exception e) { throw new RuntimeException(e); }
     }
 
+    /** Java 对象 → 紧凑 JSON 字符串。 */
     public static String toJson(Object obj) {
-        return provider.writeValueAsString(obj);
+        try { return MAPPER.writeValueAsString(obj); }
+        catch (Exception e) { throw new RuntimeException(e); }
     }
 
+    /** Java 对象 → 美化 JSON 字符串。 */
     public static String toPrettyJson(Object obj) {
-        return provider.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
+        try { return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(obj); }
+        catch (Exception e) { throw new RuntimeException(e); }
     }
 
-
+    /** POJO → {@link JsonNode} 树节点（无需字符串中转）。 */
     public static JsonNode toTree(Object obj) {
-        return provider.readValue(toJson(obj), JsonNode.class);
+        return MAPPER.valueToTree(obj);
     }
 
+    /** 创建空的 JSON 对象构建器。 */
     public static ObjectNode createObject() {
-        return provider.createObjectNode();
+        return MAPPER.createObjectNode();
     }
 }

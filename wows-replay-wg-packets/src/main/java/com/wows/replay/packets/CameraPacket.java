@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.spec.types.Vec3;
 
 /**
- * Packet 0x25 (modern) / 0x24 (legacy): Camera state (60 bytes).
- * Written every tick alongside GunMarker and PlayerNetStats.
+ * 0x25（新版）/ 0x24（旧版）: 相机状态（60 字节）。
+ * 每 tick 与 GunMarker 和 PlayerNetStats 一起写入。
  */
 public record CameraPacket(
     @JsonProperty("rotation_quat") float[] rotationQuat,

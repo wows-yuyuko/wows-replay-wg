@@ -6,7 +6,7 @@ import com.wows.replay.spec.types.Rot3;
 import com.wows.replay.spec.types.Vec3;
 
 /**
- * Packet 0x0a: Entity position update. Written every tick for each tracked entity.
+ * 0x0a: 实体位置更新。每个 tick 为每个追踪实体写入。
  */
 public record PositionPacket(
     @JsonProperty("entity_id") EntityId entityId,

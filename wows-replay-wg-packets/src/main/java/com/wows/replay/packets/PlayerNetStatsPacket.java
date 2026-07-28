@@ -3,8 +3,8 @@ package com.wows.replay.packets;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Packet 0x1d: Player network stats (every tick).
- * Packs fps, ping, isLagging into a single u32.
+ * 0x1d: 玩家网络统计（每 tick）。
+ * 将 fps, ping, isLagging 打包为单个 u32。
  */
 public record PlayerNetStatsPacket(
     @JsonProperty("fps") int fps,

@@ -3,7 +3,7 @@ package com.wows.replay.packets;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Packet 0x27: Camera mode.
+ * 0x27: 相机模式。
  */
 public record CameraModePacket(
     @JsonProperty("mode") int mode

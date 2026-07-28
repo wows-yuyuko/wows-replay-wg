@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.spec.types.Vec3;
 
 /**
- * Packet 0x18: Gun marker / aiming state (every tick, 52 bytes).
+ * 0x18: 炮标/瞄准状态（每 tick, 52 字节）。
  */
 public record GunMarkerPacket(
     @JsonProperty("target_point") Vec3 targetPoint,

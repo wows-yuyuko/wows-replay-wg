@@ -6,22 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Global LRU cache for loaded game data files, keyed by version.
+ * 全局 LRU 缓存，按版本缓存已加载的游戏数据文件。
  *
- * <p>Supports multiple game versions concurrently and evicts the
- * least-recently-used entry when the cache exceeds its maximum size.</p>
- *
- * <h3>Usage</h3>
- * <pre>{@code
- * var cache = GameDataCache.withMaxSize(4);
- *
- * // Auto-loads and caches
- * var params = cache.wowsInfo(version, gameDataDir);
- * var constants = cache.constants(version, gameDataDir);
- *
- * // Pre-load a specific version
- * cache.preload(gameDataDir);
- * }</pre>
+ * <p>支持多版本并存，超过最大容量时淘汰最久未使用的条目。</p>
  */
 public final class GameDataCache {
 
@@ -30,7 +17,7 @@ public final class GameDataCache {
 
     private GameDataCache(int maxSize) {
         this.maxSize = maxSize;
-        this.store = new LinkedHashMap<>(maxSize, 0.75f, true) { // access-order
+        this.store = new LinkedHashMap<>(maxSize, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<VersionKey, Object> eldest) {
                 return size() > maxSize;
@@ -38,14 +25,12 @@ public final class GameDataCache {
         };
     }
 
-    /** Create a cache that holds up to {@code maxSize} versions. */
+    /** 创建最多缓存 {@code maxSize} 个版本的缓存。 */
     public static GameDataCache withMaxSize(int maxSize) {
         return new GameDataCache(maxSize);
     }
 
-    // ── Public API ───────────────────────────────────────────────────────────
-
-    /** Load (or retrieve cached) constants.json for a version. */
+    /** 获取（或加载并缓存）指定版本的 constants.json。 */
     public JsonConstantsProvider constants(VersionKey version, Path gameDataDir) {
         var key = version.subKey("constants");
         return (JsonConstantsProvider) store.computeIfAbsent(key, _ -> {
@@ -55,22 +40,16 @@ public final class GameDataCache {
         });
     }
 
-    // ── Version key ──────────────────────────────────────────────────────────
-
-    /**
-     * Identifies a game version + data sub-type for cache lookup.
-     * Equality is based on version triple (major.minor.patch) and sub-key,
-     * ignoring the build number so minor patches share caches.
-     */
+    /** 版本标识，按 major.minor.patch 分组，忽略 build 号。 */
     public record VersionKey(int major, int minor, int patch, String subKey) {
 
-        /** Extract from a data directory name like "data-15.6.0.0.12830008". */
+        /** 从目录名（如 "data-15.6.0.0.12830008"）提取。 */
         public static VersionKey from(Path gameDataDir) {
             var name = gameDataDir.getFileName().toString();
             return fromDirName(name);
         }
 
-        /** Parse from a "data-M.m.p.b" directory name. */
+        /** 从 "data-M.m.p.b" 格式解析。 */
         public static VersionKey fromDirName(String dirName) {
             var parts = dirName.replace("data-", "").split("\\.");
             int major = 0, minor = 0, patch = 0;
@@ -82,7 +61,7 @@ public final class GameDataCache {
             return new VersionKey(major, minor, patch, "");
         }
 
-        /** Same version triple with a different sub-key. */
+        /** 同版本号下不同子类型。 */
         public VersionKey subKey(String subKey) {
             return new VersionKey(major, minor, patch, subKey);
         }

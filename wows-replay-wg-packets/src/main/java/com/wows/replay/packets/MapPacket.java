@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.spec.types.EntityId;
 
 /**
- * Packet 0x28: Map / arena info.
+ * 0x28: 地图/竞技场信息。
  */
 public record MapPacket(
     @JsonProperty("space_id") int spaceId,

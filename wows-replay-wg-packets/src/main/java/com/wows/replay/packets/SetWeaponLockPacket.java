@@ -7,7 +7,7 @@ import com.wows.replay.spec.types.WeaponLockType;
 import com.wows.replay.spec.types.WeaponType;
 
 /**
- * Packet 0x30: Weapon lock state change.
+ * 0x30: 武器锁定状态变更。
  */
 public record SetWeaponLockPacket(
     @JsonProperty("weapon_type") Recognized<WeaponType> weaponType,

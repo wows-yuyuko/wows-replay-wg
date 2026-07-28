@@ -10,43 +10,41 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Final battle report output — serialized to JSON.
- *
- * <p>Mirrors the replay-dumper JSON output structure.</p>
+ * 战斗报告，序列化为 JSON。对标 replay-dumper 的输出结构。
  */
 @JsonPropertyOrder({"meta", "summary", "packets", "entities", "vehicles", "vehicles_resolved", "chat", "damage", "minimap"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record BattleReport(
 
-    /** Replay metadata (player, map, version, etc.) */
+    /** 回放元数据（玩家、地图、版本等） */
     @JsonProperty("meta") MetaSection meta,
 
-    /** High-level summary statistics */
+    /** 顶层统计摘要 */
     @JsonProperty("summary") SummarySection summary,
 
-    /** Packet statistics by type */
+    /** 按类型分组的包统计 */
     @JsonProperty("packets") PacketsSection packets,
 
-    /** Entity lifecycle events */
+    /** 实体生命周期事件 */
     @JsonProperty("entities") List<EntityEvent> entities,
 
-    /** Per-vehicle event timelines (vehicleEvents=true) */
+    /** 每车辆事件时间线 */
     @JsonProperty("vehicles") List<VehicleTimeline> vehicles,
 
-    /** Chat messages */
+    /** 聊天消息 */
     @JsonProperty("chat") List<ChatMessage> chat,
 
-    /** Damage statistics (selfDamageStats=true) */
+    /** 伤害统计 */
     @JsonProperty("damage") DamageSection damage,
 
-    /** Minimap position timeline (minimap=true) */
+    /** 小地图位置时间线 */
     @JsonProperty("minimap") MinimapSection minimap,
 
-    /** GameParam ID → name resolution for vehicle/equipment IDs (replay-dumper style). */
+    /** 车辆 ID→玩家信息 */
     @JsonProperty("vehicles_resolved") List<ResolvedVehicle> resolvedVehicles
 ) {
 
-    // ── Sub-sections ────────────────────────────────────────────────────────
+    // ── 子结构 ───────────────────────────────────────────────────────────────
 
     public record MetaSection(
         @JsonProperty("player_name") String playerName,
@@ -76,8 +74,7 @@ public record BattleReport(
                 meta.dateTime(), meta.duration(), meta.battleDuration(),
                 meta.scenario(), meta.playersPerTeam(), meta.teamsCount(),
                 meta.matchGroup(), meta.weatherParams(), meta.playerVehicle(),
-                meta.vehicles()
-            );
+                meta.vehicles());
         }
     }
 
@@ -87,66 +84,52 @@ public record BattleReport(
         @JsonProperty("total_duration") float totalDuration,
         @JsonProperty("position_packets") int positionPackets,
         @JsonProperty("entity_creates") int entityCreates,
-        @JsonProperty("entity_methods") int entityMethods
-    ) {}
+        @JsonProperty("entity_methods") int entityMethods) {}
 
     public record PacketsSection(
         @JsonProperty("by_type") Map<String, Integer> byType,
         @JsonProperty("unknown_packets") int unknownPackets,
-        @JsonProperty("invalid_packets") int invalidPackets
-    ) {}
+        @JsonProperty("invalid_packets") int invalidPackets) {}
 
     public record EntityEvent(
         @JsonProperty("clock") float clock,
         @JsonProperty("event") String event,
         @JsonProperty("entity_id") int entityId,
         @JsonProperty("entity_type") String entityType,
-        @JsonProperty("vehicle_id") long vehicleId
-    ) {}
+        @JsonProperty("vehicle_id") long vehicleId) {}
 
     public record VehicleTimeline(
         @JsonProperty("entity_id") int entityId,
         @JsonProperty("vehicle_id") long vehicleId,
-        @JsonProperty("events") List<Map<String, Object>> events
-    ) {}
+        @JsonProperty("events") List<Map<String, Object>> events) {}
 
     public record ChatMessage(
         @JsonProperty("clock") float clock,
         @JsonProperty("entity_id") int entityId,
-        @JsonProperty("message") String message
-    ) {}
+        @JsonProperty("message") String message) {}
 
     public record DamageSection(
         @JsonProperty("total_damage_dealt") long totalDamageDealt,
         @JsonProperty("total_damage_received") long totalDamageReceived,
-        @JsonProperty("by_weapon") Map<String, Long> byWeapon
-    ) {}
+        @JsonProperty("by_weapon") Map<String, Long> byWeapon) {}
 
     public record MinimapSection(
         @JsonProperty("step") int step,
-        @JsonProperty("frames") List<MinimapFrame> frames
-    ) {}
+        @JsonProperty("frames") List<MinimapFrame> frames) {}
 
     public record MinimapFrame(
         @JsonProperty("clock") float clock,
-        @JsonProperty("entities") List<MinimapEntity> entities
-    ) {}
+        @JsonProperty("entities") List<MinimapEntity> entities) {}
 
     public record MinimapEntity(
         @JsonProperty("entity_id") int entityId,
         @JsonProperty("x") float x,
         @JsonProperty("y") float y,
         @JsonProperty("rotation") float rotation,
-        @JsonProperty("team") int team
-    ) {}
+        @JsonProperty("team") int team) {}
 
-    /**
-     * Resolved GameParamId → name mapping for a vehicle.
-     * Mirrors replay-dumper's {@code player_json.vehicle} block.
-     */
     public record ResolvedVehicle(
         @JsonProperty("ship_id") long shipId,
         @JsonProperty("relation") int relation,
-        @JsonProperty("player_name") String playerName
-    ) {}
+        @JsonProperty("player_name") String playerName) {}
 }

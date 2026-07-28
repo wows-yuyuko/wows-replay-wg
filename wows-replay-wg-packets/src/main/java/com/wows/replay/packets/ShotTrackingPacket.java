@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.spec.types.EntityId;
 
 /**
- * Packet 0x33: Shot tracking change.
+ * 0x33: 射击追踪变更。
  */
 public record ShotTrackingPacket(
     @JsonProperty("entity_id") EntityId entityId,

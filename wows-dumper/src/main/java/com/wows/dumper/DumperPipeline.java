@@ -15,50 +15,38 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Replay → JSON pipeline, mirroring Rust replay-dumper's output format.
- *
- * <h3>Usage</h3>
- * <pre>{@code
- * var pipeline = new DumperPipeline(Path.of("/data/wows"));
- * String json = pipeline.dump(Path.of("replay.wowsreplay"), options);
- * }</pre>
+ * 回放 → JSON 管线，对标 Rust replay-dumper 的输出格式。
  */
 public final class DumperPipeline {
 
     private final Path gameDataBase;
 
-    /** Shared LRU cache for loaded game data across dumps. */
+    /** 全局 LRU 缓存，跨多次 dump 共享已加载数据。 */
     private static final GameDataCache CACHE = GameDataCache.withMaxSize(4);
 
-    public DumperPipeline(Path gameDataBase) {
-        this.gameDataBase = gameDataBase;
-    }
+    public DumperPipeline(Path gameDataBase) { this.gameDataBase = gameDataBase; }
 
-    /** Parse options mirroring replay-dumper's ParseOptions. */
+    /** 解析选项，对标 replay-dumper 的 ParseOptions。 */
     public record Options(
-        boolean minimap,
-        int minimapStep,
-        Path constantsFile,
-        Path gameParamFile
+        boolean minimap, int minimapStep, Path constantsFile, Path gameParamFile
     ) {
         public static final Options DEFAULT = new Options(false, 7, null, null);
     }
 
-    /** Dump a replay file to JSON string. */
+    /** 从文件 dump。 */
     public String dump(Path replayPath, Options options) throws IOException, ReplayException {
         return dump(ReplayFile.fromFile(replayPath), options);
     }
 
-    /** Dump replay bytes to JSON string. */
+    /** 从字节数组 dump。 */
     public String dump(byte[] replayBytes, Options options) throws ReplayException {
         return dump(ReplayFile.fromBytes(replayBytes), options);
     }
 
     private String dump(ReplayFile replay, Options options) {
-        // Find game data directory for this version
         Path gameData = findGameData(replay);
 
-        // Load constants.json (explicit path overrides cache)
+        // 加载 constants.json（显式路径优先于缓存）
         JsonConstantsProvider constants = null;
         if (options.constantsFile != null && Files.exists(options.constantsFile)) {
             constants = JsonConstantsProvider.fromFile(options.constantsFile);
@@ -67,32 +55,28 @@ public final class DumperPipeline {
             constants = CACHE.constants(ver, gameData);
         }
 
-        // Run the analyzer with optional providers
         var analyzerBuilder = ReplayAnalyzer.builder()
             .config(ReplayAnalyzerConfig.builder()
-                .minimap(options.minimap, options.minimapStep)
-                .build());
+                .minimap(options.minimap, options.minimapStep).build());
         if (constants != null) analyzerBuilder.constantsProvider(constants);
         var analyzer = analyzerBuilder.build();
 
         var report = analyzer.buildReport(replay);
-
-        // Build JSON in replay-dumper format
         return buildJson(replay, report);
     }
 
-    // ── Game data discovery ──────────────────────────────────────────────────
+    // ── 游戏数据目录发现 ────────────────────────────────────────────────────
 
-    /** Find the data-{version}/live/ directory matching the replay version. */
+    /** 查找与回放版本匹配的 data-{version}/live/ 目录。 */
     public Path findGameData(ReplayFile replay) {
         var ver = replay.meta().clientVersionFromExe().replace(',', '.');
         var version = Version.fromClientExe(replay.meta().clientVersionFromExe());
 
-        // Exact match: data-major.minor.patch.build/live
+        // 精确匹配
         var exact = gameDataBase.resolve("data-" + ver).resolve("live");
         if (Files.exists(exact)) return exact;
 
-        // Try data-major.minor.patch.0build/live
+        // 尝试 data-major.minor.patch.0build/live
         int lastDot = ver.lastIndexOf('.');
         if (lastDot > 0) {
             var altVer = ver.substring(0, lastDot) + ".0" + ver.substring(lastDot);
@@ -100,7 +84,7 @@ public final class DumperPipeline {
             if (Files.exists(alt)) return alt;
         }
 
-        // Fuzzy: data-major.minor.patch.*/live, pick highest build
+        // 模糊匹配：data-major.minor.patch.*/live，取最高 build
         var prefix = "data-" + version.toPath() + ".";
         Path best = null;
         long bestBuild = -1;
@@ -119,13 +103,12 @@ public final class DumperPipeline {
         return best;
     }
 
-    // ── JSON builder ─────────────────────────────────────────────────────────
+    // ── JSON 构建 ────────────────────────────────────────────────────────────
 
     private String buildJson(ReplayFile replay, BattleReport report) {
         var root = JsonMapper.createObject();
         var meta = replay.meta();
 
-        // Top-level fields matching replay-dumper output
         root.put("arena_id", meta.mapId());
         root.put("date_time", meta.dateTime());
         root.put("version", meta.clientVersionFromExe().replace(',', '.'));
@@ -135,31 +118,13 @@ public final class DumperPipeline {
         root.put("game_type", meta.gameType());
         root.put("match_group", meta.matchGroup());
 
-        // Meta section (full metadata)
         root.set("meta", JsonMapper.toTree(report.meta()));
-
-        // Summary
         root.set("summary", JsonMapper.toTree(report.summary()));
-
-        // Packet stats
         root.set("packets", JsonMapper.toTree(report.packets()));
+        if (report.entities() != null) root.set("entities", JsonMapper.toTree(report.entities()));
+        if (report.resolvedVehicles() != null) root.set("vehicles_resolved", JsonMapper.toTree(report.resolvedVehicles()));
+        if (report.minimap() != null) root.set("minimap", JsonMapper.toTree(report.minimap()));
 
-        // Entity events
-        if (report.entities() != null) {
-            root.set("entities", JsonMapper.toTree(report.entities()));
-        }
-
-        // Resolved vehicles
-        if (report.resolvedVehicles() != null) {
-            root.set("vehicles_resolved", JsonMapper.toTree(report.resolvedVehicles()));
-        }
-
-        // Minimap
-        if (report.minimap() != null) {
-            root.set("minimap", JsonMapper.toTree(report.minimap()));
-        }
-
-        // Serialize JObject builder to JSON string
         return JsonMapper.toJson(root);
     }
 }

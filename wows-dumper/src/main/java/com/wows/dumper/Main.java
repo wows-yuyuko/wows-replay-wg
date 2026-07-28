@@ -5,22 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * CLI replay JSON dumper — mirrors {@code replay-dumper} from wows-toolkit.
- *
- * <h3>Usage</h3>
- * <pre>
- *   wows-dumper &lt;replay.wowsreplay&gt; -b &lt;game-data-base&gt; [options]
- * </pre>
- *
- * <h3>Options</h3>
- * <pre>
- *   -b, --game-data-base &lt;dir&gt;   base directory for data-{version}/live/
- *   -o, --out-file &lt;path&gt;         write output to file (default: stdout)
- *   -c, --constants-file &lt;path&gt;   path to constants.json for name resolution
- *   --minimap                       include minimap position timeline
- *   --minimap-step &lt;n&gt;             only emit minimap every N ticks (default: 7)
- *   --help                          print usage
- * </pre>
+ * 回放 JSON 导出命令行工具，对标 wows-toolkit 的 replay-dumper。
  */
 public final class Main {
 
@@ -31,7 +16,6 @@ public final class Main {
             return;
         }
 
-        // Parse positional: first non-flag arg is replay path
         Path replayPath = null;
         Path gameDataBase = null;
         Path outFile = null;
@@ -48,26 +32,14 @@ public final class Main {
                 case "--minimap"               -> minimap = true;
                 case "--minimap-step"          -> minimapStep = Integer.parseInt(args[++i]);
                 default -> {
-                    if (!args[i].startsWith("-") && replayPath == null) {
-                        replayPath = Path.of(args[i]);
-                    }
+                    if (!args[i].startsWith("-") && replayPath == null) replayPath = Path.of(args[i]);
                 }
             }
             i++;
         }
 
-        if (replayPath == null) {
-            System.err.println("Error: missing replay file argument");
-            printUsage();
-            System.exit(1);
-            return;
-        }
-        if (gameDataBase == null) {
-            System.err.println("Error: missing -b/--game-data-base");
-            printUsage();
-            System.exit(1);
-            return;
-        }
+        if (replayPath == null) { System.err.println("错误：缺少回放文件参数"); printUsage(); System.exit(1); return; }
+        if (gameDataBase == null) { System.err.println("错误：缺少 -b/--game-data-base"); printUsage(); System.exit(1); return; }
 
         try {
             var pipeline = new DumperPipeline(gameDataBase);
@@ -76,12 +48,12 @@ public final class Main {
 
             if (outFile != null) {
                 Files.writeString(outFile, json);
-                System.err.println("Wrote " + outFile);
+                System.err.println("已写入 " + outFile);
             } else {
                 System.out.println(json);
             }
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("错误：" + e.getMessage());
             e.printStackTrace(System.err);
             System.exit(1);
         }
@@ -94,18 +66,18 @@ public final class Main {
 
     private static void printUsage() {
         System.out.println("""
-            wows-dumper — Extract WoWs replay data as JSON
+            wows-dumper — 将 WoWs 回放数据导出为 JSON
 
-            Usage:
-              wows-dumper <replay.wowsreplay> -b <game-data-base> [options]
+            用法:
+              wows-dumper <replay.wowsreplay> -b <game-data-base> [选项]
 
-            Options:
-              -b, --game-data-base <dir>   base directory for data-{version}/live/
-              -o, --out-file <path>         write output to file (default: stdout)
-              -c, --constants-file <path>   path to constants.json for name resolution
-              --minimap                     include minimap position timeline
-              --minimap-step <n>            only emit minimap every N ticks (default: 7)
-              --help                        print this message
+            选项:
+              -b, --game-data-base <dir>   data-{version}/live/ 的父目录
+              -o, --out-file <path>        输出文件（默认 stdout）
+              -c, --constants-file <path>  constants.json 路径（可选）
+              --minimap                     包含小地图位置时间线
+              --minimap-step <n>           小地图采样间隔（默认 7）
+              --help                        打印帮助
             """);
     }
 }

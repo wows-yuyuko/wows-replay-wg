@@ -3,7 +3,7 @@ package com.wows.replay.packets;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Packet 0x0e: Server tick rate (always 1/7).
+ * 0x0e: 服务器 tick 速率（恒为 1/7）。
  */
 public record ServerTickPacket(
     @JsonProperty("tick_rate") double tickRate

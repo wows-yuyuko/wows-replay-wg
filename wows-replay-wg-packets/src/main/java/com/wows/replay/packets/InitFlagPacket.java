@@ -3,7 +3,7 @@ package com.wows.replay.packets;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Packet 0x10: Init flag (always 0 at clock=0).
+ * 0x10: 初始化标志（clock=0 时恒为 0）。
  */
 public record InitFlagPacket(
     @JsonProperty("flag") int flag

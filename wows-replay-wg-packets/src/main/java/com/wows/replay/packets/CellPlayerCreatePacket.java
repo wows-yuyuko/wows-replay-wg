@@ -10,7 +10,7 @@ import com.wows.replay.spec.types.Vec3;
 import java.util.Map;
 
 /**
- * Packet 0x01: Cell player entity creation (with internal properties + position).
+ * 0x01: Cell 玩家实体创建（含内部属性+位置）。
  */
 public record CellPlayerCreatePacket(
     @JsonProperty("entity_id") EntityId entityId,

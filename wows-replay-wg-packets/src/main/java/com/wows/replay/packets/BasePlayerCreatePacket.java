@@ -7,7 +7,7 @@ import com.wows.replay.spec.types.EntityId;
 import java.util.Map;
 
 /**
- * Packet 0x00: Base player entity creation (with base properties).
+ * 0x00: 基础玩家实体创建（含基础属性）。
  */
 public record BasePlayerCreatePacket(
     @JsonProperty("entity_id") EntityId entityId,

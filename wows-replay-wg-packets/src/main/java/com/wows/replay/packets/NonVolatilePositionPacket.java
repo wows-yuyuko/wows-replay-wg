@@ -6,8 +6,8 @@ import com.wows.replay.spec.types.Rot3;
 import com.wows.replay.spec.types.Vec3;
 
 /**
- * Packet 0x2a (modern) / 0x29 (legacy): Non-volatile entity position update.
- * Same format as Position but without direction vector and is_on_ground.
+ * 0x2a（新版）/ 0x29（旧版）: 非易失性实体位置更新。
+ * 与 Position 格式相同，但无方向向量和 is_on_ground。
  */
 public record NonVolatilePositionPacket(
     @JsonProperty("entity_id") EntityId entityId,

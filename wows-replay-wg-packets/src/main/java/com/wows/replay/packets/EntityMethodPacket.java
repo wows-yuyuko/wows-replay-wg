@@ -7,7 +7,7 @@ import com.wows.replay.spec.types.EntityId;
 import java.util.List;
 
 /**
- * Packet 0x08: Entity method invocation (RPC call).
+ * 0x08: 实体方法调用（RPC）。
  */
 public record EntityMethodPacket(
     @JsonProperty("entity_id") EntityId entityId,

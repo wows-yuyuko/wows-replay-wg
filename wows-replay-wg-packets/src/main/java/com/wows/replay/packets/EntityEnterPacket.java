@@ -5,7 +5,7 @@ import com.wows.replay.spec.types.EntityId;
 import com.wows.replay.spec.types.GameParamId;
 
 /**
- * Packet 0x03: Entity entering the player's AoI.
+ * 0x03: 实体进入玩家 AoI。
  */
 public record EntityEnterPacket(
     @JsonProperty("entity_id") EntityId entityId,

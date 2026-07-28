@@ -5,7 +5,7 @@ import com.wows.replay.spec.rpc.ArgValue;
 import com.wows.replay.spec.types.EntityId;
 
 /**
- * Packet 0x07: Entity property update.
+ * 0x07: 实体属性更新。
  */
 public record EntityPropertyPacket(
     @JsonProperty("entity_id") EntityId entityId,

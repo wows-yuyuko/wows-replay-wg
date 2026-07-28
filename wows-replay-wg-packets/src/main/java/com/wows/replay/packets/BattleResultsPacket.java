@@ -3,7 +3,7 @@ package com.wows.replay.packets;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Packet 0x22 (modern only): Battle results JSON (appears near end of replay).
+ * 0x22（仅新版）: 战斗结果 JSON（回放末尾附近）。
  */
 public record BattleResultsPacket(
     @JsonProperty("json") String json
