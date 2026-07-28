@@ -202,7 +202,12 @@ public final class ReplayFile {
         }
 
         // Parse metadata JSON
-        ReplayMeta   meta = JsonMapper.fromJson(rawMeta, ReplayMeta.class);
+        ReplayMeta meta;
+        try {
+            meta = JsonMapper.fromJson(rawMeta, ReplayMeta.class);
+        } catch (IOException e) {
+            throw new ReplayException("Failed to parse replay metadata JSON", e);
+        }
         return new ReplayFile(meta, rawMeta, packetData);
     }
 
@@ -236,10 +241,11 @@ public final class ReplayFile {
         byte[] metaBytes = new byte[metaLen];
         buf.get(metaBytes);
         String rawMeta = new String(metaBytes, StandardCharsets.UTF_8);
-        return JsonMapper.mapper()
-                .readerFor(ReplayMeta.class)
-                .readValue(rawMeta);
-
+        try {
+            return JsonMapper.fromJson(rawMeta, ReplayMeta.class);
+        } catch (IOException e) {
+            throw new ReplayException("Failed to parse replay metadata JSON", e);
+        }
     }
 
     /**
