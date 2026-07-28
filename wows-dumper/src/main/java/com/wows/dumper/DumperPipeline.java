@@ -65,13 +65,20 @@ public final class DumperPipeline {
             if (Files.exists(cf)) constants = JsonConstantsProvider.fromFile(cf);
         }
 
-        // Run the analyzer
-        var analyzerConfig = ReplayAnalyzerConfig.builder()
-            .minimap(options.minimap, options.minimapStep)
-            .build();
-        var analyzer = ReplayAnalyzer.builder()
-            .config(analyzerConfig)
-            .build();
+        // Load wowsinfo.json for GameParam ID→name resolution
+        WowsInfoExtractor gameParams = null;
+        if (gameData != null) {
+            var wi = gameData.resolve("app/data/wowsinfo.json");
+            if (Files.exists(wi)) gameParams = new WowsInfoExtractor(wi);
+        }
+
+        // Run the analyzer with GameParamProvider
+        var analyzerBuilder = ReplayAnalyzer.builder()
+            .config(ReplayAnalyzerConfig.builder()
+                .minimap(options.minimap, options.minimapStep)
+                .build());
+        if (gameParams != null) analyzerBuilder.paramProvider(gameParams);
+        var analyzer = analyzerBuilder.build();
 
         var report = analyzer.buildReport(replay);
 
