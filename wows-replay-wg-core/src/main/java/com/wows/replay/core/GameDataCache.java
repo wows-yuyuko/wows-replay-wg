@@ -1,11 +1,9 @@
 package com.wows.replay.core;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Global LRU cache for loaded game data files, keyed by version.
@@ -47,31 +45,14 @@ public final class GameDataCache {
 
     // ── Public API ───────────────────────────────────────────────────────────
 
-    /** Load (or retrieve cached) wowsinfo.json for a version. */
-    public WowsInfoExtractor wowsInfo(VersionKey version, Path gameDataDir) {
-        var key = version.subKey("wowsinfo");
-        return (WowsInfoExtractor) store.computeIfAbsent(key, k -> {
-            var path = gameDataDir.resolve("app/data/wowsinfo.json");
-            if (!Files.exists(path)) return null;
-            return new WowsInfoExtractor(path);
-        });
-    }
-
     /** Load (or retrieve cached) constants.json for a version. */
     public JsonConstantsProvider constants(VersionKey version, Path gameDataDir) {
         var key = version.subKey("constants");
-        return (JsonConstantsProvider) store.computeIfAbsent(key, k -> {
+        return (JsonConstantsProvider) store.computeIfAbsent(key, _ -> {
             var path = gameDataDir.resolve("constants.json");
             if (!Files.exists(path)) return null;
             return JsonConstantsProvider.fromFile(path);
         });
-    }
-
-    /** Pre-load all discoverable data for a game version directory. */
-    public void preload(Path gameDataDir) {
-        var ver = VersionKey.from(gameDataDir);
-        wowsInfo(ver, gameDataDir);
-        constants(ver, gameDataDir);
     }
 
     // ── Version key ──────────────────────────────────────────────────────────

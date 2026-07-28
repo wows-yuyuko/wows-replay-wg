@@ -7,7 +7,6 @@ import com.wows.replay.core.ReplayFile;
 import com.wows.replay.packets.*;
 import com.wows.replay.spec.spi.EntitySpecProvider;
 import com.wows.replay.spec.spi.GameConstantsProvider;
-import com.wows.replay.spec.spi.GameParamProvider;
 import com.wows.replay.spec.types.GameClock;
 import com.wows.replay.core.JsonMapper;
 
@@ -45,16 +44,13 @@ import java.util.List;
 public final class ReplayAnalyzer {
 
     private final EntitySpecProvider specProvider;
-    private final GameParamProvider paramProvider;
     private final GameConstantsProvider constantsProvider;
     private final ReplayAnalyzerConfig config;
 
     private ReplayAnalyzer(EntitySpecProvider specProvider,
-                           GameParamProvider paramProvider,
                            GameConstantsProvider constantsProvider,
                            ReplayAnalyzerConfig config) {
         this.specProvider = specProvider;
-        this.paramProvider = paramProvider;
         this.constantsProvider = constantsProvider;
         this.config = config;
     }
@@ -67,7 +63,7 @@ public final class ReplayAnalyzer {
      */
     public static String quick(ReplayFile replay) throws ReplayException {
         if (replay == null) throw new ReplayException("replay must not be null");
-        var analyzer = new ReplayAnalyzer(null, null, null, ReplayAnalyzerConfig.DEFAULT);
+        var analyzer = new ReplayAnalyzer(null, null, ReplayAnalyzerConfig.DEFAULT);
         return analyzer.analyze(replay);
     }
 
@@ -86,17 +82,11 @@ public final class ReplayAnalyzer {
 
     public static final class Builder {
         private EntitySpecProvider specProvider;
-        private GameParamProvider paramProvider;
         private GameConstantsProvider constantsProvider;
         private ReplayAnalyzerConfig config = ReplayAnalyzerConfig.DEFAULT;
 
         public Builder specProvider(EntitySpecProvider p) {
             specProvider = p;
-            return this;
-        }
-
-        public Builder paramProvider(GameParamProvider p) {
-            paramProvider = p;
             return this;
         }
 
@@ -111,7 +101,7 @@ public final class ReplayAnalyzer {
         }
 
         public ReplayAnalyzer build() {
-            return new ReplayAnalyzer(specProvider, paramProvider, constantsProvider, config);
+            return new ReplayAnalyzer(specProvider, constantsProvider, config);
         }
     }
 

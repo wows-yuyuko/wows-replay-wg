@@ -3,6 +3,7 @@ package com.wows.dumper;
 import com.wows.replay.analyzer.BattleReport;
 import com.wows.replay.analyzer.ReplayAnalyzer;
 import com.wows.replay.analyzer.ReplayAnalyzerConfig;
+import com.wows.replay.core.GameDataCache;
 import com.wows.replay.core.JsonConstantsProvider;
 import com.wows.replay.core.JsonMapper;
 import com.wows.replay.core.ReplayException;
@@ -66,20 +67,12 @@ public final class DumperPipeline {
             constants = CACHE.constants(ver, gameData);
         }
 
-        // Load wowsinfo.json via cache for GameParam ID→name resolution
-        WowsInfoExtractor gameParams = null;
-        if (gameData != null) {
-            var ver = GameDataCache.VersionKey.from(gameData);
-            gameParams = CACHE.wowsInfo(ver, gameData);
-        }
-
         // Run the analyzer with optional providers
         var analyzerBuilder = ReplayAnalyzer.builder()
             .config(ReplayAnalyzerConfig.builder()
                 .minimap(options.minimap, options.minimapStep)
                 .build());
         if (constants != null) analyzerBuilder.constantsProvider(constants);
-        if (gameParams != null) analyzerBuilder.paramProvider(gameParams);
         var analyzer = analyzerBuilder.build();
 
         var report = analyzer.buildReport(replay);
