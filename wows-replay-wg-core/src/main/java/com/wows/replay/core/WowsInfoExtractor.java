@@ -1,8 +1,8 @@
 package com.wows.replay.core;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
+import tools.jackson.core.JsonFactory;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
 import com.wows.replay.spec.spi.GameParamProvider;
 import com.wows.replay.spec.types.GameParamId;
 
