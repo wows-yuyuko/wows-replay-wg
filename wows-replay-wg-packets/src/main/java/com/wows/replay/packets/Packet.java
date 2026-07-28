@@ -6,24 +6,24 @@ import com.wows.replay.core.RawPacket;
 import com.wows.replay.spec.types.GameClock;
 
 /**
- * A fully decoded replay packet with typed payload.
+ * 完全解码的带类型载荷的回放包。
  *
- * <p>Mirrors Rust's {@code Packet<'replay, 'argtype>}.</p>
+ * <p>对标 Rust's {@code Packet<'replay, 'argtype>}.</p>
  */
 public record Packet(
-    /** Total packet size in bytes (from header). */
+    /** 包总大小（来自头部）。 */
     int packetSize,
 
     /** Wire packet type (for filtering). */
     PacketTypeId packetType,
 
-    /** Game clock when recorded. */
+    /** 记录时的游戏时钟。 */
     GameClock clock,
 
-    /** Decoded payload (null for Invalid/Unknown packets). */
+    /** 已解码载荷。 */
     Object payload,
 
-    /** Raw payload bytes (for debugging). */
+    /** 原始载荷字节（调试用）。 */
     byte[] raw,
 
     /** Bytes remaining after the parser consumed data (non-empty = parse mismatch). */
@@ -31,7 +31,7 @@ public record Packet(
     byte[] leftover
 ) {
     /**
-     * Create from a RawPacket and decoded payload.
+     * 从 RawPacket 和已解码载荷创建。
      */
     public static Packet fromRaw(RawPacket raw, Object payload, byte[] leftover) {
         return new Packet(
@@ -45,7 +45,7 @@ public record Packet(
     }
 
     /**
-     * Create an invalid packet (parse failure).
+     * 创建无效包（解析失败）。
      */
     public static Packet invalid(RawPacket raw, String errorMessage) {
         return new Packet(
@@ -59,7 +59,7 @@ public record Packet(
     }
 
     /**
-     * Create a packet with unknown payload (type not recognized).
+     * 创建未知载荷包。
      */
     public static Packet unknown(RawPacket raw) {
         return new Packet(
@@ -73,7 +73,7 @@ public record Packet(
     }
 
     /**
-     * Invalid packet payload (carries error message).
+     * 无效包载荷。
      */
     public record InvalidPayload(String error) {}
 }

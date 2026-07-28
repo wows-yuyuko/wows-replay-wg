@@ -3,8 +3,8 @@ package com.wows.replay.spec.entity;
 import java.util.List;
 
 /**
- * Entity type definition loaded from game .def files.
- * Maps entity_type (u16 index into specs array) to its name,
+ * 从游戏 .def 文件加载的实体类型定义。
+ * 将 entity_type（u16 索引）映射到名称、属性和方法。
  * properties, and methods.
  */
 public record EntitySpec(
@@ -30,7 +30,7 @@ public record EntitySpec(
     List<MethodSpec> cellMethods
 ) {
     /**
-     * Convenience: all properties (used for EntityCreate decoding).
+     * 全部属性（用于 EntityCreate 解码）。
      */
     public List<PropertySpec> properties() {
         return clientProperties;

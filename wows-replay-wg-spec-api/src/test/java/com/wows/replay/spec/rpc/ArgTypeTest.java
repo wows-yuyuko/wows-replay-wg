@@ -33,7 +33,7 @@ class ArgTypeTest {
         "VECTOR3, VECTOR3",
         "VECTOR4, VECTOR4",
     })
-    @DisplayName("Primitive descriptors resolve correctly")
+    @DisplayName("基本类型描述符正确解析")
     void primitiveDescriptor(String input, String expectedTypeName) {
         var t = ArgType.fromDescriptor(input);
         assertEquals(expectedTypeName, t.typeName());
@@ -41,20 +41,20 @@ class ArgTypeTest {
     }
 
     @Test
-    @DisplayName("Case insensitive")
+    @DisplayName("大小写不敏感")
     void caseInsensitive() {
         assertEquals(ArgType.Primitive.UINT32, ArgType.fromDescriptor("uint32"));
         assertEquals(ArgType.Primitive.FLOAT, ArgType.fromDescriptor("Float32"));
     }
 
     @Test
-    @DisplayName("Null descriptor → BLOB")
+    @DisplayName("null 描述符 → BLOB")
     void nullDescriptor() {
         assertEquals(ArgType.Primitive.BLOB, ArgType.fromDescriptor(null));
     }
 
     @Test
-    @DisplayName("Unknown descriptor → BLOB fallback")
+    @DisplayName("未知描述符 → BLOB fallback")
     void unknownDescriptor() {
         assertEquals(ArgType.Primitive.BLOB, ArgType.fromDescriptor("NONEXISTENT"));
     }
@@ -87,7 +87,7 @@ class ArgTypeTest {
     }
 
     @Test
-    @DisplayName("Nested ARRAY of ARRAY")
+    @DisplayName("嵌套 ARRAY")
     void nestedArray() {
         var t = ArgType.fromDescriptor("ARRAY <of> ARRAY <of> UINT8");
         assertInstanceOf(ArgType.Array.class, t);
@@ -105,7 +105,7 @@ class ArgTypeTest {
     }
 
     @Test
-    @DisplayName("sortSize for primitives")
+    @DisplayName("基本类型 sortSize")
     void sortSize() {
         assertEquals(1, ArgType.Primitive.INT8.sortSize());
         assertEquals(2, ArgType.Primitive.INT16.sortSize());
@@ -118,14 +118,14 @@ class ArgTypeTest {
     }
 
     @Test
-    @DisplayName("sortSize for TUPLE")
+    @DisplayName("TUPLE sortSize")
     void sortSizeTuple() {
         var t = new ArgType.Tuple(List.of(ArgType.Primitive.INT32, ArgType.Primitive.FLOAT));
         assertEquals(8, t.sortSize());
     }
 
     @Test
-    @DisplayName("sortSize for TUPLE with variable element")
+    @DisplayName("TUPLE sortSize with variable element")
     void sortSizeTupleVariable() {
         var t = new ArgType.Tuple(List.of(ArgType.Primitive.INT32, ArgType.Primitive.STRING));
         assertEquals(ArgType.SORT_INFINITY, t.sortSize());

@@ -1,9 +1,9 @@
 package com.wows.replay.spec.entity;
 
 /**
- * BigWorld entity property visibility flags.
- * Determines when a property is transmitted on the wire.
- * Mirrors Rust's {@code entitydefs::Flags}.
+ * BigWorld 实体属性可见性标志。
+ * 确定属性何时在线路上传输。
+ * 对标 Rust's {@code entitydefs::Flags}.
  */
 public enum PropertyFlags {
     ALL_CLIENTS,
@@ -15,7 +15,7 @@ public enum PropertyFlags {
     CELL_PUBLIC,
     OTHER_CLIENTS;
 
-    /** Parse from .def XML flag string. */
+    /** 从 .def XML 标志字符串解析。 */
     public static PropertyFlags fromDef(String s) {
         return switch (s) {
             case "ALL_CLIENTS"          -> ALL_CLIENTS;

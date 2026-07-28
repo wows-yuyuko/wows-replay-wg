@@ -3,14 +3,14 @@ package com.wows.replay.spec.types;
 import java.util.regex.Pattern;
 
 /**
- * Game version parsed from clientVersionFromExe string (e.g. "15.4.0.12345").
- * Mirrors Rust's {@code wows_core::version::Version}.
+ * 游戏版本，从 clientVersionFromExe 字符串解析（如 "15.4.0.12345").
+ * 对标 Rust's {@code wows_core::version::Version}.
  */
 public record Version(int major, int minor, int patch, int build) implements Comparable<Version> {
 
     /**
      * Parse from clientVersionFromExe format: "major,minor,patch,build".
-     * Build may be absent in older replays (treated as 0).
+     * 旧版回放可能缺少 build（视为 0）。
      */
     public static Version fromClientExe(String versionStr) {
         if (versionStr == null || versionStr.isBlank()) {
@@ -25,11 +25,11 @@ public record Version(int major, int minor, int patch, int build) implements Com
     }
 
     /**
-     * Extract game version from an Account.def entity definition XML.
+     * 从 Account.def 实体定义 XML 中提取游戏版本。
      *
      * <p>The file contains a node like
      * {@code <curVersion_15_1_0_11965230></curVersion_15_1_0_11965230>}
-     * whose tag name encodes the version triple.</p>
+     * 其标签名编码了版本号。</p>
      */
     public static Version fromAccountDef(String xml) {
         var matcher = VERSION_NODE_PATTERN.matcher(xml);
@@ -47,7 +47,7 @@ public record Version(int major, int minor, int patch, int build) implements Com
         return new Version(0, 0, 0, 0);
     }
 
-    /** Matches {@code curVersion_X_Y_Z_B} or {@code curVersion_release_X_Y_Z_B}. */
+    /** 匹配 {@code curVersion_X_Y_Z_B} or {@code curVersion_release_X_Y_Z_B}. */
     private static final Pattern VERSION_NODE_PATTERN = Pattern.compile(
         "curVersion_(?:[Rr]elease_)?(\\d+_\\d+_\\d+_\\d+(?:_\\d+)?)");
 
@@ -59,20 +59,20 @@ public record Version(int major, int minor, int patch, int build) implements Com
         }
     }
 
-    /** Check if this version is at least {@code other} (ignoring build). */
-    public boolean isAtLeast(Version other) {
+    /** 检查此版本是否至少为 {@code other}（忽略 build）。 */
+    public boolean isAtLeast 比较(Version other) {
         if (major != other.major) return major > other.major;
         if (minor != other.minor) return minor > other.minor;
         return patch >= other.patch;
     }
 
     /** File-system path segment: {@code "major.minor.patch"}. */
-    public String toPath() {
+    public String toPath 路径() {
         return major + "." + minor + "." + patch;
     }
 
     @Override
-    public int compareTo(Version o) {
+    public int compareTo 比较(Version o) {
         int c = Integer.compare(major, o.major);
         if (c != 0) return c;
         c = Integer.compare(minor, o.minor);

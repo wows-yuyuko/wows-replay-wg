@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Replay metadata parsed from the JSON block at the start of a .wowsreplay file.
- * Mirrors Rust's {@code ReplayMeta} struct.
+ * 从 .wowsreplay 文件开头的 JSON 块解析的元数据。
+ * 对标 Rust's {@code ReplayMeta} struct.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ReplayMeta(
@@ -87,7 +87,7 @@ public record ReplayMeta(
     int battleDuration
 ) {
     /**
-     * Vehicle info within replay metadata.
+     * 元数据中的车辆信息。
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record VehicleInfoMeta(

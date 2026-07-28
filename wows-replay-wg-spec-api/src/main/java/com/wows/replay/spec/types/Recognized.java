@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Recognized enum value — either a known variant or an unknown raw value.
- * Mirrors Rust's {@code Recognized<T, u32>}.
+ * 可识别的枚举值 — either a known variant or an unknown raw value.
+ * 对标 Rust's {@code Recognized<T, u32>}.
  */
 public sealed interface Recognized<T extends Enum<T>> {
 
@@ -25,7 +25,7 @@ public sealed interface Recognized<T extends Enum<T>> {
     }
 
     /**
-     * Create from raw value using a reverse lookup map.
+     * 用反向查找 map 从原始值创建。
      */
     static <T extends Enum<T>> Recognized<T> fromRaw(int raw, Map<Integer, T> reverseMap) {
         T known = reverseMap.get(raw);
@@ -33,14 +33,14 @@ public sealed interface Recognized<T extends Enum<T>> {
     }
 
     /**
-     * Convenience factory for an always-unknown value (no reverse map available).
+     * 始终为未知值的便捷工厂方法。
      */
     static Recognized<?> unknown(int raw) {
         return new Unknown<>(raw);
     }
 
     /**
-     * Return the known value, if recognized.
+     * 返回已知值（如果可识别）。
      */
     default Optional<T> intoKnown() {
         return this instanceof Known<T> k ? Optional.of(k.value) : Optional.empty();

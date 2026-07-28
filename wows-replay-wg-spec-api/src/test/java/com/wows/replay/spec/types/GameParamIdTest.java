@@ -15,7 +15,7 @@ class GameParamIdTest {
     }
 
     @Test
-    @DisplayName("int constructor converts unsigned")
+    @DisplayName("int 构造器无符号转换")
     void intConstructorUnsigned() {
         // buf.getInt() returns -113330352 for wire value 4181636944
         var id = new GameParamId(-113330352);
@@ -23,23 +23,23 @@ class GameParamIdTest {
     }
 
     @Test
-    @DisplayName("small int values passthrough")
+    @DisplayName("小 int 值直通")
     void intConstructorSmall() {
         var id = new GameParamId(42);
         assertEquals(42L, id.value());
     }
 
     @Test
-    @DisplayName("ZERO constant")
+    @DisplayName("ZERO 常量")
     void zero() {
         assertEquals(0L, GameParamId.ZERO.value());
     }
 
     @Test
-    @DisplayName("compareTo")
-    void compareTo() {
-        assertTrue(new GameParamId(100).compareTo(new GameParamId(50)) > 0);
-        assertEquals(0, new GameParamId(42).compareTo(new GameParamId(42)));
+    @DisplayName("compareTo 比较")
+    void compareTo 比较() {
+        assertTrue(new GameParamId(100).compareTo 比较(new GameParamId(50)) > 0);
+        assertEquals(0, new GameParamId(42).compareTo 比较(new GameParamId(42)));
     }
 
     @Test

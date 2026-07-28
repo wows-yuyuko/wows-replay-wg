@@ -7,21 +7,21 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Weapon type enumerating selectable armaments.
- * Mirrors Rust's {@code wowsunpack::game_types::WeaponType}.
+ * 武器类型，枚举可选择的武装。
+ * 对标 Rust's {@code wowsunpack::game_types::WeaponType}.
  *
- * <p>Raw wire values come from the client's integer {@code WeaponType}
+ * <p>线路上原始值来自客户端's integer {@code WeaponType}
  * enum ({@code scripts/WeaponType.pyc}), which is wider than the
  * selectable weapons modeled here.  Non-selectable types are preserved
  * as {@link Recognized.Unknown}.</p>
  */
 public enum WeaponType {
     ARTILLERY,
-    /** Secondary battery. */
+    /** 副炮。 */
     SECONDARIES,
     TORPEDOES,
     PLANES,
-    /** Sonar pinger (submarines). */
+    /** 声纳（潜艇）。 */
     PINGER;
 
     private static final Map<Integer, WeaponType> REVERSE = Stream.of(values())
@@ -35,7 +35,7 @@ public enum WeaponType {
             },
             w -> w));
 
-    /** Wire-level name used in Python entity defs. */
+    /** Python entity def 中使用的线级名称。 */
     @JsonValue
     public String wireName() {
         return switch (this) {
@@ -47,7 +47,7 @@ public enum WeaponType {
         };
     }
 
-    /** Human-readable description. */
+    /** 可读描述。 */
     public String description() {
         return switch (this) {
             case ARTILLERY  -> "Main Battery";
@@ -59,8 +59,8 @@ public enum WeaponType {
     }
 
     /**
-     * Map a raw wire value to a {@link Recognized} variant.
-     * Returns {@link Recognized.Unknown} for non-selectable weapon types.
+     * 将线路上原始值映射为 {@link Recognized} 变体。
+     * 非可选择武器类型返回 {@link Recognized.Unknown}。
      */
     public static Recognized<WeaponType> fromRaw(int raw) {
         var known = REVERSE.get(raw);

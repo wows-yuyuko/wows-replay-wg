@@ -7,15 +7,15 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Provides game parameter lookups (ship names, stats, etc.).
+ * 提供游戏参数查找（舰船名称、属性等）。
  *
- * <p>Abstraction over wowsunpack's GameParams.data loading.
- * Implementations may load from game files or a pre-extracted JSON dump.</p>
+ * <p>对 wowsunpack GameParams.data 的抽象。's GameParams.data loading.
+ * 可从游戏文件或预提取的 JSON dump 加载。</p>
  */
 public interface GameParamProvider {
 
     /**
-     * Get the index/name for a game parameter by its ID.
+     * 按 ID 获取游戏参数的 index/name。
      *
      * @param id the ship/equipment parameter ID
      * @return the parameter index string (e.g. "PASB018_Alaska_1950")
@@ -27,7 +27,7 @@ public interface GameParamProvider {
      */
     default Map<Long, String> paramNames() { return Collections.emptyMap(); }
 
-    /** Empty provider — all lookups return empty. */
+    /** 空提供者 — all lookups return empty. */
     static GameParamProvider empty() {
         return id -> Optional.empty();
     }

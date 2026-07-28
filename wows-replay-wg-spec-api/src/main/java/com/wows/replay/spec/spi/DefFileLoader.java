@@ -3,17 +3,17 @@ package com.wows.replay.spec.spi;
 import java.io.IOException;
 
 /**
- * Abstraction over game data file access.
+ * 游戏数据文件访问抽象。
  *
  * <p>Implementations may load from the file system, a virtual file system
  * (VFS), an in-memory map (for testing), or a network source.
- * Mirrors Rust's {@code DataFileLoader} trait.</p>
+ * 对标 Rust's {@code DataFileLoader} trait.</p>
  */
 @FunctionalInterface
 public interface DefFileLoader {
 
     /**
-     * Read the contents of a game data file.
+     * 读取游戏数据文件内容。
      *
      * @param path file path within the game data tree
      *             (e.g. {@code "scripts/entity_defs/Avatar.def"})

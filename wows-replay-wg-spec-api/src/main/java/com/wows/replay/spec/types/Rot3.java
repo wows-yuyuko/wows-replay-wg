@@ -3,7 +3,7 @@ package com.wows.replay.spec.types;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 3D rotation: yaw, pitch, roll (f32 × 3).
+ * 3D 旋转：yaw, pitch, roll（f32 × 3).
  */
 public record Rot3(
     @JsonProperty("yaw") float yaw,

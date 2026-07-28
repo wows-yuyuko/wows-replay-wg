@@ -7,17 +7,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Weapon lock state enumerating the four lock modes.
- * Mirrors Rust's {@code wowsunpack::game_types::WeaponLockType}.
+ * 武器锁定状态，枚举四种锁定模式。
+ * 对标 Rust's {@code wowsunpack::game_types::WeaponLockType}.
  */
 public enum WeaponLockType {
-    /** No lock (an unlock). */
+    /** 无锁定（解锁）。 */
     NONE,
-    /** Lock onto a fixed point in world space. */
+    /** 锁定世界空间中的固定点。 */
     ABSOLUTE,
-    /** Lock onto a point relative to the firing ship. */
+    /** 锁定相对于发射舰船的点。 */
     RELATIVE,
-    /** Hard lock onto a target entity. */
+    /** 硬锁定目标实体。 */
     TARGET;
 
     private static final Map<Integer, WeaponLockType> REVERSE = Stream.of(values())
@@ -36,7 +36,7 @@ public enum WeaponLockType {
     }
 
     /**
-     * Map a raw wire value to a {@link Recognized} variant.
+     * 将线路上原始值映射为 {@link Recognized} 变体。
      */
     public static Recognized<WeaponLockType> fromRaw(int raw) {
         var known = REVERSE.get(raw);

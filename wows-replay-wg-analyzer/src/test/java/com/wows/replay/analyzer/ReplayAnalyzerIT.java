@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Full integration test: replay file → parse → analyze → JSON.
+ * 完整集成测试：回放文件 → parse → analyze → JSON.
  *
  * <p>The test replay is expected at {@code temp/wg_15.7/} relative to the
  * project root.  Tests are skipped gracefully if the file is absent.</p>
@@ -31,7 +31,7 @@ class ReplayAnalyzerIT {
     }
 
     @Test
-    @DisplayName("Quick analysis produces valid JSON")
+    @DisplayName("快速分析生成有效 JSON")
     void quickAnalysisProducesJson() throws Exception {
         var path = resolveReplay();
         if (path == null) {
@@ -53,7 +53,7 @@ class ReplayAnalyzerIT {
     }
 
     @Test
-    @DisplayName("Quick analysis from in-memory ReplayFile")
+    @DisplayName("从内存 ReplayFile 快速分析")
     void quickAnalysisFromReplayFile() throws Exception {
         var path = resolveReplay();
         if (path == null) {
@@ -71,7 +71,7 @@ class ReplayAnalyzerIT {
     }
 
     @Test
-    @DisplayName("buildReport returns structured data")
+    @DisplayName("buildReport 返回结构化数据")
     void buildReportReturnsStructuredData() throws Exception {
         var path = resolveReplay();
         if (path == null) {
@@ -97,14 +97,14 @@ class ReplayAnalyzerIT {
     }
 
     @Test
-    @DisplayName("quick with null replay throws")
+    @DisplayName("quick(null) 抛出异常")
     void quickWithNullReplay() {
         assertThrows(ReplayException.class, () -> ReplayAnalyzer.quick((ReplayFile) null),
             "quick(null) should throw ReplayException");
     }
 
     @Test
-    @DisplayName("quick with non-existent file throws IOException")
+    @DisplayName("quick(不存在的文件) 抛出 IOException")
     void quickWithNonExistentFile() {
         assertThrows(IOException.class,
             () -> ReplayAnalyzer.quick(Path.of("nonexistent_12345.wowsreplay")),

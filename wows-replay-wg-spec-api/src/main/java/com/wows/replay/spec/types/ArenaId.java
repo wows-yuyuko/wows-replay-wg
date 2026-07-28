@@ -3,7 +3,7 @@ package com.wows.replay.spec.types;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Arena (battle instance) identifier (i64).
+ * 竞技场标识（i64）。
  */
 public record ArenaId(long value) implements Comparable<ArenaId> {
 
@@ -11,7 +11,7 @@ public record ArenaId(long value) implements Comparable<ArenaId> {
     public long value() { return value; }
 
     @Override
-    public int compareTo(ArenaId o) { return Long.compare(value, o.value); }
+    public int compareTo 比较(ArenaId o) { return Long.compare(value, o.value); }
 
     @Override
     public String toString() { return String.valueOf(value); }

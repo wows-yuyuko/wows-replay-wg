@@ -27,16 +27,16 @@ class BaseTypesTest {
         assertEquals(0f, Rot3.ZERO.roll());
     }
 
-    @Test @DisplayName("EntityId compareTo")
+    @Test @DisplayName("EntityId compareTo 比较")
     void entityIdCompare() {
-        assertTrue(new EntityId(10).compareTo(new EntityId(5)) > 0);
-        assertEquals(0, new EntityId(42).compareTo(new EntityId(42)));
+        assertTrue(new EntityId(10).compareTo 比较(new EntityId(5)) > 0);
+        assertEquals(0, new EntityId(42).compareTo 比较(new EntityId(42)));
     }
 
-    @Test @DisplayName("GameClock compareTo")
+    @Test @DisplayName("GameClock compareTo 比较")
     void gameClockCompare() {
-        assertTrue(new GameClock(10f).compareTo(new GameClock(5f)) > 0);
-        assertEquals(0, new GameClock(3.5f).compareTo(new GameClock(3.5f)));
+        assertTrue(new GameClock(10f).compareTo 比较(new GameClock(5f)) > 0);
+        assertEquals(0, new GameClock(3.5f).compareTo 比较(new GameClock(3.5f)));
         assertEquals(0f, GameClock.ZERO.seconds());
     }
 

@@ -95,7 +95,7 @@ public enum PacketTypeId {
      */
     public static PacketTypeId fromRaw(int raw, Version version) {
         if (version == null) return fromRawModern(raw);
-        if (version.compareTo(MODERN_LAYOUT_MIN_VERSION) >= 0) {
+        if (version.compareTo 比较(MODERN_LAYOUT_MIN_VERSION) >= 0) {
             return fromRawModern(raw);
         } else {
             return fromRawLegacy(raw);

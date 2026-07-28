@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Provides game constant lookups (consumable names, death reasons,
+ * 提供游戏常量查找（消耗品、死亡原因、战斗阶段、相机模式等）。
  * battle stages, camera modes, etc.).
  *
  * <p>These constants are extracted from game Scripts/ directory or
@@ -42,7 +42,7 @@ public interface GameConstantsProvider {
     default List<String> ribbonNames() { return Collections.emptyList(); }
 
     /**
-     * Empty provider — all lookups return empty.
+     * 空提供者 — all lookups return empty.
      */
     static GameConstantsProvider empty() {
         return new GameConstantsProvider() {};

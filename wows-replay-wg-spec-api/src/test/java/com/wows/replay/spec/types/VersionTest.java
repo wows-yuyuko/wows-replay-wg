@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class VersionTest {
 
     @Test
-    @DisplayName("fromClientExe parses comma-separated version")
+    @DisplayName("fromClientExe 解析逗号分隔版本")
     void fromClientExe() {
         var v = Version.fromClientExe("15,6,0,12830008");
         assertEquals(15, v.major());
@@ -34,7 +34,7 @@ class VersionTest {
     }
 
     @Test
-    @DisplayName("fromAccountDef modern format")
+    @DisplayName("fromAccountDef 现代格式")
     void fromAccountDefModern() {
         var xml = "<root><Properties><curVersion_15_1_0_11965230></curVersion_15_1_0_11965230></Properties></root>";
         var v = Version.fromAccountDef(xml);
@@ -74,24 +74,24 @@ class VersionTest {
     }
 
     @Test
-    @DisplayName("isAtLeast")
-    void isAtLeast() {
+    @DisplayName("isAtLeast 比较")
+    void isAtLeast 比较() {
         var older = Version.fromClientExe("0,10,9,0");
         var newer = Version.fromClientExe("0,10,10,0");
-        assertTrue(newer.isAtLeast(older));
-        assertTrue(newer.isAtLeast(newer));
-        assertFalse(older.isAtLeast(newer));
+        assertTrue(newer.isAtLeast 比较(older));
+        assertTrue(newer.isAtLeast 比较(newer));
+        assertFalse(older.isAtLeast 比较(newer));
     }
 
     @Test
-    @DisplayName("isAtLeast different minor")
-    void isAtLeastMinor() {
-        assertTrue(Version.fromClientExe("0,11,0,0").isAtLeast(Version.fromClientExe("0,10,9,0")));
+    @DisplayName("isAtLeast 比较 different minor")
+    void isAtLeast 比较Minor() {
+        assertTrue(Version.fromClientExe("0,11,0,0").isAtLeast 比较(Version.fromClientExe("0,10,9,0")));
     }
 
     @Test
-    @DisplayName("toPath")
-    void toPath() {
-        assertEquals("15.6.0", Version.fromClientExe("15,6,0,12830008").toPath());
+    @DisplayName("toPath 路径")
+    void toPath 路径() {
+        assertEquals("15.6.0", Version.fromClientExe("15,6,0,12830008").toPath 路径());
     }
 }

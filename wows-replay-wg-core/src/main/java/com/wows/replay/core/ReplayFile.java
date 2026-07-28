@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 /**
- * Parsed World of Warships replay file.
+ * 已解析的 WoWs 回放文件。
  *
  * <h3>File format</h3>
  * <pre>

@@ -6,18 +6,18 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * BigWorld RPC argument type definition.
- * Describes how to parse a value from the wire.
+ * BigWorld RPC 参数类型定义。
+ * 描述如何从线路上解析值。
  *
- * <p>Mirrors Rust's {@code ArgType} enum in {@code wowsunpack::rpc::typedefs}.</p>
+ * <p>对标 Rust's {@code ArgType} enum in {@code wowsunpack::rpc::typedefs}.</p>
  */
 public sealed interface ArgType {
 
     // ── Primitive types ──────────────────────────────────────────────────────
 
     /**
-     * Wire-level primitive types.
-     * Replaces 16 separate marker records with a single enum, matching
+     * 线级基本类型。
+     * 用单个枚举替代 16 个独立标记 record，对标
      * Rust's {@code PrimitiveType} enum.
      */
     enum Primitive implements ArgType {
@@ -30,33 +30,33 @@ public sealed interface ArgType {
 
     // ── Compound types ───────────────────────────────────────────────────────
 
-    /** Array of a single element type. Mirrors Rust's {@code Array(Option<usize>, Box<ArgType>)}. */
+    /** Array of a single element type. 对标 Rust's {@code Array(Option<usize>, Box<ArgType>)}. */
     record Array(ArgType elementType) implements ArgType {}
 
-    /** Fixed-size tuple of heterogeneous types. Mirrors Rust's {@code Tuple(Box<ArgType>, usize)}. */
+    /** Fixed-size tuple of heterogeneous types. 对标 Rust's {@code Tuple(Box<ArgType>, usize)}. */
     record Tuple(List<ArgType> elementTypes) implements ArgType {}
 
     /**
-     * A named type reference — resolved via EntitySpec definitions.
-     * Mirrors Rust's {@code Named { name, inner }}.
-     * {@code inner} defaults to {@link Primitive#BLOB} until resolved by the spec layer.
+     * 具名类型引用 — resolved via EntitySpec definitions.
+     * 对标 Rust's {@code Named { name, inner }}.
+     * {@code inner} 默认 {@link Primitive#BLOB}，直到由 spec 层解析。
      */
     record NamedType(String name, ArgType inner) implements ArgType {
-        /** Convenience constructor for unresolved references. */
+        /** 未解析引用的便捷构造器。 */
         public NamedType(String name) { this(name, Primitive.BLOB); }
     }
 
     // ── Descriptor parsing ───────────────────────────────────────────────────
 
-    /** Matches "ARRAY <of> element" / "ARRAY element". */
+    /** 匹配 "ARRAY <of> element" / "ARRAY element". */
     Pattern ARRAY_PATTERN = Pattern.compile(
         "ARRAY\\s*(?:<OF>)?\\s*(.+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    /** Matches "TUPLE <of> type1,type2,..." / "TUPLE type1,type2,...". */
+    /** 匹配 "TUPLE <of> type1,type2,..." / "TUPLE type1,type2,...". */
     Pattern TUPLE_PATTERN = Pattern.compile(
         "TUPLE\\s*(?:<OF>)?\\s*(.+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    /** Lookup table for primitive type descriptors. */
+    /** 基本类型描述符查找表。 */
     Map<String, Primitive> DESCRIPTOR_MAP = Map.ofEntries(
         Map.entry("INT8",    Primitive.INT8),
         Map.entry("INT16",   Primitive.INT16),
@@ -80,17 +80,17 @@ public sealed interface ArgType {
     );
 
     /**
-     * Parse a type descriptor string from .def files.
-     * Examples: "UINT8", "FLOAT32", "STRING", "ARRAY <of> UINT32",
-     * "TUPLE <of> FLOAT,FLOAT,FLOAT", "FIXED_DICT AvatarCommon".
+     * 从 .def 文件解析类型描述符字符串。
+     * Examples: "UINT8", "FLOAT32", "STRING", "ARRAY 解析",
+     * "TUPLE <of> FLOAT,FLOAT,FLOAT", "FIXED_DICT 解析 AvatarCommon".
      */
     static ArgType fromDescriptor(String descriptor) {
         if (descriptor == null) return Primitive.BLOB;
         var trimmed = descriptor.trim().toUpperCase();
 
-        // FIXED_DICT → NamedType reference (resolved later via EntitySpec)
-        if (trimmed.startsWith("FIXED_DICT")) {
-            var name = trimmed.substring("FIXED_DICT".length()).trim();
+        // FIXED_DICT 解析 → NamedType reference (resolved later via EntitySpec)
+        if (trimmed.startsWith("FIXED_DICT 解析")) {
+            var name = trimmed.substring("FIXED_DICT 解析".length()).trim();
             return new NamedType(name);
         }
 
@@ -113,7 +113,7 @@ public sealed interface ArgType {
     }
 
     /**
-     * Split a comma-separated type list, respecting angle-bracket nesting.
+     * 分割逗号分隔的类型列表，保留尖括号嵌套。
      * e.g. "ARRAY<UINT32>,FLOAT" → ["ARRAY<UINT32>", "FLOAT"]
      */
     private static ArrayList<String> splitTupleTypes(String s) {
@@ -136,13 +136,13 @@ public sealed interface ArgType {
 
     // ── Wire size estimation ─────────────────────────────────────────────────
 
-    /** Sentinel for variable-length types (matches Rust's {@code INFINITY}). */
+    /** 变长类型哨兵值（对标 Rust's {@code INFINITY}). */
     int SORT_INFINITY = 0xFFFF;
 
     /**
-     * Estimated fixed wire size in bytes.
-     * Returns {@link #SORT_INFINITY} for variable-length or nullable types.
-     * Mirrors Rust's {@code ArgType::sort_size()}.
+     * 估算的固定线尺寸（字节）。
+     * 变长或可空类型返回 {@link #SORT_INFINITY}。
+     * 对标 Rust's {@code ArgType::sort_size()}.
      */
     default int sortSize() {
         return switch (this) {
@@ -175,7 +175,7 @@ public sealed interface ArgType {
     // ── Display ──────────────────────────────────────────────────────────────
 
     /**
-     * Human-readable type name for error messages and debugging.
+     * 可读类型名，用于错误消息和调试。
      */
     default String typeName() {
         return switch (this) {
@@ -184,7 +184,7 @@ public sealed interface ArgType {
             case Tuple(var es) -> "TUPLE<" + es.stream()
                 .map(ArgType::typeName)
                 .collect(java.util.stream.Collectors.joining(",")) + ">";
-            case NamedType(var n, var _) -> "FIXED_DICT<" + n + ">";
+            case NamedType(var n, var _) -> "FIXED_DICT 解析<" + n + ">";
         };
     }
 }

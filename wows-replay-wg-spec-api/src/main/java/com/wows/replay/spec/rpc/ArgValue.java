@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A decoded RPC argument value.
- * Sealed type hierarchy covering all BigWorld wire types.
+ * 已解码的 RPC 参数值。
+ * sealed 类型层级，覆盖所有 BigWorld 线类型。
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public sealed interface ArgValue {
@@ -55,7 +55,7 @@ public sealed interface ArgValue {
     }
 
     /**
-     * Return a JSON-compatible representation (used by Jackson).
+     * 返回 JSON 兼容的表示（由 Jackson 使用）。
      */
     @JsonValue
     Object jsonValue();

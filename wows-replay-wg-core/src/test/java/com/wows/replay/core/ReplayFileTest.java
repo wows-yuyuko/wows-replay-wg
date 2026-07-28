@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * End-to-end tests using a real .wowsreplay file.
+ * 使用真实 .wowsreplay 文件的端到端测试。
  *
  * <p>The test replay is expected at {@code temp/wg_15.7/} relative to the
  * project root.  Tests are skipped gracefully if the file is absent.</p>
@@ -36,7 +36,7 @@ class ReplayFileTest {
     // ── Metadata-only ────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("Parse replay metadata without decrypting packets")
+    @DisplayName("不解密包，只解析元数据")
     void parseMetadataOnly() throws Exception {
         var path = resolveReplay();
         if (path == null) {
@@ -65,7 +65,7 @@ class ReplayFileTest {
     // ── Full parse ───────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("Full replay parse: decrypt + decompress + packet iteration")
+    @DisplayName("完整解析：解密+解压+包遍历")
     void fullParse() throws Exception {
         var path = resolveReplay();
         if (path == null) {
@@ -126,13 +126,13 @@ class ReplayFileTest {
     // ── Error handling ───────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("fromBytes with invalid data throws ReplayException")
+    @DisplayName("无效数据抛出 ReplayException")
     void fromBytesWithInvalidData() {
         assertThrows(ReplayException.class, () -> ReplayFile.fromBytes(new byte[]{1, 2, 3}));
     }
 
     @Test
-    @DisplayName("fromBytes with null throws ReplayException")
+    @DisplayName("null 抛出 ReplayException")
     void fromBytesWithNull() {
         assertThrows(ReplayException.class, () -> ReplayFile.fromBytes(null));
     }

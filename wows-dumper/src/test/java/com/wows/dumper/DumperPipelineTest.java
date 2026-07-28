@@ -23,7 +23,7 @@ class DumperPipelineTest {
     }
 
     @Test
-    @DisplayName("Dump replay to JSON with default options")
+    @DisplayName("默认选项导出 JSON")
     void dumpWithDefaultOptions() throws Exception {
         var path = resolveReplay();
         if (path == null) {
@@ -44,7 +44,7 @@ class DumperPipelineTest {
     }
 
     @Test
-    @DisplayName("Dump replay bytes")
+    @DisplayName("从字节数组导出")
     void dumpFromBytes() throws Exception {
         var path = resolveReplay();
         if (path == null) {
@@ -60,7 +60,7 @@ class DumperPipelineTest {
     }
 
     @Test
-    @DisplayName("Options defaults")
+    @DisplayName("Options 默认值")
     void optionsDefaults() {
         var opts = DumperPipeline.Options.DEFAULT;
         assertFalse(opts.minimap());
@@ -69,7 +69,7 @@ class DumperPipelineTest {
     }
 
     @Test
-    @DisplayName("dump with non-existent file throws")
+    @DisplayName("不存在的文件抛出异常")
     void dumpNonExistent() {
         var pipeline = new DumperPipeline(Path.of("."));
         assertThrows(IOException.class, () ->
@@ -77,7 +77,7 @@ class DumperPipelineTest {
     }
 
     @Test
-    @DisplayName("dump with null bytes throws")
+    @DisplayName("null 字节抛出异常")
     void dumpNullBytes() {
         var pipeline = new DumperPipeline(Path.of("."));
         assertThrows(ReplayException.class, () ->

@@ -3,8 +3,8 @@ package com.wows.replay.spec.types;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 2D vector (f32 × 2).
- * Mirrors Rust's {@code wowsunpack::game_types::Vec2}.
+ * 2D 向量（f32 × 2).
+ * 对标 Rust's {@code wowsunpack::game_types::Vec2}.
  */
 public record Vec2(
     @JsonProperty("x") float x,

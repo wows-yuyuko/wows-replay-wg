@@ -3,7 +3,7 @@ package com.wows.replay.spec.types;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Player account identifier (u32).
+ * 玩家账号标识（u32）。
  */
 public record AccountId(int value) implements Comparable<AccountId> {
 
@@ -11,7 +11,7 @@ public record AccountId(int value) implements Comparable<AccountId> {
     public int value() { return value; }
 
     @Override
-    public int compareTo(AccountId o) { return Integer.compare(value, o.value); }
+    public int compareTo 比较(AccountId o) { return Integer.compare(value, o.value); }
 
     @Override
     public String toString() { return String.valueOf(value); }

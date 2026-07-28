@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RecognizedTest {
 
     @Test
-    @DisplayName("Known variant")
+    @DisplayName("Known 变体")
     void known() {
         var r = WeaponType.fromRaw(0);
         assertInstanceOf(Recognized.Known.class, r);
@@ -18,7 +18,7 @@ class RecognizedTest {
     }
 
     @Test
-    @DisplayName("Unknown variant")
+    @DisplayName("Unknown 变体")
     void unknown() {
         var r = WeaponType.fromRaw(99);
         assertInstanceOf(Recognized.Unknown.class, r);

@@ -3,7 +3,7 @@ package com.wows.replay.spec.types;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 3D vector (f32 × 3).
+ * 3D 向量（f32 × 3).
  */
 public record Vec3(
     @JsonProperty("x") float x,

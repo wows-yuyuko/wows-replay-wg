@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Game parameter identifier (u32) — indexes into GameParams.data.
- * Uses {@code long} to hold the full unsigned 32-bit range.
+ * 游戏参数标识（u32） — indexes into GameParams.data.
+ * 用 {@code long} 保存完整的无符号 32 位范围。
  */
 public record GameParamId(long value) implements Comparable<GameParamId> {
 
@@ -14,7 +14,7 @@ public record GameParamId(long value) implements Comparable<GameParamId> {
     @JsonCreator
     public GameParamId {}
 
-    /** Convenience: convert wire u32 (read as signed int) to unsigned long. */
+    /** 便捷构造：u32 线值转无符号 long。 */
     public GameParamId(int value) {
         this(Integer.toUnsignedLong(value));
     }
@@ -23,7 +23,7 @@ public record GameParamId(long value) implements Comparable<GameParamId> {
     public long value() { return value; }
 
     @Override
-    public int compareTo(GameParamId o) { return Long.compare(value, o.value); }
+    public int compareTo 比较(GameParamId o) { return Long.compare(value, o.value); }
 
     @Override
     public String toString() { return String.valueOf(value); }
