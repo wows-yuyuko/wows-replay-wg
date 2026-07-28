@@ -1,10 +1,14 @@
 package com.wows.replay.core;
 
-import com.wows.replay.core.json.JNode;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.wows.replay.spec.spi.GameParamProvider;
 import com.wows.replay.spec.types.GameParamId;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -12,106 +16,104 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Extracts GameParam ID→name mappings from a WoWs {@code wowsinfo.json} file
- * and provides them via {@link GameParamProvider}.
+ * Extracts GameParam ID→name mappings from a WoWs {@code wowsinfo.json}
+ * file using streaming JSON parsing to avoid loading the full 7 MB tree
+ * into memory.
  *
- * <p>The file lives at {@code app/data/wowsinfo.json} inside the game data
- * directory and contains all ship/consumable/module parameter IDs with
- * their human-readable index strings.</p>
- *
- * <h3>File format</h3>
- * <pre>{@code
- * {
- *   "ships": {
- *     "4292851696": { "id": 4292851696, "index": "PASA002", "tier": 5, ... },
- *     ...
- *   }
- * }
- * }</pre>
+ * <p>Only the fields we need ({@code id}, {@code index}, {@code name})
+ * are retained; all other ship data is skipped without materializing.</p>
  */
 public final class WowsInfoExtractor implements GameParamProvider {
 
     private final Map<Long, String> idToIndex;
     private final Map<Long, String> idToName;
 
-    /** Load from a wowsinfo.json file. */
+    /** Load from a wowsinfo.json file (streaming). */
     public WowsInfoExtractor(Path wowsInfoPath) throws IOException {
-        this(JsonMapper.readTree(java.nio.file.Files.readAllBytes(wowsInfoPath)));
-    }
-
-    /** Load from already-parsed JSON tree. */
-    public WowsInfoExtractor(JNode root) {
-        var indexMap = new LinkedHashMap<Long, String>();
-        var nameMap = new LinkedHashMap<Long, String>();
-
-        // Extract ships section: ships > id > { id, index, name, ... }
-        var ships = root.get("ships");
-        if (ships != null && ships.isObject()) {
-            var fields = ships.fields();
-            while (fields.hasNext()) {
-                var entry = fields.next();
-                try {
-                    long id = Long.parseLong(entry.getKey());
-                    var ship = entry.getValue();
-                    if (ship.isObject()) {
-                        var indexNode = ship.get("index");
-                        var nameNode = ship.get("name");
-                        if (indexNode != null && indexNode.isTextual()) {
-                            indexMap.put(id, indexNode.textValue());
-                        }
-                        if (nameNode != null && nameNode.isTextual()) {
-                            nameMap.put(id, nameNode.textValue());
-                        }
-                        // Also index by the ship's own "id" field (can differ from key)
-                        var idNode = ship.get("id");
-                        if (idNode != null && idNode.isInt()) {
-                            long selfId = idNode.longValue();
-                            if (selfId != id && indexNode != null && indexNode.isTextual()) {
-                                indexMap.putIfAbsent(selfId, indexNode.textValue());
-                            }
-                        }
-                    }
-                } catch (NumberFormatException ignored) {
-                    // skip non-numeric keys
-                }
-            }
+        try (var in = Files.newInputStream(wowsInfoPath)) {
+            var result = parse(in);
+            this.idToIndex = Collections.unmodifiableMap(result.index);
+            this.idToName = Collections.unmodifiableMap(result.name);
         }
-
-        // Extract consumable/component names from ship modules
-        for (var shipEntry : indexMap.entrySet()) {
-            // This is handled inline above; components nested in ships don't have
-            // their own top-level entries in wowsinfo.json
-        }
-
-        this.idToIndex = Collections.unmodifiableMap(indexMap);
-        this.idToName = Collections.unmodifiableMap(nameMap);
     }
 
     // ── GameParamProvider impl ───────────────────────────────────────────────
 
-    @Override
-    public Optional<String> paramNameById(GameParamId id) {
-        return Optional.ofNullable(idToIndex.get(id.value()));
-    }
-
-    @Override
-    public Optional<Integer> paramIndexById(GameParamId id) {
-        // wowsinfo.json doesn't have numeric indices like GameParams.data
-        return Optional.empty();
-    }
-
-    @Override
-    public Map<Long, String> paramNames() {
-        return idToIndex;
-    }
-
-    // ── Additional accessors ─────────────────────────────────────────────────
-
-    /** The number of resolved entries. */
+    @Override public Optional<String> paramNameById(GameParamId id) {
+        return Optional.ofNullable(idToIndex.get(id.value())); }
+    @Override public Optional<Integer> paramIndexById(GameParamId id) {
+        return Optional.empty(); }
+    @Override public Map<Long, String> paramNames() { return idToIndex; }
     public int size() { return idToIndex.size(); }
-
-    /** Get the display name for a ship ID (e.g. "IDS_PASA002"). */
     public Optional<String> displayName(long id) {
-        return Optional.ofNullable(idToName.get(id));
+        return Optional.ofNullable(idToName.get(id)); }
+
+    // ── Streaming parser ─────────────────────────────────────────────────────
+
+    private static final JsonFactory FACTORY = new JsonFactory();
+
+    private record Result(Map<Long, String> index, Map<Long, String> name) {}
+
+    /**
+     * Stream-parse only the fields we care about.
+     *
+     * <p>File shape: {@code {"ships": {"ID": {"index": "X", "name": "Y", ...}, ...}}}
+     * We read ship IDs as map keys, then scan each ship object for {@code index}
+     * and {@code name} fields, skipping everything else.</p>
+     */
+    private static Result parse(InputStream in) throws IOException {
+        var index = new LinkedHashMap<Long, String>();
+        var name  = new LinkedHashMap<Long, String>();
+
+        try (var p = FACTORY.createParser(in)) {
+            // Navigate to "ships"
+            expect(p, JsonToken.START_OBJECT);     // root {
+            expect(p, JsonToken.FIELD_NAME);
+            if (!"ships".equals(p.currentName())) {
+                return new Result(index, name);    // unexpected format
+            }
+
+            expect(p, JsonToken.START_OBJECT);     // ships {
+
+            while (p.nextToken() == JsonToken.FIELD_NAME) {
+                // Ship ID is the field name
+                long shipId;
+                try {
+                    shipId = Long.parseLong(p.currentName());
+                } catch (NumberFormatException e) {
+                    p.nextToken();                 // skip value
+                    p.skipChildren();
+                    continue;
+                }
+
+                expect(p, JsonToken.START_OBJECT); // ship {
+
+                // Scan ship fields until we hit the closing }
+                String shipIndex = null;
+                String shipName = null;
+                while (p.nextToken() != JsonToken.END_OBJECT) {
+                    if (p.currentToken() != JsonToken.FIELD_NAME) continue;
+                    var field = p.currentName();
+                    p.nextToken();                 // field value
+                    if ("index".equals(field) && p.currentToken() == JsonToken.VALUE_STRING) {
+                        shipIndex = p.getValueAsString();
+                    } else if ("name".equals(field) && p.currentToken() == JsonToken.VALUE_STRING) {
+                        shipName = p.getValueAsString();
+                    } else {
+                        p.skipChildren();          // skip nested objects/arrays
+                    }
+                }
+
+                if (shipIndex != null) index.put(shipId, shipIndex);
+                if (shipName != null) name.put(shipId, shipName);
+            }
+        }
+        return new Result(index, name);
+    }
+
+    private static void expect(JsonParser p, JsonToken token) throws IOException {
+        if (p.nextToken() != token) {
+            throw new IOException("Expected " + token + " but got " + p.currentToken());
+        }
     }
 }
