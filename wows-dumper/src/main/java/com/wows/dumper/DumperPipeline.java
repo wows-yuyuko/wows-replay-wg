@@ -7,8 +7,6 @@ import com.wows.replay.core.JsonConstantsProvider;
 import com.wows.replay.core.JsonMapper;
 import com.wows.replay.core.ReplayException;
 import com.wows.replay.core.ReplayFile;
-import com.wows.replay.core.json.JNode;
-import com.wows.replay.core.json.JObject;
 import com.wows.replay.spec.types.Version;
 
 import java.io.IOException;
