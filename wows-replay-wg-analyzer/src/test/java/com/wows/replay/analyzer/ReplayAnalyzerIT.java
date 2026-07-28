@@ -49,7 +49,7 @@ class ReplayAnalyzerIT {
 
         System.out.println("JSON length: " + json.length() + " chars");
         // Print first ~500 chars for inspection
-        System.out.println(json.substring(0, Math.min(500, json.length())));
+        System.out.println(json);
     }
 
     @Test

@@ -47,7 +47,7 @@ public record BattleReport(
 
     public record MetaSection(
         @JsonProperty("player_name") String playerName,
-        @JsonProperty("player_id") int playerId,
+        @JsonProperty("player_id") long playerId,
         @JsonProperty("map_name") String mapName,
         @JsonProperty("map_display_name") String mapDisplayName,
         @JsonProperty("game_mode") int gameMode,
@@ -98,12 +98,12 @@ public record BattleReport(
         @JsonProperty("event") String event,
         @JsonProperty("entity_id") int entityId,
         @JsonProperty("entity_type") String entityType,
-        @JsonProperty("vehicle_id") int vehicleId
+        @JsonProperty("vehicle_id") long vehicleId
     ) {}
 
     public record VehicleTimeline(
         @JsonProperty("entity_id") int entityId,
-        @JsonProperty("vehicle_id") int vehicleId,
+        @JsonProperty("vehicle_id") long vehicleId,
         @JsonProperty("events") List<Map<String, Object>> events
     ) {}
 
