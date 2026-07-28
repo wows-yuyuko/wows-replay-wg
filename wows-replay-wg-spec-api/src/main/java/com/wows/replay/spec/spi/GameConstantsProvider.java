@@ -42,7 +42,7 @@ public interface GameConstantsProvider {
     default List<String> ribbonNames() { return Collections.emptyList(); }
 
     /**
-     * 空提供者 — all lookups return empty.
+     * 空提供者——所有查找返回空。
      */
     static GameConstantsProvider empty() {
         return new GameConstantsProvider() {};

@@ -20,7 +20,7 @@ import java.util.*;
  *
  * <p>This is a concrete implementation of the def→EntitySpec pipeline,
  * using JDK's built-in XML parser (no external XML library needed).
- * Mirrors Rust's {@code wowsunpack::rpc::entitydefs} + {@code typedefs}.</p>
+ * Mirrors Rust {@code wowsunpack::rpc::entitydefs} + {@code typedefs}.</p>
  *
  * <h3>Usage</h3>
  * <pre>{@code

@@ -4,7 +4,7 @@ import java.util.regex.Pattern;
 
 /**
  * 游戏版本，从 clientVersionFromExe 字符串解析（如 "15.4.0.12345").
- * 对标 Rust's {@code wows_core::version::Version}.
+ * 对标 Rust {@code wows_core::version::Version}.
  */
 public record Version(int major, int minor, int patch, int build) implements Comparable<Version> {
 

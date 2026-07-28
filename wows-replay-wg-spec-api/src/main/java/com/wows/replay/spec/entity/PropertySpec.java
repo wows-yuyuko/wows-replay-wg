@@ -3,7 +3,7 @@ package com.wows.replay.spec.entity;
 import com.wows.replay.spec.rpc.ArgType;
 
 /**
- * Entity property definition.  对标 Rust's {@code entitydefs::Property}.
+ * Entity property definition.  对标 Rust {@code entitydefs::Property}.
  */
 public record PropertySpec(
     /** Property name (e.g. "position", "health", "maxHealth"). */

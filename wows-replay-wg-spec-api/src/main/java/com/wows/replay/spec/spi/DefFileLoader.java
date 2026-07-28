@@ -7,7 +7,7 @@ import java.io.IOException;
  *
  * <p>Implementations may load from the file system, a virtual file system
  * (VFS), an in-memory map (for testing), or a network source.
- * 对标 Rust's {@code DataFileLoader} trait.</p>
+ * 对标 Rust {@code DataFileLoader} trait.</p>
  */
 @FunctionalInterface
 public interface DefFileLoader {

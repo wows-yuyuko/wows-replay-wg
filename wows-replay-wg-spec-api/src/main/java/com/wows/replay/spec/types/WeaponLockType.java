@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 /**
  * 武器锁定状态，枚举四种锁定模式。
- * 对标 Rust's {@code wowsunpack::game_types::WeaponLockType}.
+ * 对标 Rust {@code wowsunpack::game_types::WeaponLockType}.
  */
 public enum WeaponLockType {
     /** 无锁定（解锁）。 */

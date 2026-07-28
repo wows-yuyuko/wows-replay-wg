@@ -8,7 +8,7 @@ import java.util.Optional;
 
 /**
  * 可识别的枚举值 — either a known variant or an unknown raw value.
- * 对标 Rust's {@code Recognized<T, u32>}.
+ * 对标 Rust {@code Recognized<T, u32>}.
  */
 public sealed interface Recognized<T extends Enum<T>> {
 

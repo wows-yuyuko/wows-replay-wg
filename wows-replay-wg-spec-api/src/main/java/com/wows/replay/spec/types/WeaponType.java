@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 /**
  * 武器类型，枚举可选择的武装。
- * 对标 Rust's {@code wowsunpack::game_types::WeaponType}.
+ * 对标 Rust {@code wowsunpack::game_types::WeaponType}.
  *
  * <p>线路上原始值来自客户端's integer {@code WeaponType}
  * enum ({@code scripts/WeaponType.pyc}), which is wider than the

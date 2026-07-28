@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  * BigWorld RPC 参数类型定义。
  * 描述如何从线路上解析值。
  *
- * <p>对标 Rust's {@code ArgType} enum in {@code wowsunpack::rpc::typedefs}.</p>
+ * <p>对标 Rust {@code ArgType} enum in {@code wowsunpack::rpc::typedefs}.</p>
  */
 public sealed interface ArgType {
 
@@ -18,7 +18,7 @@ public sealed interface ArgType {
     /**
      * 线级基本类型。
      * 用单个枚举替代 16 个独立标记 record，对标
-     * Rust's {@code PrimitiveType} enum.
+     * Rust {@code PrimitiveType} enum.
      */
     enum Primitive implements ArgType {
         INT8, INT16, INT32, INT64,
@@ -30,15 +30,15 @@ public sealed interface ArgType {
 
     // ── Compound types ───────────────────────────────────────────────────────
 
-    /** Array of a single element type. 对标 Rust's {@code Array(Option<usize>, Box<ArgType>)}. */
+    /** Array of a single element type. 对标 Rust {@code Array(Option<usize>, Box<ArgType>)}. */
     record Array(ArgType elementType) implements ArgType {}
 
-    /** Fixed-size tuple of heterogeneous types. 对标 Rust's {@code Tuple(Box<ArgType>, usize)}. */
+    /** Fixed-size tuple of heterogeneous types. 对标 Rust {@code Tuple(Box<ArgType>, usize)}. */
     record Tuple(List<ArgType> elementTypes) implements ArgType {}
 
     /**
      * 具名类型引用 — resolved via EntitySpec definitions.
-     * 对标 Rust's {@code Named { name, inner }}.
+     * 对标 Rust {@code Named { name, inner }}.
      * {@code inner} 默认 {@link Primitive#BLOB}，直到由 spec 层解析。
      */
     record NamedType(String name, ArgType inner) implements ArgType {
@@ -136,13 +136,13 @@ public sealed interface ArgType {
 
     // ── Wire size estimation ─────────────────────────────────────────────────
 
-    /** 变长类型哨兵值（对标 Rust's {@code INFINITY}). */
+    /** 变长类型哨兵值（对标 Rust {@code INFINITY}). */
     int SORT_INFINITY = 0xFFFF;
 
     /**
      * 估算的固定线尺寸（字节）。
      * 变长或可空类型返回 {@link #SORT_INFINITY}。
-     * 对标 Rust's {@code ArgType::sort_size()}.
+     * 对标 Rust {@code ArgType::sort_size()}.
      */
     default int sortSize() {
         return switch (this) {
