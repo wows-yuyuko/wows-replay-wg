@@ -1,0 +1,71 @@
+-------------------------------------------------------------------------------
+Test set: com.wows.replay.core.ReplayFileTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 3, Skipped: 0, Time elapsed: 0.371 s <<< FAILURE! -- in com.wows.replay.core.ReplayFileTest
+com.wows.replay.core.ReplayFileTest.fullParse -- Time elapsed: 0.064 s <<< ERROR!
+com.wows.replay.core.ReplayException: Failed to parse replay: ..\temp\wg_15.7\20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay — Blowfish decryption failed
+	at com.wows.replay.core.ReplayFile.fromFile(ReplayFile.java:213)
+	at com.wows.replay.core.ReplayFileTest.fullParse(ReplayFileTest.java:76)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: com.wows.replay.core.ReplayException: Blowfish decryption failed
+	at com.wows.replay.core.ReplayFile.fromBytes(ReplayFile.java:187)
+	at com.wows.replay.core.ReplayFile.fromFile(ReplayFile.java:211)
+	... 4 more
+Caused by: java.security.NoSuchProviderException: No such provider: BC
+	at java.base/javax.crypto.Cipher.getInstance(Cipher.java:650)
+	at com.wows.replay.core.ReplayFile.decryptBlowfishCbc(ReplayFile.java:281)
+	at com.wows.replay.core.ReplayFile.fromBytes(ReplayFile.java:185)
+	... 5 more
+
+com.wows.replay.core.ReplayFileTest.parseMetadataOnly -- Time elapsed: 0.273 s <<< ERROR!
+tools.jackson.databind.exc.MismatchedInputException: 
+Cannot construct instance of `com.wows.replay.spec.types.GameParamId` (although at least one Creator exists): no long/Long-argument constructor/factory method to deserialize from Number value (4181636944)
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); byte offset: #UNKNOWN] (through reference chain: com.wows.replay.core.ReplayMeta["vehicles"]->java.util.ArrayList[0]->com.wows.replay.core.ReplayMeta$VehicleInfoMeta["shipId"])
+	at tools.jackson.databind.exc.MismatchedInputException.from(MismatchedInputException.java:70)
+	at tools.jackson.databind.DeserializationContext.reportInputMismatch(DeserializationContext.java:1962)
+	at tools.jackson.databind.DeserializationContext.handleMissingInstantiator(DeserializationContext.java:1640)
+	at tools.jackson.databind.deser.ValueInstantiator.createFromLong(ValueInstantiator.java:313)
+	at tools.jackson.databind.deser.std.StdValueInstantiator.createFromLong(StdValueInstantiator.java:435)
+	at tools.jackson.databind.deser.bean.BeanDeserializerBase.deserializeFromNumber(BeanDeserializerBase.java:1755)
+	at tools.jackson.databind.deser.bean.BeanDeserializer._deserializeOther(BeanDeserializer.java:214)
+	at tools.jackson.databind.deser.bean.BeanDeserializer.deserialize(BeanDeserializer.java:202)
+	at tools.jackson.databind.deser.SettableBeanProperty.deserialize(SettableBeanProperty.java:568)
+	at tools.jackson.databind.deser.bean.BeanDeserializer._deserializeWithErrorWrapping(BeanDeserializer.java:943)
+	at tools.jackson.databind.deser.bean.BeanDeserializer._deserializeUsingPropertyBased(BeanDeserializer.java:775)
+	at tools.jackson.databind.deser.bean.BeanDeserializerBase.deserializeFromObjectUsingNonDefault(BeanDeserializerBase.java:1695)
+	at tools.jackson.databind.deser.bean.BeanDeserializer.deserializeFromObject(BeanDeserializer.java:629)
+	at tools.jackson.databind.deser.bean.BeanDeserializer.deserialize(BeanDeserializer.java:200)
+	at tools.jackson.databind.deser.jdk.CollectionDeserializer._deserializeNoNullChecks(CollectionDeserializer.java:580)
+	at tools.jackson.databind.deser.jdk.CollectionDeserializer._deserializeFromArray(CollectionDeserializer.java:389)
+	at tools.jackson.databind.deser.jdk.CollectionDeserializer.deserialize(CollectionDeserializer.java:279)
+	at tools.jackson.databind.deser.jdk.CollectionDeserializer.deserialize(CollectionDeserializer.java:30)
+	at tools.jackson.databind.deser.SettableBeanProperty.deserialize(SettableBeanProperty.java:568)
+	at tools.jackson.databind.deser.bean.BeanDeserializer._deserializeWithErrorWrapping(BeanDeserializer.java:943)
+	at tools.jackson.databind.deser.bean.BeanDeserializer._deserializeUsingPropertyBased(BeanDeserializer.java:775)
+	at tools.jackson.databind.deser.bean.BeanDeserializerBase.deserializeFromObjectUsingNonDefault(BeanDeserializerBase.java:1695)
+	at tools.jackson.databind.deser.bean.BeanDeserializer.deserializeFromObject(BeanDeserializer.java:629)
+	at tools.jackson.databind.deser.bean.BeanDeserializer.deserialize(BeanDeserializer.java:200)
+	at tools.jackson.databind.deser.DeserializationContextExt.readRootValue(DeserializationContextExt.java:322)
+	at tools.jackson.databind.ObjectReader._bindAndClose(ObjectReader.java:1888)
+	at tools.jackson.databind.ObjectReader.readValue(ObjectReader.java:1304)
+	at com.wows.replay.core.ReplayFile.metaFromBytes(ReplayFile.java:237)
+	at com.wows.replay.core.ReplayFileTest.parseMetadataOnly(ReplayFileTest.java:48)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+
+com.wows.replay.core.ReplayFileTest.fullParseFromBytes -- Time elapsed: 0.004 s <<< ERROR!
+com.wows.replay.core.ReplayException: Blowfish decryption failed
+	at com.wows.replay.core.ReplayFile.fromBytes(ReplayFile.java:187)
+	at com.wows.replay.core.ReplayFileTest.fullParseFromBytes(ReplayFileTest.java:106)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: java.security.NoSuchProviderException: No such provider: BC
+	at java.base/javax.crypto.Cipher.getInstance(Cipher.java:650)
+	at com.wows.replay.core.ReplayFile.decryptBlowfishCbc(ReplayFile.java:281)
+	at com.wows.replay.core.ReplayFile.fromBytes(ReplayFile.java:185)
+	... 4 more
+
