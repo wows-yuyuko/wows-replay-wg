@@ -60,6 +60,11 @@ public final class JsonMapper {
         return provider.toJson(obj);
     }
 
+    /** Convert a POJO directly to a {@link JNode} tree. */
+    public static JNode toTree(Object obj) throws IOException {
+        return provider.toTree(obj);
+    }
+
     /** Create an empty JSON object builder. */
     public static JObject createObject() {
         return provider.createObject();

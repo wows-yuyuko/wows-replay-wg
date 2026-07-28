@@ -32,6 +32,9 @@ public interface JsonProvider {
     /** Serialize a {@link JObject} builder to compact JSON. */
     String toJson(JObject obj) throws IOException;
 
+    /** Convert a POJO directly to a {@link JNode} tree (no string round-trip). */
+    JNode toTree(Object obj) throws IOException;
+
     /** Create an empty JSON object builder. */
     JObject createObject();
 }

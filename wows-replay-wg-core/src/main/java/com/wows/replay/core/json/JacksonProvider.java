@@ -56,6 +56,11 @@ public final class JacksonProvider implements JsonProvider {
     }
 
     @Override
+    public JNode toTree(Object obj) throws IOException {
+        return new JacksonNode(COMPACT.valueToTree(obj));
+    }
+
+    @Override
     public JObject createObject() {
         return new JacksonBuilder(COMPACT.createObjectNode());
     }

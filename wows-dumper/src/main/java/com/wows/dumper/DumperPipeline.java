@@ -72,11 +72,12 @@ public final class DumperPipeline {
             if (Files.exists(wi)) gameParams = new WowsInfoExtractor(wi);
         }
 
-        // Run the analyzer with GameParamProvider
+        // Run the analyzer with optional providers
         var analyzerBuilder = ReplayAnalyzer.builder()
             .config(ReplayAnalyzerConfig.builder()
                 .minimap(options.minimap, options.minimapStep)
                 .build());
+        if (constants != null) analyzerBuilder.constantsProvider(constants);
         if (gameParams != null) analyzerBuilder.paramProvider(gameParams);
         var analyzer = analyzerBuilder.build();
 
@@ -141,35 +142,30 @@ public final class DumperPipeline {
         root.put("match_group", meta.matchGroup());
 
         // Meta section (full metadata)
-        root.set("meta", treeNode(report.meta()));
+        root.set("meta", JsonMapper.toTree(report.meta()));
 
         // Summary
-        root.set("summary", treeNode(report.summary()));
+        root.set("summary", JsonMapper.toTree(report.summary()));
 
         // Packet stats
-        root.set("packets", treeNode(report.packets()));
+        root.set("packets", JsonMapper.toTree(report.packets()));
 
         // Entity events
         if (report.entities() != null) {
-            root.set("entities", treeNode(report.entities()));
+            root.set("entities", JsonMapper.toTree(report.entities()));
         }
 
         // Resolved vehicles
         if (report.resolvedVehicles() != null) {
-            root.set("vehicles_resolved", treeNode(report.resolvedVehicles()));
+            root.set("vehicles_resolved", JsonMapper.toTree(report.resolvedVehicles()));
         }
 
         // Minimap
         if (report.minimap() != null) {
-            root.set("minimap", treeNode(report.minimap()));
+            root.set("minimap", JsonMapper.toTree(report.minimap()));
         }
 
         // Serialize JObject builder to JSON string
         return JsonMapper.toJson(root);
-    }
-
-    /** Convert any Java object to a JNode via JSON round-trip. */
-    private JNode treeNode(Object obj) throws IOException {
-        return JsonMapper.readTree(JsonMapper.toJson(obj));
     }
 }
