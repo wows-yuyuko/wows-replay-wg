@@ -146,8 +146,6 @@ public record BattleReport(
      */
     public record ResolvedVehicle(
         @JsonProperty("ship_id") long shipId,
-        @JsonProperty("ship_name") String shipName,
-        @JsonProperty("ship_index") String shipIndex,
         @JsonProperty("relation") int relation,
         @JsonProperty("player_name") String playerName
     ) {}

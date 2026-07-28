@@ -18,9 +18,12 @@ public final class JsonMapper {
     private static final ObjectMapper provider = new ObjectMapper();
 
     static {
-        provider.enable(SerializationFeature.INDENT_OUTPUT);
+        provider.isEnabled(SerializationFeature.INDENT_OUTPUT);
     }
 
+    public static ObjectMapper getMapper() {
+        return provider;
+    }
 
     // ── Convenience shortcuts ────────────────────────────────────────────────
 

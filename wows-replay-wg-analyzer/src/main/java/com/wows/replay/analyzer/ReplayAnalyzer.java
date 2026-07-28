@@ -231,33 +231,14 @@ public final class ReplayAnalyzer {
 
     // ── Vehicle name resolution ──────────────────────────────────────────────
 
-    /**
-     * Resolve vehicle IDs from metadata to human-readable names using
-     * the configured {@link GameParamProvider}.
-     * Mirrors replay-dumper's {@code param_names} + {@code resolve_ids}.
-     */
+    /** Collect vehicle entries from replay metadata. */
     private List<BattleReport.ResolvedVehicle> resolveVehicleNames(ReplayFile replay) {
-        var meta = replay.meta();
-        var vehicles = meta.vehicles();
+        var vehicles = replay.meta().vehicles();
         if (vehicles == null || vehicles.isEmpty()) return List.of();
 
-        var names = paramProvider != null
-            ? paramProvider.paramNames()
-            : java.util.Collections.<Long, String>emptyMap();
-
         return vehicles.stream()
-            .map(v -> {
-                var id = v.shipId().value();
-                return new BattleReport.ResolvedVehicle(
-                    id,
-                    names.getOrDefault(id, String.valueOf(id)),
-                    paramProvider != null
-                        ? paramProvider.paramIndexById(v.shipId())
-                            .map(Object::toString).orElse(String.valueOf(id))
-                        : String.valueOf(id),
-                    v.relation(),
-                    v.name());
-            })
+            .map(v -> new BattleReport.ResolvedVehicle(
+                v.shipId().value(), v.relation(), v.name()))
             .toList();
     }
 
