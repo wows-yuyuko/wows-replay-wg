@@ -6,7 +6,6 @@ import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -20,48 +19,44 @@ public final class JacksonProvider implements JsonProvider {
     static final ObjectMapper PRETTY = new ObjectMapper()
         .enable(SerializationFeature.INDENT_OUTPUT);
 
-    @Override
-    public JNode readTree(byte[] bytes) throws IOException {
-        return new JacksonNode(COMPACT.readTree(bytes));
+    @Override public JNode readTree(byte[] bytes) {
+        try { return new JacksonNode(COMPACT.readTree(bytes)); }
+        catch (Exception e) { throw new JacksonException(e); }
     }
 
-    @Override
-    public JNode readTree(String json) throws IOException {
-        return new JacksonNode(COMPACT.readTree(json));
+    @Override public JNode readTree(String json) {
+        try { return new JacksonNode(COMPACT.readTree(json)); }
+        catch (Exception e) { throw new JacksonException(e); }
     }
 
-    @Override
-    public <T> T fromJson(String json, Class<T> type) throws IOException {
-        return COMPACT.readerFor(type).readValue(json);
+    @Override public <T> T fromJson(String json, Class<T> type) {
+        try { return COMPACT.readerFor(type).readValue(json); }
+        catch (Exception e) { throw new JacksonException(e); }
     }
 
-    @Override
-    public String toJson(Object obj) throws IOException {
-        return COMPACT.writeValueAsString(obj);
+    @Override public String toJson(Object obj) {
+        try { return COMPACT.writeValueAsString(obj); }
+        catch (Exception e) { throw new JacksonException(e); }
     }
 
-    @Override
-    public String toPrettyJson(Object obj) throws IOException {
-        return PRETTY.writeValueAsString(obj);
+    @Override public String toPrettyJson(Object obj) {
+        try { return PRETTY.writeValueAsString(obj); }
+        catch (Exception e) { throw new JacksonException(e); }
     }
 
-    @Override
-    public String nodeToJson(JNode node) throws IOException {
-        return COMPACT.writeValueAsString(((JacksonNode) node).delegate);
+    @Override public String nodeToJson(JNode node) {
+        return toJson(((JacksonNode) node).delegate);
     }
 
-    @Override
-    public String toJson(JObject obj) throws IOException {
-        return COMPACT.writeValueAsString(((JacksonBuilder) obj).delegate);
+    @Override public String toJson(JObject obj) {
+        return toJson(((JacksonBuilder) obj).delegate);
     }
 
-    @Override
-    public JNode toTree(Object obj) throws IOException {
+    @Override public JNode toTree(Object obj) {
         return new JacksonNode(COMPACT.valueToTree(obj));
     }
 
-    @Override
-    public JObject createObject() {
+    @Override public JObject createObject() {
         return new JacksonBuilder(COMPACT.createObjectNode());
     }
 
@@ -74,16 +69,16 @@ public final class JacksonProvider implements JsonProvider {
 
         @Override public boolean isObject()  { return delegate.isObject(); }
         @Override public boolean isArray()   { return delegate.isArray(); }
-        @Override public boolean isTextual() { return delegate.isTextual(); }
+        @Override public boolean isTextual() { return delegate.isString(); }
         @Override public boolean isInt()     { return delegate.isInt(); }
         @Override public boolean isNull()    { return delegate.isNull(); }
-        @Override public String textValue()  { return delegate.textValue(); }
+        @Override public String textValue()  { return delegate.stringValue(); }
         @Override public int intValue()      { return delegate.intValue(); }
         @Override public long longValue()    { return delegate.longValue(); }
 
         @Override
         public Iterator<Map.Entry<String, JNode>> fields() {
-            var it = delegate.fields();
+            var it = delegate.properties();
             return new Iterator<>() {
                 @Override public boolean hasNext() { return it.hasNext(); }
                 @Override public Map.Entry<String, JNode> next() {
@@ -93,8 +88,7 @@ public final class JacksonProvider implements JsonProvider {
             };
         }
 
-        @Override
-        public List<JNode> elements() {
+        @Override public List<JNode> elements() {
             var list = new java.util.ArrayList<JNode>();
             for (var el : delegate) list.add(new JacksonNode(el));
             return list;
@@ -133,5 +127,10 @@ public final class JacksonProvider implements JsonProvider {
         @Override public JArray add(JNode node) {
             delegate.add(((JacksonNode) node).delegate); return this;
         }
+    }
+
+    /** Unchecked wrapper for JSON library exceptions. */
+    private static final class JacksonException extends RuntimeException {
+        JacksonException(Throwable cause) { super(cause); }
     }
 }

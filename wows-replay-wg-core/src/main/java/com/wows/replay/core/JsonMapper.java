@@ -5,8 +5,6 @@ import com.wows.replay.core.json.JNode;
 import com.wows.replay.core.json.JObject;
 import com.wows.replay.core.json.JsonProvider;
 
-import java.io.IOException;
-
 /**
  * Static accessor for the global {@link JsonProvider}.
  *
@@ -30,43 +28,12 @@ public final class JsonMapper {
 
     // ── Convenience shortcuts ────────────────────────────────────────────────
 
-    /** Parse JSON bytes into a {@link JNode} tree. */
-    public static JNode readTree(byte[] bytes) throws IOException {
-        return provider.readTree(bytes);
-    }
-
-    /** Parse JSON string into a {@link JNode} tree. */
-    public static JNode readTree(String json) throws IOException {
-        return provider.readTree(json);
-    }
-
-    /** Deserialize JSON string into a Java object. */
-    public static <T> T fromJson(String json, Class<T> type) throws IOException {
-        return provider.fromJson(json, type);
-    }
-
-    /** Serialize an object to compact JSON. */
-    public static String toJson(Object obj) throws IOException {
-        return provider.toJson(obj);
-    }
-
-    /** Serialize an object to pretty-printed JSON. */
-    public static String toPrettyJson(Object obj) throws IOException {
-        return provider.toPrettyJson(obj);
-    }
-
-    /** Serialize a {@link JObject} builder to compact JSON. */
-    public static String toJson(JObject obj) throws IOException {
-        return provider.toJson(obj);
-    }
-
-    /** Convert a POJO directly to a {@link JNode} tree. */
-    public static JNode toTree(Object obj) throws IOException {
-        return provider.toTree(obj);
-    }
-
-    /** Create an empty JSON object builder. */
-    public static JObject createObject() {
-        return provider.createObject();
-    }
+    public static JNode readTree(byte[] bytes)          { return provider.readTree(bytes); }
+    public static JNode readTree(String json)           { return provider.readTree(json); }
+    public static <T> T fromJson(String json, Class<T> type) { return provider.fromJson(json, type); }
+    public static String toJson(Object obj)             { return provider.toJson(obj); }
+    public static String toPrettyJson(Object obj)       { return provider.toPrettyJson(obj); }
+    public static String toJson(JObject obj)            { return provider.toJson(obj); }
+    public static JNode toTree(Object obj)              { return provider.toTree(obj); }
+    public static JObject createObject()                { return provider.createObject(); }
 }

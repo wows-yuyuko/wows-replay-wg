@@ -51,11 +51,11 @@ public final class DumperPipeline {
     }
 
     /** Dump replay bytes to JSON string. */
-    public String dump(byte[] replayBytes, Options options) throws IOException, ReplayException {
+    public String dump(byte[] replayBytes, Options options) throws ReplayException {
         return dump(ReplayFile.fromBytes(replayBytes), options);
     }
 
-    private String dump(ReplayFile replay, Options options) throws IOException {
+    private String dump(ReplayFile replay, Options options) {
         // Find game data directory for this version
         Path gameData = findGameData(replay);
 
@@ -130,7 +130,7 @@ public final class DumperPipeline {
 
     // ── JSON builder ─────────────────────────────────────────────────────────
 
-    private String buildJson(ReplayFile replay, BattleReport report) throws IOException {
+    private String buildJson(ReplayFile replay, BattleReport report) {
         var root = JsonMapper.createObject();
         var meta = replay.meta();
 

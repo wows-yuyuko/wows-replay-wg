@@ -29,7 +29,7 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     private final Map<Integer, String> consumableStates;
 
     /** Load from a byte array (e.g. from a VFS or network source). */
-    public JsonConstantsProvider(byte[] jsonBytes) throws IOException {
+    public JsonConstantsProvider(byte[] jsonBytes) {
         this.root = JsonMapper.readTree(jsonBytes);
         this.deathReasons = buildReverseLookup("DEATH_REASON_NAME");
         this.cameraModes = buildReverseLookup("CAMERA_MODE");
@@ -38,8 +38,12 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     }
 
     /** Load from a file path. */
-    public static JsonConstantsProvider fromFile(Path path) throws IOException {
-        return new JsonConstantsProvider(java.nio.file.Files.readAllBytes(path));
+    public static JsonConstantsProvider fromFile(Path path) {
+        try {
+            return new JsonConstantsProvider(java.nio.file.Files.readAllBytes(path));
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to read constants.json: " + path, e);
+        }
     }
 
     // ── GameConstantsProvider impl ───────────────────────────────────────────

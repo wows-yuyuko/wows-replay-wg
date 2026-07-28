@@ -48,42 +48,30 @@ public final class GameDataCache {
     // ── Public API ───────────────────────────────────────────────────────────
 
     /** Load (or retrieve cached) wowsinfo.json for a version. */
-    public WowsInfoExtractor wowsInfo(VersionKey version, Path gameDataDir) throws IOException {
+    public WowsInfoExtractor wowsInfo(VersionKey version, Path gameDataDir) {
         var key = version.subKey("wowsinfo");
         return (WowsInfoExtractor) store.computeIfAbsent(key, k -> {
-            try {
-                var path = gameDataDir.resolve("app/data/wowsinfo.json");
-                if (!Files.exists(path)) return null;
-                return new WowsInfoExtractor(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            var path = gameDataDir.resolve("app/data/wowsinfo.json");
+            if (!Files.exists(path)) return null;
+            return new WowsInfoExtractor(path);
         });
     }
 
     /** Load (or retrieve cached) constants.json for a version. */
-    public JsonConstantsProvider constants(VersionKey version, Path gameDataDir) throws IOException {
+    public JsonConstantsProvider constants(VersionKey version, Path gameDataDir) {
         var key = version.subKey("constants");
         return (JsonConstantsProvider) store.computeIfAbsent(key, k -> {
-            try {
-                var path = gameDataDir.resolve("constants.json");
-                if (!Files.exists(path)) return null;
-                return JsonConstantsProvider.fromFile(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            var path = gameDataDir.resolve("constants.json");
+            if (!Files.exists(path)) return null;
+            return JsonConstantsProvider.fromFile(path);
         });
     }
 
     /** Pre-load all discoverable data for a game version directory. */
     public void preload(Path gameDataDir) {
         var ver = VersionKey.from(gameDataDir);
-        try {
-            wowsInfo(ver, gameDataDir);
-            constants(ver, gameDataDir);
-        } catch (IOException ignored) {
-            // skip missing files
-        }
+        wowsInfo(ver, gameDataDir);
+        constants(ver, gameDataDir);
     }
 
     // ── Version key ──────────────────────────────────────────────────────────

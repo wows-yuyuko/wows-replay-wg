@@ -11,7 +11,6 @@ import com.wows.replay.spec.spi.GameParamProvider;
 import com.wows.replay.spec.types.GameClock;
 import com.wows.replay.core.JsonMapper;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -123,11 +122,7 @@ public final class ReplayAnalyzer {
      */
     public String analyze(ReplayFile replay) throws ReplayException {
         var report = buildReport(replay);
-        try {
-            return config.prettyPrint() ? JsonMapper.toPrettyJson(report) : JsonMapper.toJson(report);
-        } catch (IOException e) {
-            throw new ReplayException("Failed to serialize battle report", e);
-        }
+        return config.prettyPrint() ? JsonMapper.toPrettyJson(report) : JsonMapper.toJson(report);
     }
 
     /**

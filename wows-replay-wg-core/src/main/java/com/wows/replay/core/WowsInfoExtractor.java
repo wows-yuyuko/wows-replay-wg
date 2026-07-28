@@ -1,12 +1,11 @@
 package com.wows.replay.core;
 
-import tools.jackson.core.JsonFactory;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
+import tools.jackson.core.json.JsonFactory;
 import com.wows.replay.spec.spi.GameParamProvider;
 import com.wows.replay.spec.types.GameParamId;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,11 +28,13 @@ public final class WowsInfoExtractor implements GameParamProvider {
     private final Map<Long, String> idToName;
 
     /** Load from a wowsinfo.json file (streaming). */
-    public WowsInfoExtractor(Path wowsInfoPath) throws IOException {
+    public WowsInfoExtractor(Path wowsInfoPath) {
         try (var in = Files.newInputStream(wowsInfoPath)) {
             var result = parse(in);
             this.idToIndex = Collections.unmodifiableMap(result.index);
             this.idToName = Collections.unmodifiableMap(result.name);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse wowsinfo.json: " + wowsInfoPath, e);
         }
     }
 
@@ -61,46 +62,43 @@ public final class WowsInfoExtractor implements GameParamProvider {
      * We read ship IDs as map keys, then scan each ship object for {@code index}
      * and {@code name} fields, skipping everything else.</p>
      */
-    private static Result parse(InputStream in) throws IOException {
+    private static Result parse(InputStream in) {
         var index = new LinkedHashMap<Long, String>();
         var name  = new LinkedHashMap<Long, String>();
 
         try (var p = FACTORY.createParser(in)) {
-            // Navigate to "ships"
             expect(p, JsonToken.START_OBJECT);     // root {
             expect(p, JsonToken.FIELD_NAME);
             if (!"ships".equals(p.currentName())) {
-                return new Result(index, name);    // unexpected format
+                return new Result(index, name);
             }
 
             expect(p, JsonToken.START_OBJECT);     // ships {
 
             while (p.nextToken() == JsonToken.FIELD_NAME) {
-                // Ship ID is the field name
                 long shipId;
                 try {
                     shipId = Long.parseLong(p.currentName());
                 } catch (NumberFormatException e) {
-                    p.nextToken();                 // skip value
+                    p.nextToken();
                     p.skipChildren();
                     continue;
                 }
 
                 expect(p, JsonToken.START_OBJECT); // ship {
 
-                // Scan ship fields until we hit the closing }
                 String shipIndex = null;
                 String shipName = null;
                 while (p.nextToken() != JsonToken.END_OBJECT) {
                     if (p.currentToken() != JsonToken.FIELD_NAME) continue;
                     var field = p.currentName();
-                    p.nextToken();                 // field value
+                    p.nextToken();
                     if ("index".equals(field) && p.currentToken() == JsonToken.VALUE_STRING) {
                         shipIndex = p.getValueAsString();
                     } else if ("name".equals(field) && p.currentToken() == JsonToken.VALUE_STRING) {
                         shipName = p.getValueAsString();
                     } else {
-                        p.skipChildren();          // skip nested objects/arrays
+                        p.skipChildren();
                     }
                 }
 
@@ -111,9 +109,9 @@ public final class WowsInfoExtractor implements GameParamProvider {
         return new Result(index, name);
     }
 
-    private static void expect(JsonParser p, JsonToken token) throws IOException {
+    private static void expect(JsonParser p, JsonToken token) {
         if (p.nextToken() != token) {
-            throw new IOException("Expected " + token + " but got " + p.currentToken());
+            throw new RuntimeException("Expected " + token + " but got " + p.currentToken());
         }
     }
 }
