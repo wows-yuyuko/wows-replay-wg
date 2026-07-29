@@ -102,8 +102,9 @@ final class RichExtractor {
     int minimapTickCounter = 0;
     final List<MinimapData.Frame> richMinimapFrames = new ArrayList<>();
 
-    /** 按 CellPlayerCreate 出现顺序匹配的玩家列表 */
-    private final List<PlayerLink> orderedMetaPlayers = new ArrayList<>();
+    /** meta.vehicles[i].id() → (dbId, name, relation) */
+    private record MetaPlayer(long dbId, String name, int relation) {}
+    private final List<MetaPlayer> metaPlayers = new ArrayList<>();
     private int cellPlayerCreateCount = 0;
 
     RichExtractor(ReplayFile replay, EntitySpecProvider specProvider) {
@@ -112,14 +113,18 @@ final class RichExtractor {
         this.battleStart = replay.battleStartClock();
         this.parser = new PacketParser(specProvider, version);
 
-        // 从回放元数据预加载所有玩家信息（保持原始顺序）
+        // 从回放元数据预加载所有玩家信息并预填充到 players
         var vehicles = replay.meta().vehicles();
         if (vehicles != null) {
             for (var v : vehicles) {
-                orderedMetaPlayers.add(new PlayerLink(v.id().value(), v.name()));
+                long dbId = v.id().value();
+                String name = v.name();
+                metaPlayers.add(new MetaPlayer(dbId, name, v.relation()));
+                // 预填充所有玩家(实体ID暂时为0)
+                players.put(dbId, new PlayerInfo(name, 0));
             }
         }
-        System.err.println("[RichExtractor] 元数据玩家: " + orderedMetaPlayers.size());
+        System.err.println("[RichExtractor] 元数据玩家: " + metaPlayers.size());
 
         int specCount = this.parser.specs() != null ? this.parser.specs().size() : 0;
         if (specCount == 0) {
@@ -142,7 +147,7 @@ final class RichExtractor {
         finish();
         System.err.println("[RichExtractor] CellPlayerCreate=" + cellPlayerCreateCount
             + " VehicleCreate=" + vehicleCreateCount
-            + " metaPlayers=" + orderedMetaPlayers.size());
+            + " metaPlayers=" + metaPlayers.size());
         System.err.println("[RichExtractor] 数据包: " + totalPackets + " 总计, "
             + decodedPackets + " 已解码, "
             + players.size() + " 玩家, "
@@ -246,15 +251,19 @@ final class RichExtractor {
 
         if (entityType != null) cpEntityTypes.add(entityType);
 
-        // 按 CellPlayerCreate 出现顺序匹配 meta.vehicles() 列表
-        if ("Avatar".equals(entityType) && cellPlayerCreateCount < orderedMetaPlayers.size()) {
-            var metaPlayer = orderedMetaPlayers.get(cellPlayerCreateCount++);
-            entityToPlayer.putIfAbsent(eid, metaPlayer);
-            players.putIfAbsent(metaPlayer.dbId,
-                new PlayerInfo(metaPlayer.username, eid));
-            System.err.println("[RichExtractor] 玩家 #" + (cellPlayerCreateCount - 1)
-                + ": eid=" + eid + " db_id=" + metaPlayer.dbId
-                + " name=" + metaPlayer.username);
+        // CellPlayerCreate(Avatar) 对应录制玩家 (relation=0)
+        if ("Avatar".equals(entityType)) {
+            cellPlayerCreateCount++;
+            for (var mp : metaPlayers) {
+                if (mp.relation == 0) {
+                    var link = new PlayerLink(mp.dbId, mp.name);
+                    entityToPlayer.put(eid, link);
+                    players.put(mp.dbId, new PlayerInfo(mp.name, eid));
+                    System.err.println("[RichExtractor] 录制玩家: eid=" + eid
+                        + " db_id=" + mp.dbId + " name=" + mp.name);
+                    break;
+                }
+            }
         }
 
         // 输出属性用于诊断
@@ -278,19 +287,13 @@ final class RichExtractor {
         if (type != null) entityCreateTypes.add(type);
 
         // Vehicle owner → Avatar entity_id 映射
+        // shipConfig 是二进制 BLOB，无法直接提取 shipId
         if ("Vehicle".equals(type)) {
             vehicleCreateCount++;
             ArgValue owner = ec.props().get("owner");
             if (owner instanceof ArgValue.IntVal iv) {
                 int ownerEid = (int) iv.value();
-                // 如果 owner 尚未关联玩家，尝试按 Vehicle 出现顺序匹配
-                if (!entityToPlayer.containsKey(ownerEid)
-                    && vehicleCreateCount <= orderedMetaPlayers.size()) {
-                    var metaPlayer = orderedMetaPlayers.get(vehicleCreateCount - 1);
-                    entityToPlayer.put(ownerEid, metaPlayer);
-                    players.putIfAbsent(metaPlayer.dbId,
-                        new PlayerInfo(metaPlayer.username, ownerEid));
-                }
+                entityTypes.putIfAbsent(ownerEid, "Avatar");
             }
         }
 

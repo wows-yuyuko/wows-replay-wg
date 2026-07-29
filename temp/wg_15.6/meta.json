@@ -1,0 +1,179 @@
+{
+  "matchGroup": "pvp",
+  "gameMode": 15,
+  "filtersByShipConfigName": {},
+  "clientVersionFromExe": "15,6,0,12830008",
+  "mapBorder": null,
+  "scenarioUiCategoryId": 0,
+  "eventType": "",
+  "mapDisplayName": "18_NE_ice_islands",
+  "mapId": 11,
+  "clientVersionFromXml": "15,6,0,12830008",
+  "weatherParams": {
+    "0": [
+      "PCOW003_Cloudy"
+    ]
+  },
+  "disabledShipClasses": [],
+  "playersPerTeam": 12,
+  "duration": 1200,
+  "gameTypeGameParamId": 0,
+  "name": "12x12",
+  "scenario": "armsrace",
+  "playerID": 0,
+  "vehicles": [
+    {
+      "shipId": 4181636944,
+      "relation": 1,
+      "id": 672103681,
+      "name": "sanlooking"
+    },
+    {
+      "shipId": 3539941072,
+      "relation": 0,
+      "id": 672142341,
+      "name": "Nahida_official"
+    },
+    {
+      "shipId": 4076811984,
+      "relation": 1,
+      "id": 538018073,
+      "name": "eucliwoodzz"
+    },
+    {
+      "shipId": 3550394352,
+      "relation": 1,
+      "id": 672114074,
+      "name": "Mylove_Origami"
+    },
+    {
+      "shipId": 3751720752,
+      "relation": 1,
+      "id": 537963942,
+      "name": "IJN_I19"
+    },
+    {
+      "shipId": 4180587728,
+      "relation": 2,
+      "id": 672108842,
+      "name": "doublingseason"
+    },
+    {
+      "shipId": 4076255024,
+      "relation": 1,
+      "id": 538027179,
+      "name": "lion68"
+    },
+    {
+      "shipId": 3539941104,
+      "relation": 1,
+      "id": 537938034,
+      "name": "Fan11_1"
+    },
+    {
+      "shipId": 4284429616,
+      "relation": 2,
+      "id": 672141871,
+      "name": "_TeeMur_"
+    },
+    {
+      "shipId": 4181112560,
+      "relation": 2,
+      "id": 537972408,
+      "name": "OceanNoob"
+    },
+    {
+      "shipId": 4076255216,
+      "relation": 1,
+      "id": 537898947,
+      "name": "horange_akguk"
+    },
+    {
+      "shipId": 4076255024,
+      "relation": 2,
+      "id": 672070084,
+      "name": "springlate"
+    },
+    {
+      "shipId": 4276041424,
+      "relation": 2,
+      "id": 537978951,
+      "name": "wolf_pack_3"
+    },
+    {
+      "shipId": 3751720752,
+      "relation": 2,
+      "id": 672022859,
+      "name": "killbee_"
+    },
+    {
+      "shipId": 3550426576,
+      "relation": 2,
+      "id": 672074188,
+      "name": "Passion_Tears"
+    },
+    {
+      "shipId": 3741235184,
+      "relation": 2,
+      "id": 672107088,
+      "name": "train3427"
+    },
+    {
+      "shipId": 3519985360,
+      "relation": 1,
+      "id": 672206663,
+      "name": "Oralvi"
+    },
+    {
+      "shipId": 4277090288,
+      "relation": 2,
+      "id": 537879765,
+      "name": "wwsdasb"
+    },
+    {
+      "shipId": 4277090288,
+      "relation": 1,
+      "id": 537891286,
+      "name": "CheeseBread_Ltd"
+    },
+    {
+      "shipId": 3550426576,
+      "relation": 1,
+      "id": 672081881,
+      "name": "FoldingPlume"
+    },
+    {
+      "shipId": 3540924400,
+      "relation": 2,
+      "id": 537931975,
+      "name": "wk2308530665"
+    },
+    {
+      "shipId": 4259231440,
+      "relation": 2,
+      "id": 672016618,
+      "name": "AshengKukai"
+    },
+    {
+      "shipId": 4282333168,
+      "relation": 2,
+      "id": 672158956,
+      "name": "yyzjsj"
+    },
+    {
+      "shipId": 4180554960,
+      "relation": 1,
+      "id": 672166727,
+      "name": "Sakuraba_Ema"
+    }
+  ],
+  "gameType": "RandomBattle",
+  "dateTime": "27.07.2026 23:09:08",
+  "mapName": "spaces/18_NE_ice_islands",
+  "playerName": "Nahida_official",
+  "scenarioConfigId": 177,
+  "teamsCount": 2,
+  "playerVehicle": "PJSB720-Aki",
+  "battleDuration": 1200,
+  "battleItemTrees": {}
+}
