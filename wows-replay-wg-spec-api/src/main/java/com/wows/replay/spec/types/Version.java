@@ -60,19 +60,19 @@ public record Version(int major, int minor, int patch, int build) implements Com
     }
 
     /** 检查此版本是否至少为 {@code other}（忽略 build）。 */
-    public boolean isAtLeast 比较(Version other) {
+    public boolean isAtLeast (Version other) {
         if (major != other.major) return major > other.major;
         if (minor != other.minor) return minor > other.minor;
         return patch >= other.patch;
     }
 
     /** File-system path segment: {@code "major.minor.patch"}. */
-    public String toPath 路径() {
+    public String toPath () {
         return major + "." + minor + "." + patch;
     }
 
     @Override
-    public int compareTo 比较(Version o) {
+    public int compareTo (Version o) {
         int c = Integer.compare(major, o.major);
         if (c != 0) return c;
         c = Integer.compare(minor, o.minor);

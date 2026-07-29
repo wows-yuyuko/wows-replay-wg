@@ -56,28 +56,36 @@ public sealed interface ArgType {
     Pattern TUPLE_PATTERN = Pattern.compile(
         "TUPLE\\s*(?:<OF>)?\\s*(.+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    /** 基本类型描述符查找表。 */
-    Map<String, Primitive> DESCRIPTOR_MAP = Map.ofEntries(
-        Map.entry("INT8",    Primitive.INT8),
-        Map.entry("INT16",   Primitive.INT16),
-        Map.entry("INT32",   Primitive.INT32),
-        Map.entry("INT64",   Primitive.INT64),
-        Map.entry("UINT8",   Primitive.UINT8),
-        Map.entry("UINT16",  Primitive.UINT16),
-        Map.entry("UINT32",  Primitive.UINT32),
-        Map.entry("UINT64",  Primitive.UINT64),
-        Map.entry("FLOAT",   Primitive.FLOAT),
-        Map.entry("FLOAT32", Primitive.FLOAT),
-        Map.entry("FLOAT64", Primitive.DOUBLE),
-        Map.entry("DOUBLE",  Primitive.DOUBLE),
-        Map.entry("STRING",  Primitive.STRING),
-        Map.entry("BOOL",    Primitive.BOOL),
-        Map.entry("BLOB",    Primitive.BLOB),
-        Map.entry("PYTHON",  Primitive.PYTHON),
-        Map.entry("VECTOR2", Primitive.VECTOR2),
-        Map.entry("VECTOR3", Primitive.VECTOR3),
-        Map.entry("VECTOR4", Primitive.VECTOR4)
-    );
+    /**
+     * 基本类型描述符查找表（方法而非字段，避免 ArgType ↔ Primitive 类加载循环）。
+     * 首次调用时初始化，此时 Primitive 枚举已完全就绪。
+     */
+    static Map<String, Primitive> descriptorMap() {
+        return DescriptorMapHolder.MAP;
+    }
+    static final class DescriptorMapHolder {
+        static final Map<String, Primitive> MAP = Map.ofEntries(
+            Map.entry("INT8",    Primitive.INT8),
+            Map.entry("INT16",   Primitive.INT16),
+            Map.entry("INT32",   Primitive.INT32),
+            Map.entry("INT64",   Primitive.INT64),
+            Map.entry("UINT8",   Primitive.UINT8),
+            Map.entry("UINT16",  Primitive.UINT16),
+            Map.entry("UINT32",  Primitive.UINT32),
+            Map.entry("UINT64",  Primitive.UINT64),
+            Map.entry("FLOAT",   Primitive.FLOAT),
+            Map.entry("FLOAT32", Primitive.FLOAT),
+            Map.entry("FLOAT64", Primitive.DOUBLE),
+            Map.entry("DOUBLE",  Primitive.DOUBLE),
+            Map.entry("STRING",  Primitive.STRING),
+            Map.entry("BOOL",    Primitive.BOOL),
+            Map.entry("BLOB",    Primitive.BLOB),
+            Map.entry("PYTHON",  Primitive.PYTHON),
+            Map.entry("VECTOR2", Primitive.VECTOR2),
+            Map.entry("VECTOR3", Primitive.VECTOR3),
+            Map.entry("VECTOR4", Primitive.VECTOR4)
+        );
+    }
 
     /**
      * 从 .def 文件解析类型描述符字符串。
@@ -108,7 +116,7 @@ public sealed interface ArgType {
         }
 
         // Primitives via lookup table
-        var prim = DESCRIPTOR_MAP.get(trimmed);
+        var prim = descriptorMap().get(trimmed);
         return prim != null ? prim : Primitive.BLOB; // unrecognized → raw bytes
     }
 

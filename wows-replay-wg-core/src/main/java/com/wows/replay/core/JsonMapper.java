@@ -2,21 +2,18 @@ package com.wows.replay.core;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
  * 全局 JSON 工具类，基于 Jackson 3 的 {@link ObjectMapper}。
+ *
+ * 解析不需要处理异常
  */
 public final class JsonMapper {
 
     private JsonMapper() {}
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    static {
-        MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
-    }
 
     /** 获取底层 {@link ObjectMapper} 实例（流式解析等高级场景）。 */
     public static ObjectMapper getMapper() {
@@ -27,14 +24,12 @@ public final class JsonMapper {
 
     /** 从字节数组解析 JSON 树。 */
     public static JsonNode readTree(byte[] bytes) {
-        try { return MAPPER.readTree(bytes); }
-        catch (Exception e) { throw new RuntimeException(e); }
+        return MAPPER.readTree(bytes);
     }
 
     /** 从字符串解析 JSON 树。 */
     public static JsonNode readTree(String json) {
-        try { return MAPPER.readTree(json); }
-        catch (Exception e) { throw new RuntimeException(e); }
+        return MAPPER.readTree(json);
     }
 
     /** JSON 字符串 → Java 对象。 */

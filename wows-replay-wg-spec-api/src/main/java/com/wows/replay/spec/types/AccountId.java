@@ -11,7 +11,7 @@ public record AccountId(int value) implements Comparable<AccountId> {
     public int value() { return value; }
 
     @Override
-    public int compareTo 比较(AccountId o) { return Integer.compare(value, o.value); }
+    public int compareTo(AccountId o) { return Integer.compare(value, o.value); }
 
     @Override
     public String toString() { return String.valueOf(value); }

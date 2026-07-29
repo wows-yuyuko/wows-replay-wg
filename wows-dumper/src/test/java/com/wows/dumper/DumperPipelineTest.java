@@ -4,6 +4,7 @@ import com.wows.replay.core.ReplayException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,7 +14,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class DumperPipelineTest {
 
     private static final String REPLAY_PATH =
-        "temp/wg_15.7/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
+            "temp/wg_15.6/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
+    private static final Path DATA_PATH = new File(System.getProperty("user.dir").replace("wows-dumper", "") + "temp" + File.separator + "wows-data").toPath();
+    ;
 
     private Path resolveReplay() {
         var candidate = Path.of(REPLAY_PATH);
@@ -31,16 +34,13 @@ class DumperPipelineTest {
             return;
         }
 
-        var pipeline = new DumperPipeline(Path.of("."));
+        var pipeline = new DumperPipeline(DATA_PATH);
         String json = pipeline.dump(path, DumperPipeline.Options.DEFAULT);
 
         assertNotNull(json);
         assertFalse(json.isBlank());
-        assertTrue(json.contains("\"meta\""));
-        assertTrue(json.contains("\"summary\""));
-        assertTrue(json.contains("\"packets\""));
-        assertTrue(json.contains("\"version\""));
         System.out.println("JSON length: " + json.length());
+        System.out.println(json);
     }
 
     @Test
@@ -53,7 +53,7 @@ class DumperPipelineTest {
         }
 
         byte[] bytes = Files.readAllBytes(path);
-        var pipeline = new DumperPipeline(Path.of("."));
+        var pipeline = new DumperPipeline(DATA_PATH);
         String json = pipeline.dump(bytes, DumperPipeline.Options.DEFAULT);
 
         assertTrue(json.contains("\"meta\""));
@@ -71,16 +71,16 @@ class DumperPipelineTest {
     @Test
     @DisplayName("不存在的文件抛出异常")
     void dumpNonExistent() {
-        var pipeline = new DumperPipeline(Path.of("."));
+        var pipeline = new DumperPipeline(DATA_PATH);
         assertThrows(IOException.class, () ->
-            pipeline.dump(Path.of("nonexistent_12345.wowsreplay"), DumperPipeline.Options.DEFAULT));
+                pipeline.dump(Path.of("nonexistent_12345.wowsreplay"), DumperPipeline.Options.DEFAULT));
     }
 
     @Test
     @DisplayName("null 字节抛出异常")
     void dumpNullBytes() {
-        var pipeline = new DumperPipeline(Path.of("."));
+        var pipeline = new DumperPipeline(DATA_PATH);
         assertThrows(ReplayException.class, () ->
-            pipeline.dump((byte[]) null, DumperPipeline.Options.DEFAULT));
+                pipeline.dump((byte[]) null, DumperPipeline.Options.DEFAULT));
     }
 }

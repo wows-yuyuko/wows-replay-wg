@@ -14,7 +14,7 @@ public record TeamId(int value) implements Comparable<TeamId> {
     public int value() { return value; }
 
     @Override
-    public int compareTo 比较(TeamId o) { return Integer.compare(value, o.value); }
+    public int compareTo(TeamId o) { return Integer.compare(value, o.value); }
 
     @Override
     public String toString() { return String.valueOf(value); }

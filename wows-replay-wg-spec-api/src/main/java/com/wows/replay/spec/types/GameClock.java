@@ -13,7 +13,7 @@ public record GameClock(float seconds) implements Comparable<GameClock> {
     public float seconds() { return seconds; }
 
     @Override
-    public int compareTo 比较(GameClock o) { return Float.compare(seconds, o.seconds); }
+    public int compareTo(GameClock o) { return Float.compare(seconds, o.seconds); }
 
     @Override
     public String toString() { return String.format("%.2f", seconds); }

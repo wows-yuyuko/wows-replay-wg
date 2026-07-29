@@ -36,10 +36,10 @@ class GameParamIdTest {
     }
 
     @Test
-    @DisplayName("compareTo 比较")
-    void compareTo 比较() {
-        assertTrue(new GameParamId(100).compareTo 比较(new GameParamId(50)) > 0);
-        assertEquals(0, new GameParamId(42).compareTo 比较(new GameParamId(42)));
+    @DisplayName("compareTo")
+    void compareTo() {
+        assertTrue(new GameParamId(100).compareTo(new GameParamId(50)) > 0);
+        assertEquals(0, new GameParamId(42).compareTo(new GameParamId(42)));
     }
 
     @Test

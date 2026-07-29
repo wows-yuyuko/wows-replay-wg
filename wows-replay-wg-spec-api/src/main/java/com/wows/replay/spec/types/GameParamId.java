@@ -23,7 +23,7 @@ public record GameParamId(long value) implements Comparable<GameParamId> {
     public long value() { return value; }
 
     @Override
-    public int compareTo 比较(GameParamId o) { return Long.compare(value, o.value); }
+    public int compareTo(GameParamId o) { return Long.compare(value, o.value); }
 
     @Override
     public String toString() { return String.valueOf(value); }
