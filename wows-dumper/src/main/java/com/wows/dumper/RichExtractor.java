@@ -165,6 +165,8 @@ final class RichExtractor {
 
     // ── 数据包处理器 ─────────────────────────────────────────────────────
 
+    private boolean basePlayerLogged = false;
+
     private void handleBasePlayerCreate(BasePlayerCreatePacket bp) {
         int eid = bp.entityId().value();
         entityTypes.put(eid, bp.entityType());
@@ -172,17 +174,32 @@ final class RichExtractor {
         var props = bp.props();
         if (props == null) return;
 
-        // 提取 db_id
-        ArgValue dbIdVal = props.get("db_id");
+        // 首次遇到时输出所有属性名，帮助诊断属性名不匹配问题
+        if (!basePlayerLogged) {
+            System.err.println("[RichExtractor] BasePlayerCreate(" + bp.entityType()
+                + ") 属性列表: " + props.keySet());
+            basePlayerLogged = true;
+        }
+
+        // 尝试多种可能的 db_id 属性名
+        ArgValue dbIdVal = findProp(props, "db_id", "databaseID", "dbid", "playerID");
         if (dbIdVal instanceof ArgValue.IntVal iv) {
             long dbId = iv.value();
-            String username = "";
-            ArgValue nameVal = props.get("username");
-            if (nameVal instanceof ArgValue.StrVal sv) username = sv.value();
+            ArgValue nameVal = findProp(props, "username", "name", "playerName");
+            String username = nameVal instanceof ArgValue.StrVal sv ? sv.value() : "";
 
             entityToPlayer.put(eid, new PlayerLink(dbId, username));
             players.putIfAbsent(dbId, new PlayerInfo(username, eid));
         }
+    }
+
+    /** 按优先级查找属性值 */
+    private static ArgValue findProp(Map<String, ArgValue> props, String... names) {
+        for (var name : names) {
+            var v = props.get(name);
+            if (v != null) return v;
+        }
+        return null;
     }
 
     private void handleCellPlayerCreate(CellPlayerCreatePacket cp) {
@@ -191,11 +208,21 @@ final class RichExtractor {
         entityVehicle.put(eid, cp.vehicleId().value());
     }
 
+    private boolean entityCreateLogged = false;
+
     private void handleEntityCreate(EntityCreatePacket ec) {
         int eid = ec.entityId().value();
         String type = ec.entityType();
         entityTypes.put(eid, type);
         entityVehicle.put(eid, ec.vehicleId().value());
+
+        // 首次遇到 Avatar 时输出所有属性名
+        if (!entityCreateLogged && "Avatar".equals(type)) {
+            var props = ec.props();
+            System.err.println("[RichExtractor] EntityCreate(Avatar) 属性列表: "
+                + (props != null ? props.keySet() : "null"));
+            entityCreateLogged = true;
+        }
 
         // 记录位置
         if (ec.position() != null) {
@@ -325,10 +352,21 @@ final class RichExtractor {
         }
     }
 
+    private final Set<String> seenMethods = new LinkedHashSet<>();
+    private boolean methodDebugLogged = false;
+
     private void handleEntityMethod(EntityMethodPacket em, float elapsed) {
         int eid = em.entityId().value();
         String method = em.method();
         List<ArgValue> args = em.args();
+
+        // 收集前 50 个不同方法名用于诊断
+        if (seenMethods.size() < 50) seenMethods.add(method);
+        if (!methodDebugLogged && seenMethods.size() >= 20) {
+            System.err.println("[RichExtractor] 前 " + seenMethods.size()
+                + " 个 EntityMethod: " + seenMethods);
+            methodDebugLogged = true;
+        }
 
         switch (method) {
             case "receiveDamagesOnShip" -> {
