@@ -102,8 +102,8 @@ final class RichExtractor {
     int minimapTickCounter = 0;
     final List<MinimapData.Frame> richMinimapFrames = new ArrayList<>();
 
-    /** meta.vehicles[i].id() → (dbId, name, relation, shipId) */
-    public record MetaPlayer(long dbId, String name, int relation, long shipId) {}
+    /** meta.vehicles[i] → (dbId, name, relation, shipId) */
+    public record MetaPlayer(long dbId, String name, int relation, long shipId, long metaShipId) {}
     public final List<MetaPlayer> metaPlayers = new ArrayList<>();
     private int cellPlayerCreateCount = 0;
 
@@ -119,7 +119,7 @@ final class RichExtractor {
             for (var v : vehicles) {
                 long dbId = v.id().value();
                 String name = v.name();
-                metaPlayers.add(new MetaPlayer(dbId, name, v.relation(), v.shipId().value()));
+                metaPlayers.add(new MetaPlayer(dbId, name, v.relation(), v.shipId().value(), dbId));
                 // 预填充所有玩家(实体ID暂时为0)
                 players.put(dbId, new PlayerInfo(name, 0));
             }
@@ -502,6 +502,29 @@ final class RichExtractor {
                     var pl = entityToPlayer.get(eid);
                     capturedBuffs.add(new CapturedBuffInfo(buffEid, paramsId,
                         pl != null ? (int) pl.dbId : 0, elapsed));
+                }
+            }
+            case "onArenaStateReceived" -> {
+                // args: [arena_id: i64, team_build_type_id: i8, pre_battles_info: BLOB, player_states: BLOB, bot_states?: BLOB]
+                if (args.size() >= 4 && args.get(3) instanceof ArgValue.BlobVal blob) {
+                    var arenaPlayers = PickleDecoder.parseArenaPlayers(blob.value());
+                    // 用 pickle 数据更新玩家映射
+                    for (var e : arenaPlayers.entityToDbId().entrySet()) {
+                        int entityId = e.getKey();
+                        long dbId = e.getValue();
+                        String name = arenaPlayers.dbIdToName().getOrDefault(dbId, "");
+                        int team = arenaPlayers.dbIdToTeam().getOrDefault(dbId, -1);
+
+                        var link = new PlayerLink(dbId, name);
+                        entityToPlayer.put(entityId, link);
+                        var existing = players.get(dbId);
+                        if (existing != null) {
+                            existing.entityId = entityId;
+                            existing.teamId = team;
+                        } else {
+                            players.put(dbId, new PlayerInfo(name, entityId));
+                        }
+                    }
                 }
             }
             case "receiveTeamScore" -> {
