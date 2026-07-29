@@ -102,9 +102,9 @@ final class RichExtractor {
     int minimapTickCounter = 0;
     final List<MinimapData.Frame> richMinimapFrames = new ArrayList<>();
 
-    /** meta.vehicles[i].id() → (dbId, name, relation) */
-    private record MetaPlayer(long dbId, String name, int relation) {}
-    private final List<MetaPlayer> metaPlayers = new ArrayList<>();
+    /** meta.vehicles[i].id() → (dbId, name, relation, shipId) */
+    public record MetaPlayer(long dbId, String name, int relation, long shipId) {}
+    public final List<MetaPlayer> metaPlayers = new ArrayList<>();
     private int cellPlayerCreateCount = 0;
 
     RichExtractor(ReplayFile replay, EntitySpecProvider specProvider) {
@@ -119,7 +119,7 @@ final class RichExtractor {
             for (var v : vehicles) {
                 long dbId = v.id().value();
                 String name = v.name();
-                metaPlayers.add(new MetaPlayer(dbId, name, v.relation()));
+                metaPlayers.add(new MetaPlayer(dbId, name, v.relation(), v.shipId().value()));
                 // 预填充所有玩家(实体ID暂时为0)
                 players.put(dbId, new PlayerInfo(name, 0));
             }

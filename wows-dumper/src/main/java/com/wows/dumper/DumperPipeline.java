@@ -249,24 +249,26 @@ public final class DumperPipeline {
         if (ext.playedDuration != null) root.put("played_duration", ext.playedDuration);
         if (ext.extraDuration != null) root.put("extra_duration", ext.extraDuration);
 
-        // 玩家列表
+        // 玩家列表 (来自 meta.vehicles)
         ArrayNode playersArr = root.putArray("players");
-        for (var entry : ext.players.entrySet()) {
-            long dbId = entry.getKey();
-            var info = entry.getValue();
-            int eid = info.entityId;
+        for (var mp : ext.metaPlayers) {
+            long dbId = mp.dbId();
+            var info = ext.players.get(dbId);
+            int eid = info != null ? info.entityId : 0;
 
             ObjectNode player = playersArr.addObject();
             player.put("db_id", dbId);
-            player.put("username", info.username);
+            player.put("username", mp.name());
             player.put("entity_id", eid);
+            player.put("relation", mp.relation());
+            player.put("ship_id", mp.shipId());
 
             // 初始状态
             ObjectNode initial = player.putObject("initial_state");
             initial.put("entity_id", eid);
             initial.put("db_id", dbId);
-            initial.put("username", info.username);
-            if (info.teamId >= 0) initial.put("team_id", info.teamId);
+            initial.put("username", mp.name());
+            if (info != null && info.teamId >= 0) initial.put("team_id", info.teamId);
 
             Float health = ext.entityHealth.get(eid);
             if (health != null) initial.put("health", health);
@@ -276,13 +278,6 @@ public final class DumperPipeline {
             if (alive != null) initial.put("is_alive", alive);
             String type = ext.entityTypes.get(eid);
             if (type != null) initial.put("entity_type", type);
-
-            // 载具信息
-            Long vehicleId = ext.entityVehicle.get(eid);
-            if (vehicleId != null) {
-                ObjectNode vehicle = player.putObject("vehicle");
-                vehicle.put("ship_id", vehicleId);
-            }
 
             // 消费品 / 击杀时间线
             if (options.vehicleEvents) {
