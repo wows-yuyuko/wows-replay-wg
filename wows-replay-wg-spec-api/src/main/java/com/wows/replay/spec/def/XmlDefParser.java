@@ -344,12 +344,29 @@ public final class XmlDefParser {
             var typeNode = childByName(prop, "Type");
             var flagsNode = childByName(prop, "Flags");
             var type = typeNode != null ? parseType(typeNode, aliases) : ArgType.Primitive.BLOB;
-            var flags = flagsNode != null
-                ? PropertyFlags.fromDef(flagsNode.getTextContent().trim())
-                : PropertyFlags.ALL_CLIENTS;
+            var flags = parseFlags(flagsNode);
             result.add(new PropertySpec(name, type, flags, index++));
         }
         return result;
+    }
+
+    /** 解析复合标记 — Flags 包含多个子元素如 <BASE_AND_CLIENT/><ALL_CLIENTS/> */
+    private Set<PropertyFlags> parseFlags(Element flagsNode) {
+        if (flagsNode == null) return Set.of(PropertyFlags.ALL_CLIENTS);
+        var result = EnumSet.noneOf(PropertyFlags.class);
+        for (var child : children(flagsNode)) {
+            var flag = PropertyFlags.fromDef(child.getNodeName());
+            if (flag != null) result.add(flag);
+        }
+        // 如果没有子元素，尝试解析文本内容
+        if (result.isEmpty()) {
+            var text = flagsNode.getTextContent().trim();
+            if (!text.isBlank()) {
+                var flag = PropertyFlags.fromDef(text);
+                if (flag != null) result.add(flag);
+            }
+        }
+        return result.isEmpty() ? Set.of(PropertyFlags.ALL_CLIENTS) : result;
     }
 
     private List<ArgSpec> parseArgs(Element methodNode, Map<String, ArgType> aliases) {
@@ -395,11 +412,10 @@ public final class XmlDefParser {
 
     private List<PropertySpec> filterProperties(List<PropertySpec> props,
                                                  PropertyFlags... flags) {
-        var allowed = Set.of(flags);
         var result = new ArrayList<PropertySpec>();
         int index = 0;
         for (var p : props) {
-            if (allowed.contains(p.flags())) {
+            if (p.hasAnyFlag(flags)) {
                 result.add(new PropertySpec(p.name(), p.propType(), p.flags(), index++));
             }
         }
