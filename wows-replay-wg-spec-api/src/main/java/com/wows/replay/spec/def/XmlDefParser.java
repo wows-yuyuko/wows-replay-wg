@@ -109,8 +109,8 @@ public final class XmlDefParser {
      */
     List<String> parseEntityList() throws IOException {
         var doc = parseXml(loader.get("scripts/entities.xml"));
-        var root = childByName(doc.getDocumentElement(), "root");
-        if (root == null) return List.of();
+        // getDocumentElement() 返回的就是 <root>，直接使用
+        var root = doc.getDocumentElement();
         var entities = childByName(root, "ClientServerEntities");
         if (entities == null) return List.of();
 
