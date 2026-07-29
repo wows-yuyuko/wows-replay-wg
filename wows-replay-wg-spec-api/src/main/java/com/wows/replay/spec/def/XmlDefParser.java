@@ -178,6 +178,15 @@ public final class XmlDefParser {
         // Sort client methods by wire size
         allClientMethods.sort(Comparator.comparingInt(m -> methodSortSize(m, aliases)));
 
+        // Debug: 输出 Avatar 的属性标记
+        if ("Avatar".equals(name)) {
+            System.err.println("[XmlDefParser] Avatar 属性总数=" + allProperties.size()
+                + " (自身=" + def.properties.size() + " 继承=" + inherited.properties.size() + ")");
+            for (var p : allProperties) {
+                System.err.println("  " + p.name() + " : " + p.flags() + " (type=" + p.propType().typeName() + ")");
+            }
+        }
+
         // Filter properties by visibility flags
         var internalProps = filterProperties(allProperties,
             PropertyFlags.ALL_CLIENTS, PropertyFlags.OTHER_CLIENTS,
@@ -190,6 +199,11 @@ public final class XmlDefParser {
             PropertyFlags.ALL_CLIENTS, PropertyFlags.BASE_AND_CLIENT,
             PropertyFlags.OTHER_CLIENTS, PropertyFlags.OWN_CLIENT,
             PropertyFlags.CELL_PUBLIC_AND_OWN);
+
+        if ("Avatar".equals(name)) {
+            System.err.println("[XmlDefParser] Avatar baseProps=" + baseProps.size()
+                + " clientProps=" + clientProps.size() + " internalProps=" + internalProps.size());
+        }
 
         // Sort by wire size
         Comparator<PropertySpec> bySize = Comparator.comparingInt(p -> p.propType().sortSize());
