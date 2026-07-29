@@ -1,5 +1,9 @@
 package com.wows.replay.core;
 
+import com.wows.replay.spec.def.XmlEntitySpecProvider;
+import com.wows.replay.spec.spi.EntitySpecProvider;
+
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -37,6 +41,26 @@ public final class GameDataCache {
             var path = gameDataDir.resolve("constants.json");
             if (!Files.exists(path)) return null;
             return JsonConstantsProvider.fromFile(path);
+        });
+    }
+
+    /** 获取（或加载并缓存）指定版本的实体规范提供者。 */
+    public EntitySpecProvider entitySpecs(VersionKey version, Path gameDataDir) {
+        var key = version.subKey("entitySpecs");
+        return (EntitySpecProvider) store.computeIfAbsent(key, _ -> {
+            // 验证 .def 文件存在性
+            var entitiesXml = gameDataDir.resolve("scripts/entities.xml");
+            var aliasXml = gameDataDir.resolve("scripts/entity_defs/alias.xml");
+            if (!Files.exists(entitiesXml) || !Files.exists(aliasXml)) {
+                System.err.println("[GameDataCache] 警告：" + gameDataDir
+                    + " 中缺少 scripts/entities.xml 或 scripts/entity_defs/alias.xml");
+                return EntitySpecProvider.empty();
+            }
+            return new XmlEntitySpecProvider(path -> {
+                var file = gameDataDir.resolve(path);
+                if (!Files.exists(file)) throw new IOException("def file not found: " + path);
+                return Files.readAllBytes(file);
+            });
         });
     }
 

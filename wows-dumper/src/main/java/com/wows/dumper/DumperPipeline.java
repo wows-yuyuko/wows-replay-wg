@@ -107,7 +107,7 @@ public final class DumperPipeline {
                 + gameDataBase + "/data-{version}/live/ 目录存在且包含 scripts/entity_defs/");
         }
 
-        // 加载 constants.json（显式路径优先）
+        // 加载 constants.json（显式路径优先，全局缓存）
         JsonConstantsProvider constants = null;
         if (options.constantsFile != null && Files.exists(options.constantsFile)) {
             constants = JsonConstantsProvider.fromFile(options.constantsFile);
@@ -116,7 +116,12 @@ public final class DumperPipeline {
             constants = CACHE.constants(ver, gameData);
         }
 
-        // 创建基础分析器获取 BattleReport（向后兼容路径）
+        // 实体规范提供者（全局缓存，ReplayAnalyzer 和 RichExtractor 复用同一实例）
+        var specProvider = gameData != null
+            ? CACHE.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData)
+            : com.wows.replay.spec.spi.EntitySpecProvider.empty();
+
+        // 创建基础分析器获取 BattleReport
         var analyzerBuilder = ReplayAnalyzer.builder()
                 .config(ReplayAnalyzerConfig.builder()
                         .minimap(options.minimap, options.minimapStep)
@@ -125,21 +130,14 @@ public final class DumperPipeline {
                         .decodePackets(gameData != null)
                         .build());
         if (constants != null) analyzerBuilder.constantsProvider(constants);
-
-        // 如果有游戏数据，注入实体规范提供者以启用完整数据包解码
-        if (gameData != null) {
-            analyzerBuilder.specProvider(createSpecProvider(gameData));
-        }
+        analyzerBuilder.specProvider(specProvider);
 
         var analyzer = analyzerBuilder.build();
         var report = analyzer.buildReport(replay);
 
-        // 丰富提取：全量数据包遍历。优先使用完整实体规范，加载失败时回退到空规范
+        // 丰富提取：复用已加载的实体规范
         RichExtractor extractor;
         try {
-            var specProvider = gameData != null
-                ? createSpecProvider(gameData)
-                : com.wows.replay.spec.spi.EntitySpecProvider.empty();
             extractor = new RichExtractor(replay, specProvider);
             extractor.extract();
         } catch (Exception e) {
@@ -177,15 +175,6 @@ public final class DumperPipeline {
             }
         }
         return null;
-    }
-
-    /** 从游戏数据目录创建实体规范提供者。 */
-    private static XmlEntitySpecProvider createSpecProvider(Path gameData) {
-        return new XmlEntitySpecProvider(path -> {
-            var file = gameData.resolve(path);
-            if (!Files.exists(file)) throw new IOException("def file not found: " + path);
-            return Files.readAllBytes(file);
-        });
     }
 
     // ── JSON 构建 ────────────────────────────────────────────────────────────
