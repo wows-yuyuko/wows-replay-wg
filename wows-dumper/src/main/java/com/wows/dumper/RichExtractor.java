@@ -140,6 +140,9 @@ final class RichExtractor {
             if (processPacket(raw)) decodedPackets++;
         }
         finish();
+        System.err.println("[RichExtractor] CellPlayerCreate=" + cellPlayerCreateCount
+            + " VehicleCreate=" + vehicleCreateCount
+            + " metaPlayers=" + orderedMetaPlayers.size());
         System.err.println("[RichExtractor] 数据包: " + totalPackets + " 总计, "
             + decodedPackets + " 已解码, "
             + players.size() + " 玩家, "
@@ -264,6 +267,7 @@ final class RichExtractor {
     }
 
     private final Set<String> entityCreateTypes = new LinkedHashSet<>();
+    private int vehicleCreateCount = 0;
 
     private void handleEntityCreate(EntityCreatePacket ec) {
         int eid = ec.entityId().value();
@@ -272,6 +276,23 @@ final class RichExtractor {
         entityVehicle.put(eid, ec.vehicleId().value());
 
         if (type != null) entityCreateTypes.add(type);
+
+        // Vehicle owner → Avatar entity_id 映射
+        if ("Vehicle".equals(type)) {
+            vehicleCreateCount++;
+            ArgValue owner = ec.props().get("owner");
+            if (owner instanceof ArgValue.IntVal iv) {
+                int ownerEid = (int) iv.value();
+                // 如果 owner 尚未关联玩家，尝试按 Vehicle 出现顺序匹配
+                if (!entityToPlayer.containsKey(ownerEid)
+                    && vehicleCreateCount <= orderedMetaPlayers.size()) {
+                    var metaPlayer = orderedMetaPlayers.get(vehicleCreateCount - 1);
+                    entityToPlayer.put(ownerEid, metaPlayer);
+                    players.putIfAbsent(metaPlayer.dbId,
+                        new PlayerInfo(metaPlayer.username, ownerEid));
+                }
+            }
+        }
 
         // 记录位置
         if (ec.position() != null) {
