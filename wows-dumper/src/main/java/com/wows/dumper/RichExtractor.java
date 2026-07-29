@@ -165,31 +165,33 @@ final class RichExtractor {
 
     // ── 数据包处理器 ─────────────────────────────────────────────────────
 
-    private boolean basePlayerLogged = false;
+    private final Set<String> bpEntityTypes = new LinkedHashSet<>();
 
     private void handleBasePlayerCreate(BasePlayerCreatePacket bp) {
         int eid = bp.entityId().value();
-        entityTypes.put(eid, bp.entityType());
+        String entityType = bp.entityType();
+        entityTypes.put(eid, entityType);
 
         var props = bp.props();
-        if (props == null) return;
+        if (entityType != null) bpEntityTypes.add(entityType);
 
-        // 首次遇到时输出所有属性名，帮助诊断属性名不匹配问题
-        if (!basePlayerLogged) {
-            System.err.println("[RichExtractor] BasePlayerCreate(" + bp.entityType()
-                + ") 属性列表: " + props.keySet());
-            basePlayerLogged = true;
+        // 输出每个新实体类型的属性
+        if (props != null && !props.isEmpty()) {
+            System.err.println("[RichExtractor] BasePlayerCreate(" + entityType
+                + ") eid=" + eid + " 属性: " + props.keySet());
         }
 
         // 尝试多种可能的 db_id 属性名
-        ArgValue dbIdVal = findProp(props, "db_id", "databaseID", "dbid", "playerID");
-        if (dbIdVal instanceof ArgValue.IntVal iv) {
-            long dbId = iv.value();
-            ArgValue nameVal = findProp(props, "username", "name", "playerName");
-            String username = nameVal instanceof ArgValue.StrVal sv ? sv.value() : "";
+        if (props != null) {
+            ArgValue dbIdVal = findProp(props, "db_id", "databaseID", "dbid", "playerID");
+            if (dbIdVal instanceof ArgValue.IntVal iv) {
+                long dbId = iv.value();
+                ArgValue nameVal = findProp(props, "username", "name", "playerName");
+                String username = nameVal instanceof ArgValue.StrVal sv ? sv.value() : "";
 
-            entityToPlayer.put(eid, new PlayerLink(dbId, username));
-            players.putIfAbsent(dbId, new PlayerInfo(username, eid));
+                entityToPlayer.put(eid, new PlayerLink(dbId, username));
+                players.putIfAbsent(dbId, new PlayerInfo(username, eid));
+            }
         }
     }
 
@@ -202,13 +204,26 @@ final class RichExtractor {
         return null;
     }
 
+    private final Set<String> cpEntityTypes = new LinkedHashSet<>();
+
     private void handleCellPlayerCreate(CellPlayerCreatePacket cp) {
         int eid = cp.entityId().value();
-        entityTypes.putIfAbsent(eid, cp.entityType());
+        String entityType = cp.entityType();
+        entityTypes.putIfAbsent(eid, entityType);
         entityVehicle.put(eid, cp.vehicleId().value());
+
+        if (entityType != null) cpEntityTypes.add(entityType);
+
+        // 输出属性用于诊断
+        var props = cp.props();
+        if (props != null && !props.isEmpty() && cpEntityTypes.size() <= 3) {
+            System.err.println("[RichExtractor] CellPlayerCreate(" + entityType
+                + ") eid=" + eid + " vehicle=" + cp.vehicleId().value()
+                + " 属性: " + props.keySet());
+        }
     }
 
-    private boolean entityCreateLogged = false;
+    private final Set<String> entityCreateTypes = new LinkedHashSet<>();
 
     private void handleEntityCreate(EntityCreatePacket ec) {
         int eid = ec.entityId().value();
@@ -216,13 +231,7 @@ final class RichExtractor {
         entityTypes.put(eid, type);
         entityVehicle.put(eid, ec.vehicleId().value());
 
-        // 首次遇到 Avatar 时输出所有属性名
-        if (!entityCreateLogged && "Avatar".equals(type)) {
-            var props = ec.props();
-            System.err.println("[RichExtractor] EntityCreate(Avatar) 属性列表: "
-                + (props != null ? props.keySet() : "null"));
-            entityCreateLogged = true;
-        }
+        if (type != null) entityCreateTypes.add(type);
 
         // 记录位置
         if (ec.position() != null) {
@@ -231,6 +240,12 @@ final class RichExtractor {
 
         var props = ec.props();
         if (props == null) return;
+
+        // 输出前几个不同类型的属性
+        if (!props.isEmpty() && entityCreateTypes.add("logged:" + type)) {
+            System.err.println("[RichExtractor] EntityCreate(" + type
+                + ") 属性: " + props.keySet());
+        }
 
         // 提取 health / maxHealth / teamId / isAlive
         extractHealth(props, eid);
@@ -471,6 +486,11 @@ final class RichExtractor {
     // ── 终态处理 ──────────────────────────────────────────────────────────
 
     private void finish() {
+        // 输出诊断摘要
+        System.err.println("[RichExtractor] EntityTypes: BasePlayerCreate=" + bpEntityTypes
+            + ", CellPlayerCreate=" + cpEntityTypes
+            + ", EntityCreate=" + entityCreateTypes);
+
         // 从 BattleResults 中提取 matchResult / finishType（如果尚未设置）
         if (battleResultsJson != null && (matchResult == null || finishType == null)) {
             try {

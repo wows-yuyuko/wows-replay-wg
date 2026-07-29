@@ -585,7 +585,7 @@ public final class DumperPipeline {
             byte[] json = JsonMapper.getMapper().writeValueAsBytes(value);
             byte[] compressed = brotliCompress(json, quality);
             String b64 = Base64.getEncoder().encodeToString(compressed);
-            return JsonMapper.createObject().textNode(b64);
+            return JsonMapper.createObject().stringNode(b64);
         } catch (Exception e) {
             return JsonMapper.toTree(value);
         }
