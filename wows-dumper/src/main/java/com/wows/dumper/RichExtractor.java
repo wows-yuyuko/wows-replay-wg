@@ -102,8 +102,9 @@ final class RichExtractor {
     int minimapTickCounter = 0;
     final List<MinimapData.Frame> richMinimapFrames = new ArrayList<>();
 
-    /** vehicleId → (dbId, name) 从回放元数据构建 */
-    private final Map<Long, PlayerLink> metaPlayers = new LinkedHashMap<>();
+    /** 按 CellPlayerCreate 出现顺序匹配的玩家列表 */
+    private final List<PlayerLink> orderedMetaPlayers = new ArrayList<>();
+    private int cellPlayerCreateCount = 0;
 
     RichExtractor(ReplayFile replay, EntitySpecProvider specProvider) {
         this.replay = replay;
@@ -111,15 +112,14 @@ final class RichExtractor {
         this.battleStart = replay.battleStartClock();
         this.parser = new PacketParser(specProvider, version);
 
-        // 从回放元数据预加载所有玩家信息
+        // 从回放元数据预加载所有玩家信息（保持原始顺序）
         var vehicles = replay.meta().vehicles();
         if (vehicles != null) {
             for (var v : vehicles) {
-                metaPlayers.put(v.shipId().value(),
-                    new PlayerLink(v.id().value(), v.name()));
+                orderedMetaPlayers.add(new PlayerLink(v.id().value(), v.name()));
             }
         }
-        System.err.println("[RichExtractor] 元数据玩家: " + metaPlayers.size());
+        System.err.println("[RichExtractor] 元数据玩家: " + orderedMetaPlayers.size());
 
         int specCount = this.parser.specs() != null ? this.parser.specs().size() : 0;
         if (specCount == 0) {
@@ -229,12 +229,15 @@ final class RichExtractor {
 
         if (entityType != null) cpEntityTypes.add(entityType);
 
-        // 通过 vehicleId 匹配回放元数据中的玩家信息
-        var metaPlayer = metaPlayers.get(vehicleId);
-        if (metaPlayer != null) {
+        // 按 CellPlayerCreate 出现顺序匹配 meta.vehicles() 列表
+        if ("Avatar".equals(entityType) && cellPlayerCreateCount < orderedMetaPlayers.size()) {
+            var metaPlayer = orderedMetaPlayers.get(cellPlayerCreateCount++);
             entityToPlayer.putIfAbsent(eid, metaPlayer);
             players.putIfAbsent(metaPlayer.dbId,
                 new PlayerInfo(metaPlayer.username, eid));
+            System.err.println("[RichExtractor] 玩家 #" + (cellPlayerCreateCount - 1)
+                + ": eid=" + eid + " db_id=" + metaPlayer.dbId
+                + " name=" + metaPlayer.username);
         }
 
         // 输出属性用于诊断
