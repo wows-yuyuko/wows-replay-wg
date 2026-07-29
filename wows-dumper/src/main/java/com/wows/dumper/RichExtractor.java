@@ -180,19 +180,33 @@ final class RichExtractor {
     // ── 数据包处理器 ─────────────────────────────────────────────────────
 
     private final Set<String> bpEntityTypes = new LinkedHashSet<>();
+    private boolean componentDataDumped = false;
 
     private void handleBasePlayerCreate(BasePlayerCreatePacket bp) {
         int eid = bp.entityId().value();
         String entityType = bp.entityType();
         entityTypes.put(eid, entityType);
 
-        var props = bp.props();
         if (entityType != null) bpEntityTypes.add(entityType);
 
-        // 输出每个新实体类型的属性
+        var props = bp.props();
         if (props != null && !props.isEmpty()) {
             System.err.println("[RichExtractor] BasePlayerCreate(" + entityType
                 + ") eid=" + eid + " 属性: " + props.keySet());
+        }
+
+        // dump componentData 前200字节用于分析 pickle 格式
+        byte[] compData = bp.componentData();
+        if (!componentDataDumped && compData != null && compData.length > 0) {
+            componentDataDumped = true;
+            int dumpLen = Math.min(compData.length, 200);
+            var hex = new StringBuilder();
+            for (int i = 0; i < dumpLen; i++) {
+                hex.append(String.format("%02x ", compData[i] & 0xFF));
+                if ((i + 1) % 32 == 0) hex.append('\n');
+            }
+            System.err.println("[RichExtractor] BasePlayerCreate(" + entityType
+                + ") componentData[" + compData.length + "] 前" + dumpLen + "字节:\n" + hex);
         }
 
         // 尝试多种可能的 db_id 属性名
