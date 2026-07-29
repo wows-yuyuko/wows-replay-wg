@@ -508,7 +508,7 @@ final class RichExtractor {
                         pl != null ? (int) pl.dbId : 0, elapsed));
                 }
             }
-            case "onArenaStateReceived" -> {
+            case "onArenaStateReceived", "onNewPlayerSpawnedInBattle" -> {
                 // args: [arena_id: i64, team_build_type_id: i8, pre_battles_info: BLOB, player_states: BLOB, bot_states?: BLOB]
                 if (args.size() >= 4 && args.get(3) instanceof ArgValue.BlobVal blob) {
                     var arenaPlayers = PickleDecoder.parseArenaPlayers(blob.value());
