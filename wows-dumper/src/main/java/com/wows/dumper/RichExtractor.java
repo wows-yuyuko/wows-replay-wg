@@ -508,27 +508,16 @@ final class RichExtractor {
                         pl != null ? (int) pl.dbId : 0, elapsed));
                 }
             }
-            case "onArenaStateReceived", "onNewPlayerSpawnedInBattle" -> {
+            case "onArenaStateReceived" -> {
                 // args: [arena_id: i64, team_build_type_id: i8, pre_battles_info: BLOB, player_states: BLOB, bot_states?: BLOB]
                 if (args.size() >= 4 && args.get(3) instanceof ArgValue.BlobVal blob) {
-                    var arenaPlayers = PickleDecoder.parseArenaPlayers(blob.value());
-                    // 用 pickle 数据更新玩家映射
-                    for (var e : arenaPlayers.entityToDbId().entrySet()) {
-                        int entityId = e.getKey();
-                        long dbId = e.getValue();
-                        String name = arenaPlayers.dbIdToName().getOrDefault(dbId, "");
-                        int team = arenaPlayers.dbIdToTeam().getOrDefault(dbId, -1);
-
-                        var link = new PlayerLink(dbId, name);
-                        entityToPlayer.put(entityId, link);
-                        var existing = players.get(dbId);
-                        if (existing != null) {
-                            existing.entityId = entityId;
-                            existing.teamId = team;
-                        } else {
-                            players.put(dbId, new PlayerInfo(name, entityId));
-                        }
-                    }
+                    applyArenaPlayers(blob.value());
+                }
+            }
+            case "onNewPlayerSpawnedInBattle" -> {
+                // args: [playersData: BLOB, botsData?: BLOB, observersData?: BLOB]
+                if (!args.isEmpty() && args.getFirst() instanceof ArgValue.BlobVal blob) {
+                    applyArenaPlayers(blob.value());
                 }
             }
             case "receiveTeamScore" -> {
@@ -540,6 +529,31 @@ final class RichExtractor {
                 }
             }
         }
+    }
+
+    /** 应用 arena state pickle 数据更新玩家映射 */
+    private void applyArenaPlayers(byte[] pickledBlob) {
+        var arenaPlayers = PickleDecoder.parseArenaPlayers(pickledBlob);
+        int updated = 0;
+        for (var e : arenaPlayers.entityToDbId().entrySet()) {
+            int entityId = e.getKey();
+            long dbId = e.getValue();
+            String name = arenaPlayers.dbIdToName().getOrDefault(dbId, "");
+            int team = arenaPlayers.dbIdToTeam().getOrDefault(dbId, -1);
+
+            entityToPlayer.put(entityId, new PlayerLink(dbId, name));
+            var existing = players.get(dbId);
+            if (existing != null) {
+                existing.entityId = entityId;
+                existing.teamId = team;
+                updated++;
+            } else {
+                players.put(dbId, new PlayerInfo(name, entityId));
+                updated++;
+            }
+        }
+        System.err.println("[RichExtractor] ArenaState: 解析 " + arenaPlayers.entityToDbId().size()
+            + " 玩家, 更新 " + updated + " / 总玩家 " + players.size());
     }
 
     private void handleMap(MapPacket mp) {
