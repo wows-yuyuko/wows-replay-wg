@@ -394,7 +394,7 @@ public final class XmlDefParser {
     private List<MethodSpec> parseMethodList(Element root, String listName,
                                               Map<String, ArgType> aliases) {
         var listNode = childByName(root, listName);
-        if (listNode == null) return List.of();
+        if (listNode == null) return new ArrayList<>();
         var result = new ArrayList<MethodSpec>();
         int index = 0;
         for (var method : children(listNode)) {
