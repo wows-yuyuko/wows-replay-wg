@@ -200,9 +200,14 @@ public final class XmlDefParser {
             PropertyFlags.OTHER_CLIENTS, PropertyFlags.OWN_CLIENT,
             PropertyFlags.CELL_PUBLIC_AND_OWN);
 
-        if ("Avatar".equals(name)) {
-            System.err.println("[XmlDefParser] Avatar baseProps=" + baseProps.size()
+        if ("Avatar".equals(name) || "Account".equals(name)) {
+            System.err.println("[XmlDefParser] " + name + " baseProps=" + baseProps.size()
                 + " clientProps=" + clientProps.size() + " internalProps=" + internalProps.size());
+            if (name.equals("Account")) {
+                System.err.println("[XmlDefParser] Account allProperties=" + allProperties.size()
+                    + " (own=" + def.properties.size() + " inherited=" + inherited.properties.size() + ")");
+                System.err.println("[XmlDefParser] Account 继承接口: " + def.implements_);
+            }
         }
 
         // Sort by wire size
