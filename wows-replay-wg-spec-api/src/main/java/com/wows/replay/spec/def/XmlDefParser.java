@@ -127,8 +127,8 @@ public final class XmlDefParser {
 
     DefFile parseDefFile(String path, Map<String, ArgType> aliases) throws IOException {
         var doc = parseXml(loader.get(path));
-        var root = childByName(doc.getDocumentElement(), "root");
-        if (root == null) return new DefFile();
+        // doc.getDocumentElement() 就是 <root>，直接使用
+        var root = doc.getDocumentElement();
 
         var def = new DefFile();
         def.implements_ = parseImplements(root);
