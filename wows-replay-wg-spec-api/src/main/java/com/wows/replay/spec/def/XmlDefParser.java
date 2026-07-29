@@ -48,18 +48,39 @@ public final class XmlDefParser {
      * Loads alias.xml, entities.xml, and all referenced .def files.
      */
     public List<EntitySpec> parseAll(Version version) throws IOException {
-        var aliases = parseAliases();
-        var entityNames = parseEntityList();
-        var result = new ArrayList<EntitySpec>(entityNames.size());
+        Map<String, ArgType> aliases;
+        try {
+            aliases = parseAliases();
+        } catch (IOException e) {
+            System.err.println("[XmlDefParser] 错误：无法加载 scripts/entity_defs/alias.xml: " + e.getMessage());
+            throw e;
+        }
 
+        List<String> entityNames;
+        try {
+            entityNames = parseEntityList();
+        } catch (IOException e) {
+            System.err.println("[XmlDefParser] 错误：无法加载 scripts/entities.xml: " + e.getMessage());
+            throw e;
+        }
+
+        System.err.println("[XmlDefParser] 发现 " + entityNames.size() + " 个实体类型，开始加载 .def 文件...");
+
+        var result = new ArrayList<EntitySpec>(entityNames.size());
+        int skipped = 0;
         for (var name : entityNames) {
             try {
                 var def = parseDefFile("scripts/entity_defs/" + name + ".def", aliases);
                 result.add(resolveEntity(name, def, aliases));
             } catch (IOException e) {
-                // Some entities may not have .def files — skip
+                skipped++;
             }
         }
+
+        if (skipped > 0) {
+            System.err.println("[XmlDefParser] 跳过 " + skipped + " 个无法加载的 .def 文件");
+        }
+        System.err.println("[XmlDefParser] 成功加载 " + result.size() + " 个实体规范");
         return result;
     }
 

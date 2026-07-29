@@ -100,6 +100,13 @@ public final class DumperPipeline {
     private String dump(ReplayFile replay, Options options) {
         Path gameData = findGameData(replay);
 
+        if (gameData == null) {
+            System.err.println("[wows-dumper] 警告：未找到版本匹配的游戏数据目录 (base="
+                + gameDataBase + ", version=" + replay.meta().clientVersionFromExe() + ")");
+            System.err.println("[wows-dumper] 玩家/事件/占点等数据将为空。请确认 "
+                + gameDataBase + "/data-{version}/live/ 目录存在且包含 scripts/entity_defs/");
+        }
+
         // 加载 constants.json（显式路径优先）
         JsonConstantsProvider constants = null;
         if (options.constantsFile != null && Files.exists(options.constantsFile)) {
@@ -127,11 +134,19 @@ public final class DumperPipeline {
         var analyzer = analyzerBuilder.build();
         var report = analyzer.buildReport(replay);
 
-        // 丰富提取：全量数据包遍历。gameData 可用时加载完整实体规范；
-        // 否则使用空规范（仅解码 spec-independent 包，如 Map/Position/BattleResults）
-        RichExtractor extractor = new RichExtractor(replay,
-                gameData != null ? createSpecProvider(gameData) : com.wows.replay.spec.spi.EntitySpecProvider.empty());
-        extractor.extract();
+        // 丰富提取：全量数据包遍历。优先使用完整实体规范，加载失败时回退到空规范
+        RichExtractor extractor;
+        try {
+            var specProvider = gameData != null
+                ? createSpecProvider(gameData)
+                : com.wows.replay.spec.spi.EntitySpecProvider.empty();
+            extractor = new RichExtractor(replay, specProvider);
+            extractor.extract();
+        } catch (Exception e) {
+            System.err.println("[wows-dumper] 警告：实体规范加载失败，回退到空规范: " + e);
+            extractor = new RichExtractor(replay, com.wows.replay.spec.spi.EntitySpecProvider.empty());
+            extractor.extract();
+        }
 
         // 小地图提取
         MinimapData.MinimapOutput minimapOutput = null;

@@ -107,28 +107,45 @@ final class RichExtractor {
         this.version = replay.version();
         this.battleStart = replay.battleStartClock();
         this.parser = new PacketParser(specProvider, version);
+        int specCount = this.parser.specs() != null ? this.parser.specs().size() : 0;
+        if (specCount == 0) {
+            System.err.println("[RichExtractor] 警告：实体规范为空 — 玩家/事件/占点等数据将无法提取");
+        } else {
+            System.err.println("[RichExtractor] 已加载 " + specCount + " 个实体规范");
+        }
     }
 
     /** 遍历所有数据包，提取全部战斗数据。 */
     void extract() {
+        int totalPackets = 0;
+        int decodedPackets = 0;
         var iter = replay.packetIterator();
         while (iter.hasNext()) {
             var raw = iter.next();
-            processPacket(raw);
+            totalPackets++;
+            if (processPacket(raw)) decodedPackets++;
         }
-        // 最后一次遍历后填充终态
         finish();
+        System.err.println("[RichExtractor] 数据包: " + totalPackets + " 总计, "
+            + decodedPackets + " 已解码, "
+            + players.size() + " 玩家, "
+            + killEvents.size() + " 击杀, "
+            + damageEvents.size() + " 伤害, "
+            + consumableEvents.size() + " 消耗品, "
+            + chatEvents.size() + " 聊天");
     }
 
-    private void processPacket(RawPacket raw) {
+    /** @return true if packet was decoded (not unknown/invalid) */
+    private boolean processPacket(RawPacket raw) {
         float clock = raw.clock().seconds();
         float elapsed = clock - battleStart.seconds();
 
         var packet = parser.parse(raw);
-        if (packet == null) return;
+        if (packet == null) return false;
 
         Object payload = packet.payload();
-        if (payload instanceof Packet.InvalidPayload) return;
+        if (payload instanceof Packet.InvalidPayload) return false;
+        if (packet.packetType() == null) return false; // unknown type
 
         switch (payload) {
             case BasePlayerCreatePacket bp -> handleBasePlayerCreate(bp);
@@ -141,8 +158,9 @@ final class RichExtractor {
             case PositionPacket pos      -> handlePosition(pos, elapsed, raw);
             case EntityEnterPacket ee    -> { /* entity_id → space → vehicle */ }
             case EntityLeavePacket el    -> entityAlive.put(el.entityId().value(), false);
-            default -> {}
+            default -> { return false; }
         }
+        return true;
     }
 
     // ── 数据包处理器 ─────────────────────────────────────────────────────
