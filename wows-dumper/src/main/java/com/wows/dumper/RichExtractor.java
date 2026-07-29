@@ -102,11 +102,25 @@ final class RichExtractor {
     int minimapTickCounter = 0;
     final List<MinimapData.Frame> richMinimapFrames = new ArrayList<>();
 
+    /** vehicleId → (dbId, name) 从回放元数据构建 */
+    private final Map<Long, PlayerLink> metaPlayers = new LinkedHashMap<>();
+
     RichExtractor(ReplayFile replay, EntitySpecProvider specProvider) {
         this.replay = replay;
         this.version = replay.version();
         this.battleStart = replay.battleStartClock();
         this.parser = new PacketParser(specProvider, version);
+
+        // 从回放元数据预加载所有玩家信息
+        var vehicles = replay.meta().vehicles();
+        if (vehicles != null) {
+            for (var v : vehicles) {
+                metaPlayers.put(v.shipId().value(),
+                    new PlayerLink(v.id().value(), v.name()));
+            }
+        }
+        System.err.println("[RichExtractor] 元数据玩家: " + metaPlayers.size());
+
         int specCount = this.parser.specs() != null ? this.parser.specs().size() : 0;
         if (specCount == 0) {
             System.err.println("[RichExtractor] 警告：实体规范为空 — 玩家/事件/占点等数据将无法提取");
@@ -210,15 +224,24 @@ final class RichExtractor {
         int eid = cp.entityId().value();
         String entityType = cp.entityType();
         entityTypes.putIfAbsent(eid, entityType);
-        entityVehicle.put(eid, cp.vehicleId().value());
+        long vehicleId = cp.vehicleId().value();
+        entityVehicle.put(eid, vehicleId);
 
         if (entityType != null) cpEntityTypes.add(entityType);
+
+        // 通过 vehicleId 匹配回放元数据中的玩家信息
+        var metaPlayer = metaPlayers.get(vehicleId);
+        if (metaPlayer != null) {
+            entityToPlayer.putIfAbsent(eid, metaPlayer);
+            players.putIfAbsent(metaPlayer.dbId,
+                new PlayerInfo(metaPlayer.username, eid));
+        }
 
         // 输出属性用于诊断
         var props = cp.props();
         if (props != null && !props.isEmpty() && cpEntityTypes.size() <= 3) {
             System.err.println("[RichExtractor] CellPlayerCreate(" + entityType
-                + ") eid=" + eid + " vehicle=" + cp.vehicleId().value()
+                + ") eid=" + eid + " vehicle=" + vehicleId
                 + " 属性: " + props.keySet());
         }
     }
