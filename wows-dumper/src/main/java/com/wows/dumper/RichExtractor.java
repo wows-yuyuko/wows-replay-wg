@@ -147,7 +147,9 @@ final class RichExtractor {
         finish();
         System.err.println("[RichExtractor] CellPlayerCreate=" + cellPlayerCreateCount
             + " VehicleCreate=" + vehicleCreateCount
-            + " metaPlayers=" + metaPlayers.size());
+            + " metaPlayers=" + metaPlayers.size()
+            + " vehicleToOwner=" + vehicleToOwner.size());
+        System.err.println("[RichExtractor] 所有 EntityMethod(" + seenMethods.size() + "): " + seenMethods);
         System.err.println("[RichExtractor] 数据包: " + totalPackets + " 总计, "
             + decodedPackets + " 已解码, "
             + players.size() + " 玩家, "
@@ -287,12 +289,12 @@ final class RichExtractor {
         if (type != null) entityCreateTypes.add(type);
 
         // Vehicle owner → Avatar entity_id 映射
-        // shipConfig 是二进制 BLOB，无法直接提取 shipId
         if ("Vehicle".equals(type)) {
             vehicleCreateCount++;
             ArgValue owner = ec.props().get("owner");
             if (owner instanceof ArgValue.IntVal iv) {
                 int ownerEid = (int) iv.value();
+                vehicleToOwner.put(eid, ownerEid); // Vehicle eid → Avatar eid
                 entityTypes.putIfAbsent(ownerEid, "Avatar");
             }
         }
@@ -432,20 +434,16 @@ final class RichExtractor {
     }
 
     private final Set<String> seenMethods = new LinkedHashSet<>();
-    private boolean methodDebugLogged = false;
+    /** Vehicle entity_id → Avatar entity_id (owner) */
+    private final Map<Integer, Integer> vehicleToOwner = new HashMap<>();
 
     private void handleEntityMethod(EntityMethodPacket em, float elapsed) {
         int eid = em.entityId().value();
         String method = em.method();
         List<ArgValue> args = em.args();
 
-        // 收集前 50 个不同方法名用于诊断
-        if (seenMethods.size() < 50) seenMethods.add(method);
-        if (!methodDebugLogged && seenMethods.size() >= 20) {
-            System.err.println("[RichExtractor] 前 " + seenMethods.size()
-                + " 个 EntityMethod: " + seenMethods);
-            methodDebugLogged = true;
-        }
+        // 收集所有方法名
+        seenMethods.add(method);
 
         switch (method) {
             case "receiveDamagesOnShip" -> {
@@ -453,25 +451,31 @@ final class RichExtractor {
                     for (ArgValue elem : arr.elements()) {
                         if (elem instanceof ArgValue.DictVal dict) {
                             var d = dict.entries();
-                            int aggressor = intFromArg(d.get("vehicleID"));
+                            int aggressorVe = intFromArg(d.get("vehicleID"));
+                            int aggressorAv = vehicleToOwner.getOrDefault(aggressorVe, aggressorVe);
                             float amount = floatFromArg(d.get("damage"));
-                            damageEvents.add(new DamageEvent(elapsed, aggressor, eid, amount));
+                            damageEvents.add(new DamageEvent(elapsed, aggressorAv, eid, amount));
                         }
                     }
                 }
             }
             case "receiveVehicleDeath" -> {
                 if (args.size() >= 2) {
-                    int victim = intFromArg(args.get(0));
-                    int killer = intFromArg(args.get(1));
+                    int victimVe = intFromArg(args.get(0));
+                    int killerVe = intFromArg(args.get(1));
                     int cause = args.size() >= 3 ? intFromArg(args.get(2)) : 0;
-                    var kl = entityToPlayer.get(killer);
-                    var vl = entityToPlayer.get(victim);
-                    killEvents.add(new KillEvent(elapsed, killer, victim,
+
+                    // 通过 vehicle→owner→player 链解析
+                    int victimAv = vehicleToOwner.getOrDefault(victimVe, victimVe);
+                    int killerAv = vehicleToOwner.getOrDefault(killerVe, killerVe);
+                    var kl = entityToPlayer.get(killerAv);
+                    var vl = entityToPlayer.get(victimAv);
+
+                    killEvents.add(new KillEvent(elapsed, killerAv, victimAv,
                         kl != null ? kl.dbId : 0, kl != null ? kl.username : "",
                         vl != null ? vl.dbId : 0, vl != null ? vl.username : "",
                         cause));
-                    entityAlive.put(victim, false);
+                    entityAlive.put(victimVe, false);
                 }
             }
             case "receiveBattleChatMessage" -> {
