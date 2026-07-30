@@ -97,6 +97,7 @@ public class PacketParser {
             case CAMERA_FREE_LOOK     -> parseCameraFreeLook(raw);
             case INIT_FLAG            -> parseInitFlag(raw);
             case INIT_MARKER          -> Packet.fromRaw(raw, "init_marker", new byte[0]);
+            case UNKNOWN_0X2E         -> Packet.fromRaw(raw, raw.payload(), new byte[0]);
             case BASE_PLAYER_CREATE   -> parseBasePlayerCreate(raw);
             case BASE_PLAYER_CREATE_STUB -> parseBasePlayerCreateStub(raw);
             case CELL_PLAYER_CREATE   -> parseCellPlayerCreate(raw);

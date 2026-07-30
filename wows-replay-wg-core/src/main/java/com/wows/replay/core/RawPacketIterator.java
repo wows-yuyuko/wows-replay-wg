@@ -2,6 +2,7 @@ package com.wows.replay.core;
 
 import com.wows.replay.core.types.GameClock;
 import com.wows.replay.core.types.Version;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -18,10 +19,14 @@ import java.util.NoSuchElementException;
  *
  * <p>Thread-safe: each call to {@link #next()} advances the internal position.</p>
  */
+@Slf4j
 public class RawPacketIterator implements Iterator<RawPacket> {
 
     /** Minimum packet header size: size(u32) + type(u32) + clock(f32) = 12 bytes */
     private static final int HEADER_SIZE = 12;
+
+    /** Any rawType above this is treated as suspicious corruption. */
+    private static final int MAX_VALID_TYPE = 0x100;
 
     private final ByteBuffer buffer;
     private final Version version;
@@ -58,12 +63,24 @@ public class RawPacketIterator implements Iterator<RawPacket> {
         }
 
         try {
+            int headerPos = buffer.position();          // position BEFORE reading size
             int packetSize = buffer.getInt();          // u32 little-endian
             int rawType = buffer.getInt();              // u32 little-endian
             float rawClock = buffer.getFloat();         // f32 little-endian
 
+            // ── Diagnostic: suspicious type ID ──────────────────────────
+            if (rawType < 0 || rawType > MAX_VALID_TYPE) {
+                log.warn(
+                    "Corrupt header at byte offset {} ({} remaining): size={} type=0x{} clock={}",
+                    headerPos, buffer.remaining() + HEADER_SIZE,
+                    packetSize, Integer.toHexString(rawType), rawClock);
+                // Don't stop — let the guard below handle it
+            }
+
             // Guard against corrupt data
             if (packetSize < 0 || packetSize > buffer.remaining()) {
+                log.warn("Bad packetSize={} at offset={}, {} bytes remaining — stopping iteration",
+                    packetSize, headerPos, buffer.remaining());
                 done = true;
                 nextPacket = null;
                 nextReady = true;
@@ -81,6 +98,7 @@ public class RawPacketIterator implements Iterator<RawPacket> {
 
             nextPacket = new RawPacket(packetSize, rawType, typeId, new GameClock(rawClock), payload);
         } catch (Exception e) {
+            log.warn("Packet parse error at buffer pos={}: {}", buffer.position(), e.getMessage());
             done = true;
             nextPacket = null;
         }

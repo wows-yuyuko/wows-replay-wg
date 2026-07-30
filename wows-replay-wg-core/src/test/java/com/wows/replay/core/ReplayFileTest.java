@@ -28,6 +28,8 @@ class ReplayFileTest {
     /** Path relative to project root. */
     private static final String REPLAY_PATH =
         "temp/wg_15.6/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
+    private static final String REPLAY_PATH2 =
+            "temp/wg_15.6/20260730_013138_PASB720-Rhode-Island_56_AngelWings.wowsreplay";
     private static final String WOWS_DATA_PATH =
             "temp/wows-data";
 
@@ -104,8 +106,17 @@ class ReplayFileTest {
         while (iter2.hasNext()) {
             var raw = iter2.next();
             if (raw.isUnknown()) {
-                // collect unknown raw type IDs before parser returns Packet.unknown
                 unknownIds.merge(raw.rawType(), 1, Integer::sum);
+                // Dump payload for unknown types
+                if (raw.rawType() == 0x2e) {
+                    log.info("0x2e payload[{}]: {}", raw.payload().length, hexDump(raw.payload(), 64));
+                }
+                if (raw.rawType() == -1) {
+                    log.warn("Corrupt packet at clock={}: size={} type=0x{} payload[{}]\n  hex: {}",
+                        raw.clock().seconds(), raw.packetSize(),
+                        Integer.toHexString(raw.rawType()),
+                        raw.payload().length, hexDump(raw.payload(), 128));
+                }
             }
             var pkt = parser.parse(raw);
             if (pkt.payload() instanceof Packet.InvalidPayload) {
@@ -140,6 +151,17 @@ class ReplayFileTest {
             }
         }
         return null;
+    }
+
+    private static String hexDump(byte[] data, int maxLen) {
+        int len = Math.min(data.length, maxLen);
+        var sb = new StringBuilder(len * 3);
+        for (int i = 0; i < len; i++) {
+            sb.append(String.format("%02x ", data[i] & 0xFF));
+            if ((i + 1) % 32 == 0 && i + 1 < len) sb.append('\n');
+        }
+        if (data.length > maxLen) sb.append("... (").append(data.length).append(" bytes total)");
+        return sb.toString();
     }
 
     // ── Error handling ───────────────────────────────────────────────────────

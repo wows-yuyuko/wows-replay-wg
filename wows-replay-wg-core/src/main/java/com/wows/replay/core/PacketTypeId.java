@@ -45,6 +45,14 @@ public enum PacketTypeId {
     MAP(0x28),
     NON_VOLATILE_POSITION(0x2a),
     PLAYER_ORIENTATION(0x2c),
+    /**
+     * Unknown packet type introduced by WG after 15.0.
+     *
+     * <p>Payload is always 8 bytes: {@code [entity_id: u32 LE][value: u32 LE]}.
+     * Not yet seen in wows-toolkit or replays_unpack mappings.
+     * Tentatively decoded as BLOB until the semantics are identified.</p>
+     */
+    UNKNOWN_0X2E(0x2e),
     CAMERA_FREE_LOOK(0x2f),
     SET_WEAPON_LOCK(0x30),
     SUB_CONTROLLER(0x31),
