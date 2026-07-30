@@ -136,6 +136,7 @@ final class PickleDecoder {
                 }
                 case 'U': { // SHORT_BINSTRING
                     int len = data[pos++] & 0xFF;
+                    if (len < 0 || pos + len > data.length) { stack.add("[invalid]"); break; }
                     var s = new String(data, pos, len, StandardCharsets.UTF_8);
                     pos += len;
                     stack.add(s);
@@ -143,21 +144,23 @@ final class PickleDecoder {
                 }
                 case 'T': { // BINUNICODE
                     int len = readInt32();
+                    if (len < 0 || pos + len > data.length || len > 100_000_000) { stack.add("[invalid]"); break; }
                     var s = new String(data, pos, len, StandardCharsets.UTF_8);
                     pos += len;
                     stack.add(s);
                     break;
                 }
                 case 'S': { // STRING (quoted string)
+                    if (pos >= data.length) break;
                     char quote = (char) data[pos++];
                     var sb = new StringBuilder();
                     while (pos < data.length) {
                         byte b = data[pos++];
-                        if (b == '\\') { sb.append((char) data[pos++]); }
+                        if (b == '\\' && pos < data.length) { sb.append((char) data[pos++]); }
                         else if (b == quote) break;
                         else sb.append((char) b);
                     }
-                    pos++; // skip \n
+                    if (pos < data.length) pos++; // skip \n
                     stack.add(sb.toString());
                     break;
                 }

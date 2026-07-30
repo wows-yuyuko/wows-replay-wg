@@ -664,8 +664,26 @@ public class BattleWorld {
             return;
         }
 
-        // Try PickleDecoder — many nested property updates use pickle internally
-        Object decoded = PickleDecoder.decode(raw);
+        // Only try PickleDecoder if the data looks like pickle
+        // (valid pickle starts with 0x80, '(', ']', 'K', 'J', 'M', 'U', 'T', 'S', 'N', 'G', 'F', 'I', '{', or '}')
+        if (raw.length == 0) return;
+        int first = raw[0] & 0xFF;
+        if (first != 0x80 && first != '(' && first != ']' && first != 'K'
+            && first != 'J' && first != 'M' && first != 'U' && first != 'T'
+            && first != 'S' && first != 'N' && first != 'G' && first != 'F'
+            && first != 'I' && first != '{' && first != '}' && first != '.'
+            && first != 'e' && first != 'a' && first != 't' && first != 'r'
+            && first != 'u' && first != 'q' && first != 'h' && first != '0') {
+            return;
+        }
+
+        Object decoded;
+        try {
+            decoded = PickleDecoder.decode(raw);
+        } catch (Exception e) {
+            log.debug("PropertyUpdate pickle decode failed: {}", e.getMessage());
+            return;
+        }
         if (decoded == null) return;
 
         // Handle known patterns
