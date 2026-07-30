@@ -23,9 +23,6 @@
             <groupId>com.wows</groupId>
             <artifactId>wows-replay-wg-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.wows</groupId>
-            <artifactId>wows-replay-wg-packets</artifactId>
-        </dependency>
+
     </dependencies>
 </project>

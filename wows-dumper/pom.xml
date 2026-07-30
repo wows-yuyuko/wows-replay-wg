@@ -23,10 +23,7 @@
             <groupId>com.wows</groupId>
             <artifactId>wows-replay-wg-analyzer</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.wows</groupId>
-            <artifactId>wows-replay-wg-packets</artifactId>
-        </dependency>
+
 
         <!-- Brotli 压缩（对标 Rust brotli crate）。
              如果下载失败可暂时注释此依赖，DumperPipeline 会自动回退。 -->

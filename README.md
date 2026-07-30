@@ -7,8 +7,7 @@ World of Warships WG (Wargaming) 服务器回放文件解析库 — 纯 Java 实
 | 模块 | 职责 |
 |------|------|
 | **wows-replay-wg-spec-api** | 基础类型 (EntityId, GameClock, Version...)、RPC 类型系统 (ArgType/ArgValue)、EntitySpec 定义、抽象接口 (EntitySpecProvider / GameParamProvider / GameConstantsProvider) |
-| **wows-replay-wg-core** | 回放文件 I/O → Blowfish-CBC 解密 → zlib 解压 → 原始包流迭代 (ReplayFile, RawPacketIterator, PacketTypeId) |
-| **wows-replay-wg-packets** | 30+ 包类型定义 (PositionPacket, EntityCreatePacket, CameraPacket...) + 基于 EntitySpec 的载荷解码器 (PacketParser) |
+| **wows-replay-wg-core** | 回放文件 I/O → Blowfish-CBC 解密 → zlib 解压 → 原始包流迭代 (ReplayFile, RawPacketIterator, PacketTypeId) + 30+ 包类型定义 (PositionPacket, EntityCreatePacket, CameraPacket...) + 基于 EntitySpec 的载荷解码器 (PacketParser) |
 | **wows-replay-wg-analyzer** | 高层分析 + JSON 报告生成 (ReplayAnalyzer, BattleReport) |
 
 ## 依赖关系
@@ -16,11 +15,9 @@ World of Warships WG (Wargaming) 服务器回放文件解析库 — 纯 Java 实
 ```
 wows-replay-wg-spec-api   (无内部依赖，仅 Jackson 3)
     ↑
-wows-replay-wg-core       (依赖 spec-api)
+wows-replay-wg-core       (依赖 spec-api, 含 packets 解码)
     ↑
-wows-replay-wg-packets    (依赖 spec-api + core)
-    ↑
-wows-replay-wg-analyzer   (依赖所有)
+wows-replay-wg-analyzer   (依赖 core)
 ```
 
 ## 快速开始
