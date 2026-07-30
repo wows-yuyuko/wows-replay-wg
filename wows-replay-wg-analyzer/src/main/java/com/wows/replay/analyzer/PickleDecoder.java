@@ -1,4 +1,4 @@
-package com.wows.dumper;
+package com.wows.replay.analyzer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

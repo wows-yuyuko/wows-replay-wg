@@ -1,4 +1,4 @@
-package com.wows.dumper;
+package com.wows.replay.analyzer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

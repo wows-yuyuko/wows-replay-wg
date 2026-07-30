@@ -445,13 +445,16 @@ public class PacketParser {
             }
             var methodSpec = spec.clientMethods().get(methodId);
 
-            var args = new ArrayList<ArgValue>();
+            var argNames = new ArrayList<String>();
+            var argValues = new ArrayList<ArgValue>();
             for (int i = 0; i < methodSpec.args().size() && buf.hasRemaining(); i++) {
                 var argSpec = methodSpec.args().get(i);
-                args.add(parseValue(buf, argSpec.argType()));
+                argNames.add(argSpec.name());
+                argValues.add(parseValue(buf, argSpec.argType()));
             }
 
-            return Packet.fromRaw(raw, new EntityMethodPacket(eid, methodSpec.name(), args), remaining(raw, buf));
+            return Packet.fromRaw(raw, new EntityMethodPacket(eid, methodSpec.name(),
+                new NamedArgs(argNames, argValues)), remaining(raw, buf));
         } catch (Exception e) {
             return Packet.invalid(raw, "EntityMethod parse error: " + e.getMessage());
         }

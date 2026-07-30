@@ -3,6 +3,8 @@ package com.wows.dumper;
 import com.wows.replay.analyzer.BattleReport;
 import com.wows.replay.analyzer.ReplayAnalyzer;
 import com.wows.replay.analyzer.ReplayAnalyzerConfig;
+import com.wows.replay.analyzer.MinimapData;
+import com.wows.replay.analyzer.RichExtractor;
 import com.wows.replay.core.*;
 import com.wows.replay.gamedata.GameDataCache;
 import com.wows.replay.gamedata.XmlEntitySpecProvider;
@@ -273,13 +275,14 @@ public final class DumperPipeline {
             initial.put("username", mp.name());
             if (info != null && info.teamId >= 0) initial.put("team_id", info.teamId);
 
-            Float health = ext.entityHealth.get(eid);
+            var es = ext.entities.get(eid);
+            Float health = es != null && es.health > 0 ? es.health : null;
             if (health != null) initial.put("health", health);
-            Float maxHealth = ext.entityMaxHealth.get(eid);
+            Float maxHealth = es != null && es.maxHealth > 0 ? es.maxHealth : null;
             if (maxHealth != null) initial.put("max_health", maxHealth);
-            Boolean alive = ext.entityAlive.get(eid);
+            Boolean alive = es != null ? es.isAlive : null;
             if (alive != null) initial.put("is_alive", alive);
-            String type = ext.entityTypes.get(eid);
+            String type = es != null ? es.type : null;
             if (type != null) initial.put("entity_type", type);
 
             // 消费品 / 击杀时间线

@@ -1,9 +1,10 @@
-package com.wows.dumper;
+package com.wows.replay.analyzer;
 
 import com.wows.replay.core.*;
 import com.wows.replay.packets.*;
 import com.wows.replay.core.rpc.ArgValue;
 import com.wows.replay.core.spi.EntitySpecProvider;
+import com.wows.replay.packets.NamedArgs;
 import com.wows.replay.core.types.EntityId;
 import com.wows.replay.core.types.GameClock;
 import com.wows.replay.core.types.Version;
@@ -34,71 +35,54 @@ import java.util.function.Function;
  * </ul>
  */
 @Slf4j
-final class RichExtractor {
+public final class RichExtractor {
 
     private final ReplayFile replay;
     private final PacketParser parser;
     private final Version version;
     private final GameClock battleStart;
 
-    // ── 实体→玩家映射 ────────────────────────────────────────────────────
-    /** entity_id → (db_id, username) */
-    final Map<Integer, PlayerLink> entityToPlayer = new LinkedHashMap<>();
+    // ── 实体状态（聚合） ──────────────────────────────────────────────────
+    /** entity_id → EntityState */
+    public final Map<Integer, EntityState> entities = new HashMap<>();
 
-    // ── 实体状态 ──────────────────────────────────────────────────────────
-    /** entity_id → entity_type */
-    final Map<Integer, String> entityTypes = new HashMap<>();
-    /** entity_id → health */
-    final Map<Integer, Float> entityHealth = new HashMap<>();
-    /** entity_id → maxHealth */
-    final Map<Integer, Float> entityMaxHealth = new HashMap<>();
-    /** entity_id → teamId */
-    final Map<Integer, Integer> entityTeam = new HashMap<>();
-    /** entity_id → isAlive */
-    final Map<Integer, Boolean> entityAlive = new HashMap<>();
-    /** entity_id → isInvisible */
-    final Map<Integer, Boolean> entityInvisible = new HashMap<>();
-    /** entity_id → position (x, y, z) */
-    final Map<Integer, float[]> entityPositions = new HashMap<>();
-    /** entity_id → heading (yaw) */
-    final Map<Integer, Float> entityHeadings = new HashMap<>();
-    /** entity_id → vehicleId */
-    final Map<Integer, Long> entityVehicle = new HashMap<>();
+    /** entity_id → (db_id, username) */
+    public final Map<Integer, PlayerLink> entityToPlayer = new LinkedHashMap<>();
 
     // ── 提取的数据 ────────────────────────────────────────────────────────
 
-    String arenaId;
-    String mapName;
-    long mapArenaId; // from Map packet
+    public String arenaId;
+    public String mapName;
+    public long mapArenaId; // from Map packet
 
-    final List<DamageEvent> damageEvents = new ArrayList<>();
-    final List<KillEvent> killEvents = new ArrayList<>();
-    final List<ChatEvent> chatEvents = new ArrayList<>();
-    final List<ConsumableEvent> consumableEvents = new ArrayList<>();
-    final List<ScoreEvent> scoreEvents = new ArrayList<>();
-    final List<CapturePointEvent> cpEvents = new ArrayList<>();
-    final List<MinimapFrame> minimapFrames = new ArrayList<>();
+    public final List<DamageEvent> damageEvents = new ArrayList<>();
+    public final List<KillEvent> killEvents = new ArrayList<>();
+    public final List<ChatEvent> chatEvents = new ArrayList<>();
+    public final List<ConsumableEvent> consumableEvents = new ArrayList<>();
+    public final List<ScoreEvent> scoreEvents = new ArrayList<>();
+    public final List<CapturePointEvent> cpEvents = new ArrayList<>();
+    public final List<MinimapFrame> minimapFrames = new ArrayList<>();
 
-    final Map<Integer, CpState> cpStates = new HashMap<>(); // cpIndex → state
-    final Map<Integer, Long> teamScores = new HashMap<>();   // teamIndex → score
+    public final Map<Integer, CpState> cpStates = new HashMap<>(); // cpIndex → state
+    public final Map<Integer, Long> teamScores = new HashMap<>();   // teamIndex → score
 
-    final List<BuildingInfo> buildings = new ArrayList<>();
-    final List<WeatherZoneInfo> weatherZones = new ArrayList<>();
-    final List<BuffZoneInfo> buffZones = new ArrayList<>();
-    final List<CapturedBuffInfo> capturedBuffs = new ArrayList<>();
+    public final List<BuildingInfo> buildings = new ArrayList<>();
+    public final List<WeatherZoneInfo> weatherZones = new ArrayList<>();
+    public final List<BuffZoneInfo> buffZones = new ArrayList<>();
+    public final List<CapturedBuffInfo> capturedBuffs = new ArrayList<>();
 
-    String battleResultsJson;
-    String finishType;
-    String matchResult;
-    Float maxDuration;
-    Float playedDuration;
-    Float extraDuration;
+    public String battleResultsJson;
+    public String finishType;
+    public String matchResult;
+    public Float maxDuration;
+    public Float playedDuration;
+    public Float extraDuration;
 
     // 玩家信息：db_id → (username, entity_id)
-    final Map<Long, PlayerInfo> players = new LinkedHashMap<>();
+    public final Map<Long, PlayerInfo> players = new LinkedHashMap<>();
 
     // 实体规格名称 → 参数ID 映射（用于 resolve_ids）
-    final Map<Long, String> paramNames = new HashMap<>();
+    public final Map<Long, String> paramNames = new HashMap<>();
 
     // ── 小地图提取 ────────────────────────────────────────────────────────
     int minimapTickCounter = 0;
@@ -109,7 +93,7 @@ final class RichExtractor {
     public final List<MetaPlayer> metaPlayers = new ArrayList<>();
     private int cellPlayerCreateCount = 0;
 
-    RichExtractor(ReplayFile replay, EntitySpecProvider specProvider) {
+    public RichExtractor(ReplayFile replay, EntitySpecProvider specProvider) {
         this.replay = replay;
         this.version = replay.version();
         this.battleStart = replay.battleStartClock();
@@ -137,7 +121,7 @@ final class RichExtractor {
     }
 
     /** 遍历所有数据包，提取全部战斗数据。 */
-    void extract() {
+    public void extract() {
         int totalPackets = 0;
         int decodedPackets = 0;
         var iter = replay.packetIterator();
@@ -177,7 +161,7 @@ final class RichExtractor {
             case BattleResultsPacket br  -> battleResultsJson = br.json();
             case PositionPacket pos      -> handlePosition(pos, elapsed, raw);
             case EntityEnterPacket ee    -> { /* entity_id → space → vehicle */ }
-            case EntityLeavePacket el    -> entityAlive.put(el.entityId().value(), false);
+            case EntityLeavePacket el    -> getOrCreate(el.entityId().value(), null).isAlive = false;
             default -> { return false; }
         }
         return true;
@@ -191,7 +175,7 @@ final class RichExtractor {
     private void handleBasePlayerCreate(BasePlayerCreatePacket bp) {
         int eid = bp.entityId().value();
         String entityType = bp.entityType();
-        entityTypes.put(eid, entityType);
+        getOrCreate(eid, entityType);
 
         if (entityType != null) bpEntityTypes.add(entityType);
 
@@ -242,9 +226,9 @@ final class RichExtractor {
     private void handleCellPlayerCreate(CellPlayerCreatePacket cp) {
         int eid = cp.entityId().value();
         String entityType = cp.entityType();
-        entityTypes.putIfAbsent(eid, entityType);
+        getOrCreate(eid, entityType);
         long vehicleId = cp.vehicleId().value();
-        entityVehicle.put(eid, vehicleId);
+        getOrCreate(eid, null).vehicleId = vehicleId;
 
         if (entityType != null) cpEntityTypes.add(entityType);
 
@@ -276,8 +260,8 @@ final class RichExtractor {
     private void handleEntityCreate(EntityCreatePacket ec) {
         int eid = ec.entityId().value();
         String type = ec.entityType();
-        entityTypes.put(eid, type);
-        entityVehicle.put(eid, ec.vehicleId().value());
+        getOrCreate(eid, type);
+        getOrCreate(eid, null).vehicleId = ec.vehicleId().value();
 
         if (type != null) entityCreateTypes.add(type);
 
@@ -288,13 +272,16 @@ final class RichExtractor {
             if (owner instanceof ArgValue.IntVal iv) {
                 int ownerEid = (int) iv.value();
                 vehicleToOwner.put(eid, ownerEid); // Vehicle eid → Avatar eid
-                entityTypes.putIfAbsent(ownerEid, "Avatar");
+                getOrCreate(ownerEid, "Avatar");
             }
         }
 
         // 记录位置
         if (ec.position() != null) {
-            entityPositions.put(eid, new float[]{ec.position().x(), ec.position().y(), ec.position().z()});
+            var es = getOrCreate(eid, null);
+            es.x = ec.position().x();
+            es.y = ec.position().y();
+            es.z = ec.position().z();
         }
 
         var props = ec.props();
@@ -388,16 +375,16 @@ final class RichExtractor {
 
         switch (prop) {
             case "health" -> {
-                if (val instanceof ArgValue.FloatVal fv) entityHealth.put(eid, (float) fv.value());
-                else if (val instanceof ArgValue.IntVal iv) entityHealth.put(eid, (float) iv.value());
+                if (val instanceof ArgValue.FloatVal fv) getOrCreate(eid, null).health = (float) fv.value();
+                else if (val instanceof ArgValue.IntVal iv) getOrCreate(eid, null).health = (float) iv.value();
             }
             case "maxHealth" -> {
-                if (val instanceof ArgValue.FloatVal fv) entityMaxHealth.put(eid, (float) fv.value());
-                else if (val instanceof ArgValue.IntVal iv) entityMaxHealth.put(eid, (float) iv.value());
+                if (val instanceof ArgValue.FloatVal fv) getOrCreate(eid, null).maxHealth = (float) fv.value();
+                else if (val instanceof ArgValue.IntVal iv) getOrCreate(eid, null).maxHealth = (float) iv.value();
             }
             case "teamId" -> {
                 int tid = intFromArg(val);
-                entityTeam.put(eid, tid);
+                getOrCreate(eid, null).teamId = tid;
                 // 更新玩家信息中的 teamId
                 var pl = entityToPlayer.get(eid);
                 if (pl != null) {
@@ -405,8 +392,8 @@ final class RichExtractor {
                     if (pi != null) pi.teamId = tid;
                 }
             }
-            case "isAlive" -> entityAlive.put(eid, intFromArg(val) != 0);
-            case "isInvisible" -> entityInvisible.put(eid, intFromArg(val) != 0);
+            case "isAlive" -> getOrCreate(eid, null).isAlive = intFromArg(val) != 0;
+            case "isInvisible" -> getOrCreate(eid, null).isInvisible = intFromArg(val) != 0;
             case "maxDuration" -> {
                 if (val instanceof ArgValue.FloatVal fv) maxDuration = (float) fv.value();
             }
@@ -429,97 +416,121 @@ final class RichExtractor {
     /** Vehicle entity_id → Avatar entity_id (owner) */
     private final Map<Integer, Integer> vehicleToOwner = new HashMap<>();
 
+    /** Method name → handler. 新增方法只需加一行映射。 */
+    @FunctionalInterface
+    private interface MethodHandler {
+        void handle(int eid, NamedArgs args, float elapsed);
+    }
+
+    private final Map<String, MethodHandler> methodHandlers = new LinkedHashMap<>();
+    {
+        methodHandlers.put("receiveDamagesOnShip",      this::handleDamage);
+        methodHandlers.put("receiveVehicleDeath",       this::handleKill);
+        methodHandlers.put("onChatMessage",              this::handleChat);
+        methodHandlers.put("onConsumableUsed",           this::handleConsumable);
+        methodHandlers.put("onArenaStateReceived",       this::handleArenaState);
+        methodHandlers.put("onNewPlayerSpawnedInBattle", this::handleNewPlayer);
+    }
+
     private void handleEntityMethod(EntityMethodPacket em, float elapsed) {
         int eid = em.entityId().value();
         String method = em.method();
-        List<ArgValue> args = em.args();
-
-        // 收集所有方法名
+        NamedArgs args = em.args();
         seenMethods.add(method);
 
-        switch (method) {
-            case "receiveDamagesOnShip" -> {
-                if (!args.isEmpty() && args.getFirst() instanceof ArgValue.ArrayVal arr) {
-                    for (ArgValue elem : arr.elements()) {
-                        if (elem instanceof ArgValue.DictVal dict) {
-                            var d = dict.entries();
-                            int aggressorVe = intFromArg(d.get("vehicleID"));
-                            int aggressorAv = vehicleToOwner.getOrDefault(aggressorVe, aggressorVe);
-                            float amount = floatFromArg(d.get("damage"));
-                            damageEvents.add(new DamageEvent(elapsed, aggressorAv, eid, amount));
-                        }
-                    }
-                }
-            }
-            case "receiveVehicleDeath" -> {
-                if (args.size() >= 2) {
-                    int victimVe = intFromArg(args.get(0));
-                    int killerVe = intFromArg(args.get(1));
-                    int cause = args.size() >= 3 ? intFromArg(args.get(2)) : 0;
+        var handler = methodHandlers.get(method);
+        if (handler != null) {
+            handler.handle(eid, args, elapsed);
+        }
+    }
 
-                    // 通过 vehicle→owner→player 链解析
-                    int victimAv = vehicleToOwner.getOrDefault(victimVe, victimVe);
-                    int killerAv = vehicleToOwner.getOrDefault(killerVe, killerVe);
-                    var kl = entityToPlayer.get(killerAv);
-                    var vl = entityToPlayer.get(victimAv);
+    // ── 方法处理器 ──────────────────────────────────────────────────────
+    // 参数名来自 .def 文件中的 <Args> 定义。
+    // 标注 "无名" 的表示 .def 使用 <Arg> 内联写法，spec 自动命名为 arg0,arg1...
+    // 标注 "未在 spec" 的方法在 .def 中找不到定义，暂用位置索引。
 
-                    killEvents.add(new KillEvent(elapsed, killerAv, victimAv,
-                        kl != null ? kl.dbId : 0, kl != null ? kl.username : "",
-                        vl != null ? vl.dbId : 0, vl != null ? vl.username : "",
-                        cause));
-                    entityAlive.put(victimVe, false);
-                }
-            }
-            case "receiveBattleChatMessage" -> {
-                if (args.size() >= 4) {
-                    String channel = args.get(0) instanceof ArgValue.StrVal sv ? sv.value() : "";
-                    String sender = args.get(1) instanceof ArgValue.StrVal sv ? sv.value() : "";
-                    String message = args.get(2) instanceof ArgValue.StrVal sv ? sv.value() : "";
-                    var pl = entityToPlayer.get(eid);
-                    chatEvents.add(new ChatEvent(elapsed, eid,
-                        pl != null ? pl.dbId : 0, sender, channel, message));
-                }
-            }
-            case "onConsumableActivated" -> {
-                if (!args.isEmpty() && args.getFirst() instanceof ArgValue.DictVal dict) {
+    /** receiveDamagesOnShip(Vehicle): arg0=ARRAY&lt;DAMAGES&gt; (无名) */
+    private void handleDamage(int eid, NamedArgs args, float elapsed) {
+        if (!args.isEmpty() && args.getFirst() instanceof ArgValue.ArrayVal arr) {
+            for (ArgValue elem : arr.elements()) {
+                if (elem instanceof ArgValue.DictVal dict) {
                     var d = dict.entries();
-                    long consumableId = longFromArg(d.get("consumableId"));
-                    float duration = floatFromArg(d.get("duration"));
-                    var pl = entityToPlayer.get(eid);
-                    consumableEvents.add(new ConsumableEvent(elapsed, eid,
-                        pl != null ? pl.dbId : 0, pl != null ? pl.username : "",
-                        consumableId, duration));
+                    int aggressorVe = intFromArg(d.get("vehicleID"));
+                    int aggressorAv = vehicleToOwner.getOrDefault(aggressorVe, aggressorVe);
+                    float amount = floatFromArg(d.get("damage"));
+                    damageEvents.add(new DamageEvent(elapsed, aggressorAv, eid, amount));
                 }
             }
-            case "onBuffCaptured" -> {
-                if (args.size() >= 2) {
-                    int buffEid = intFromArg(args.get(0));
-                    long paramsId = longFromArg(args.get(1));
-                    var pl = entityToPlayer.get(eid);
-                    capturedBuffs.add(new CapturedBuffInfo(buffEid, paramsId,
-                        pl != null ? (int) pl.dbId : 0, elapsed));
-                }
-            }
-            case "onArenaStateReceived" -> {
-                // args: [arena_id: i64, team_build_type_id: i8, pre_battles_info: BLOB, player_states: BLOB, bot_states?: BLOB]
-                if (args.size() >= 4 && args.get(3) instanceof ArgValue.BlobVal blob) {
-                    applyArenaPlayers(blob.value());
-                }
-            }
-            case "onNewPlayerSpawnedInBattle" -> {
-                // args: [playersData: BLOB, botsData?: BLOB, observersData?: BLOB]
-                if (!args.isEmpty() && args.getFirst() instanceof ArgValue.BlobVal blob) {
-                    applyArenaPlayers(blob.value());
-                }
-            }
-            case "receiveTeamScore" -> {
-                if (args.size() >= 2) {
-                    int teamIdx = intFromArg(args.get(0));
-                    long score = longFromArg(args.get(1));
-                    teamScores.put(teamIdx, score);
-                    scoreEvents.add(new ScoreEvent(elapsed, teamIdx, score));
-                }
-            }
+        }
+    }
+
+    /** receiveVehicleDeath(Avatar): arg0=victimVe, arg1=killerVe, arg2=cause (无名) */
+    private void handleKill(int eid, NamedArgs args, float elapsed) {
+        if (args.size() >= 2) {
+            int victimVe = intFromArg(args.get("arg0"));
+            int killerVe = intFromArg(args.get("arg1"));
+            int cause = args.size() >= 3 ? intFromArg(args.get("arg2")) : 0;
+            int victimAv = vehicleToOwner.getOrDefault(victimVe, victimVe);
+            int killerAv = vehicleToOwner.getOrDefault(killerVe, killerVe);
+            var kl = entityToPlayer.get(killerAv);
+            var vl = entityToPlayer.get(victimAv);
+            killEvents.add(new KillEvent(elapsed, killerAv, victimAv,
+                kl != null ? kl.dbId : 0, kl != null ? kl.username : "",
+                vl != null ? vl.dbId : 0, vl != null ? vl.username : "", cause));
+            getOrCreate(victimVe, null).isAlive = false;
+        }
+    }
+
+    /** onChatMessage(Account): arg0=DB_ID(senderId), arg1=STRING(channel), arg2=STRING(message) */
+    private void handleChat(int eid, NamedArgs args, float elapsed) {
+        if (args.size() >= 4) {
+            String channel = args.get(0) instanceof ArgValue.StrVal sv ? sv.value() : "";
+            String sender = args.get(1) instanceof ArgValue.StrVal sv ? sv.value() : "";
+            String message = args.get(2) instanceof ArgValue.StrVal sv ? sv.value() : "";
+            var pl = entityToPlayer.get(eid);
+            chatEvents.add(new ChatEvent(elapsed, eid,
+                pl != null ? pl.dbId : 0, sender, channel, message));
+        }
+    }
+
+    /**
+     * onConsumableUsed(Vehicle): 15.2+ arg0=BLOB(packed struct), arg1=FLOAT32(duration).
+     * <pre>
+     * Blob format (UsageConverter struct.pack):
+     *   type=0: 1 byte (NONE)
+     *   type=1: 2 bytes BB  (usage_type, consumable_id)
+     *   type=2: 10 bytes BBff (usage_type, consumable_id, x, z)
+     *   type=3: 11 bytes BBbQ (usage_type, consumable_id, target_type, target_id)
+     * </pre>
+     */
+    private void handleConsumable(int eid, NamedArgs args, float elapsed) {
+        if (args.isEmpty()) return;
+        // 15.2+: first arg is BLOB with packed usage params
+        if (args.getFirst() instanceof ArgValue.BlobVal blob) {
+            byte[] b = blob.value();
+            if (b.length < 1) return;
+            int usageType = b[0] & 0xFF;
+            int consumableId = b.length >= 2 ? b[1] & 0xFF : 0;
+            if (usageType == 0) return; // NONE
+            float duration = args.size() >= 2 ? floatFromArg(args.get(1)) : 0f;
+            var pl = entityToPlayer.get(eid);
+            consumableEvents.add(new ConsumableEvent(elapsed, eid,
+                pl != null ? pl.dbId : 0, pl != null ? pl.username : "",
+                consumableId, duration));
+        }
+    }
+
+    /** onArenaStateReceived(Avatar): playersStates=BLOB */
+    private void handleArenaState(int eid, NamedArgs args, float elapsed) {
+        if (args.has("playersStates") && args.get("playersStates") instanceof ArgValue.BlobVal blob) {
+            applyArenaPlayers(blob.value());
+        }
+    }
+
+    /** onNewPlayerSpawnedInBattle(Avatar): playersData=BLOB (第1个参数) */
+    private void handleNewPlayer(int eid, NamedArgs args, float elapsed) {
+        if (args.has("playersData") && args.get("playersData") instanceof ArgValue.BlobVal blob) {
+            applyArenaPlayers(blob.value());
         }
     }
 
@@ -576,8 +587,11 @@ final class RichExtractor {
 
     private void handlePosition(PositionPacket pos, float elapsed, RawPacket raw) {
         int eid = pos.entityId().value();
-        entityPositions.put(eid, new float[]{pos.position().x(), pos.position().y(), pos.position().z()});
-        entityHeadings.put(eid, pos.rotation().yaw());
+        var es = getOrCreate(eid, null);
+        es.x = pos.position().x();
+        es.y = pos.position().y();
+        es.z = pos.position().z();
+        es.heading = pos.rotation().yaw();
     }
 
     // ── 终态处理 ──────────────────────────────────────────────────────────
@@ -603,24 +617,36 @@ final class RichExtractor {
 
     // ── 帮助方法 ──────────────────────────────────────────────────────────
 
+    /** Get or create entity state, optionally setting its type. */
+    private EntityState getOrCreate(int eid, String type) {
+        var e = entities.get(eid);
+        if (e == null) {
+            e = new EntityState(eid, type != null ? type : "Unknown");
+            entities.put(eid, e);
+        } else if (type != null && "Unknown".equals(e.type)) {
+            e.type = type;
+        }
+        return e;
+    }
+
     private void extractHealth(Map<String, ArgValue> props, int eid) {
         ArgValue h = props.get("health");
-        if (h instanceof ArgValue.FloatVal fv) entityHealth.put(eid, (float) fv.value());
-        else if (h instanceof ArgValue.IntVal iv) entityHealth.put(eid, (float) iv.value());
+        if (h instanceof ArgValue.FloatVal fv) getOrCreate(eid, null).health = (float) fv.value();
+        else if (h instanceof ArgValue.IntVal iv) getOrCreate(eid, null).health = (float) iv.value();
 
         ArgValue mh = props.get("maxHealth");
-        if (mh instanceof ArgValue.FloatVal fv) entityMaxHealth.put(eid, (float) fv.value());
-        else if (mh instanceof ArgValue.IntVal iv) entityMaxHealth.put(eid, (float) iv.value());
+        if (mh instanceof ArgValue.FloatVal fv) getOrCreate(eid, null).maxHealth = (float) fv.value();
+        else if (mh instanceof ArgValue.IntVal iv) getOrCreate(eid, null).maxHealth = (float) iv.value();
 
         ArgValue alive = props.get("isAlive");
-        if (alive instanceof ArgValue.IntVal iv) entityAlive.put(eid, iv.value() != 0);
-        else if (alive instanceof ArgValue.BoolVal bv) entityAlive.put(eid, bv.value());
+        if (alive instanceof ArgValue.IntVal iv) getOrCreate(eid, null).isAlive = iv.value() != 0;
+        else if (alive instanceof ArgValue.BoolVal bv) getOrCreate(eid, null).isAlive = bv.value();
     }
 
     private void extractTeam(Map<String, ArgValue> props, int eid) {
         ArgValue t = props.get("teamId");
         if (t instanceof ArgValue.IntVal iv) {
-            entityTeam.put(eid, (int) iv.value());
+            getOrCreate(eid, null).teamId = (int) iv.value();
         }
     }
 
@@ -696,17 +722,17 @@ final class RichExtractor {
 
     // ── 内部类型 ──────────────────────────────────────────────────────────
 
-    record PlayerLink(long dbId, String username) {}
-    record DamageEvent(float clock, int aggressorId, int victimId, float amount) {}
-    record KillEvent(float clock, int killerEid, int victimEid,
+    public record PlayerLink(long dbId, String username) {}
+    public record DamageEvent(float clock, int aggressorId, int victimId, float amount) {}
+    public record KillEvent(float clock, int killerEid, int victimEid,
                      long killerDbId, String killerName,
                      long victimDbId, String victimName, int cause) {}
-    record ChatEvent(float clock, int entityId, long dbId,
+    public record ChatEvent(float clock, int entityId, long dbId,
                      String senderName, String channel, String message) {}
-    record ConsumableEvent(float clock, int entityId, long dbId,
+    public record ConsumableEvent(float clock, int entityId, long dbId,
                            String username, long consumableId, float duration) {}
-    record MinimapFrame(float clock, List<MinimapEntry> entities) {}
-    record MinimapEntry(int entityId, float x, float y, float rotation, int team) {}
+    public record MinimapFrame(float clock, List<MinimapEntry> entities) {}
+    public record MinimapEntry(int entityId, float x, float y, float rotation, int team) {}
 
     public static class PlayerInfo {
         public String username;
@@ -721,13 +747,13 @@ final class RichExtractor {
         public boolean hasInvaders, bothInside, isEnabled = true;
     }
 
-    record ScoreEvent(float clock, int teamIndex, long score) {}
-    record CapturePointEvent(float clock, int index, long teamId, long invaderTeam,
+    public record ScoreEvent(float clock, int teamIndex, long score) {}
+    public record CapturePointEvent(float clock, int index, long teamId, long invaderTeam,
                              Object progress, boolean hasInvaders,
                              boolean bothInside, boolean isEnabled) {}
 
-    record BuildingInfo(int entityId, float x, float z, int teamId, long paramsId, boolean isAlive) {}
-    record WeatherZoneInfo(String name, float x, float z, float radius, long paramsId) {}
-    record BuffZoneInfo(int entityId, float x, float z, float radius, int teamId, boolean isActive, Long dropParamsId) {}
-    record CapturedBuffInfo(int entityId, long paramsId, int capturedBy, float clock) {}
+    public record BuildingInfo(int entityId, float x, float z, int teamId, long paramsId, boolean isAlive) {}
+    public record WeatherZoneInfo(String name, float x, float z, float radius, long paramsId) {}
+    public record BuffZoneInfo(int entityId, float x, float z, float radius, int teamId, boolean isActive, Long dropParamsId) {}
+    public record CapturedBuffInfo(int entityId, long paramsId, int capturedBy, float clock) {}
 }
