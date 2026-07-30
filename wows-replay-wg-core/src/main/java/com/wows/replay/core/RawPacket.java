@@ -1,6 +1,6 @@
 package com.wows.replay.core;
 
-import com.wows.replay.spec.types.GameClock;
+import com.wows.replay.core.types.GameClock;
 
 /**
  * A packet with its 12-byte header parsed but the payload left raw.

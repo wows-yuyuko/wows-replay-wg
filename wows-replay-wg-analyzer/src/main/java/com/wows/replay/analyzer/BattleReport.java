@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.wows.replay.core.ReplayMeta;
-import com.wows.replay.spec.types.GameClock;
+import com.wows.replay.core.types.GameClock;
 
 import java.util.List;
 import java.util.Map;

@@ -13,17 +13,16 @@
     <description>World of Warships WG server replay parser (pure Java, JDK 25)</description>
 
     <modules>
-        <module>wows-replay-wg-spec-api</module>
         <module>wows-replay-wg-core</module>
-
+        <module>wows-replay-wg-game-data</module>
         <module>wows-replay-wg-analyzer</module>
         <module>wows-dumper</module>
     </modules>
 
     <properties>
-        <java.version>25</java.version>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
+        <java.version>26</java.version>
+        <maven.compiler.source>26</maven.compiler.source>
+        <maven.compiler.target>26</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Jackson 3 (jakarta) -->
@@ -47,12 +46,12 @@
             <!-- Internal modules -->
             <dependency>
                 <groupId>com.wows</groupId>
-                <artifactId>wows-replay-wg-spec-api</artifactId>
+                <artifactId>wows-replay-wg-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.wows</groupId>
-                <artifactId>wows-replay-wg-core</artifactId>
+                <artifactId>wows-replay-wg-game-data</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

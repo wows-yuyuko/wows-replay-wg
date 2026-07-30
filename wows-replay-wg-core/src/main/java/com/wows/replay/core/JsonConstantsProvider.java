@@ -1,7 +1,7 @@
 package com.wows.replay.core;
 
-import com.wows.replay.spec.spi.GameConstantsProvider;
-import com.wows.replay.spec.types.Version;
+import com.wows.replay.core.spi.GameConstantsProvider;
+import com.wows.replay.core.types.Version;
 import tools.jackson.databind.JsonNode;
 
 import java.nio.file.Path;

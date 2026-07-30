@@ -1,6 +1,6 @@
 package com.wows.replay.core;
 
-import com.wows.replay.spec.types.GameClock;
+import com.wows.replay.core.types.GameClock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

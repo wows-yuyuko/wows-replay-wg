@@ -4,9 +4,10 @@ import com.wows.replay.analyzer.BattleReport;
 import com.wows.replay.analyzer.ReplayAnalyzer;
 import com.wows.replay.analyzer.ReplayAnalyzerConfig;
 import com.wows.replay.core.*;
-import com.wows.replay.spec.def.XmlEntitySpecProvider;
-import com.wows.replay.spec.spi.DefFileLoader;
-import com.wows.replay.spec.types.Version;
+import com.wows.replay.gamedata.GameDataCache;
+import com.wows.replay.gamedata.XmlEntitySpecProvider;
+import com.wows.replay.core.spi.DefFileLoader;
+import com.wows.replay.core.types.Version;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -119,7 +120,7 @@ public final class DumperPipeline {
         // 实体规范提供者（全局缓存，ReplayAnalyzer 和 RichExtractor 复用同一实例）
         var specProvider = gameData != null
             ? CACHE.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData)
-            : com.wows.replay.spec.spi.EntitySpecProvider.empty();
+            : com.wows.replay.core.spi.EntitySpecProvider.empty();
 
         // 创建基础分析器获取 BattleReport
         var analyzerBuilder = ReplayAnalyzer.builder()
@@ -142,7 +143,7 @@ public final class DumperPipeline {
             extractor.extract();
         } catch (Exception e) {
             System.err.println("[wows-dumper] 警告：实体规范加载失败，回退到空规范: " + e);
-            extractor = new RichExtractor(replay, com.wows.replay.spec.spi.EntitySpecProvider.empty());
+            extractor = new RichExtractor(replay, com.wows.replay.core.spi.EntitySpecProvider.empty());
             extractor.extract();
         }
 

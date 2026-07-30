@@ -17,11 +17,11 @@
     <dependencies>
         <dependency>
             <groupId>com.wows</groupId>
-            <artifactId>wows-replay-wg-spec-api</artifactId>
+            <artifactId>wows-replay-wg-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.wows</groupId>
-            <artifactId>wows-replay-wg-core</artifactId>
+            <artifactId>wows-replay-wg-game-data</artifactId>
         </dependency>
 
     </dependencies>

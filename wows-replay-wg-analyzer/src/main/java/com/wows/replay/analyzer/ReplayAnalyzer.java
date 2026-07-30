@@ -5,9 +5,9 @@ import com.wows.replay.core.RawPacket;
 import com.wows.replay.core.ReplayException;
 import com.wows.replay.core.ReplayFile;
 import com.wows.replay.packets.*;
-import com.wows.replay.spec.spi.EntitySpecProvider;
-import com.wows.replay.spec.spi.GameConstantsProvider;
-import com.wows.replay.spec.types.GameClock;
+import com.wows.replay.core.spi.EntitySpecProvider;
+import com.wows.replay.core.spi.GameConstantsProvider;
+import com.wows.replay.core.types.GameClock;
 import com.wows.replay.core.JsonMapper;
 
 import java.io.IOException;

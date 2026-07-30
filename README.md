@@ -1,75 +1,78 @@
 # wows-replay-wg
 
-World of Warships WG (Wargaming) 服务器回放文件解析库 — 纯 Java 实现，JDK 25。
+World of Warships WG (Wargaming) server replay parser — pure Java, JDK 25.
 
-## 模块结构
+## Module structure
 
-| 模块 | 职责 |
-|------|------|
-| **wows-replay-wg-spec-api** | 基础类型 (EntityId, GameClock, Version...)、RPC 类型系统 (ArgType/ArgValue)、EntitySpec 定义、抽象接口 (EntitySpecProvider / GameParamProvider / GameConstantsProvider) |
-| **wows-replay-wg-core** | 回放文件 I/O → Blowfish-CBC 解密 → zlib 解压 → 原始包流迭代 (ReplayFile, RawPacketIterator, PacketTypeId) + 30+ 包类型定义 (PositionPacket, EntityCreatePacket, CameraPacket...) + 基于 EntitySpec 的载荷解码器 (PacketParser) |
-| **wows-replay-wg-analyzer** | 高层分析 + JSON 报告生成 (ReplayAnalyzer, BattleReport) |
+| Module | Description |
+|--------|-------------|
+| **wows-replay-wg-core** | Self-contained replay parsing — zero internal deps, no game data required. Types (EntityId, GameClock, Version, ArgType/ArgValue...), file I/O (ReplayFile, Blowfish-CBC decrypt, zlib decompress), 30+ packet types + PacketParser, SPI interfaces. |
+| **wows-replay-wg-game-data** | Entity spec XML loading from game data directory: XmlEntitySpecProvider, XmlDefParser, GameDataCache. Requires game install. |
+| **wows-replay-wg-analyzer** | High-level analysis + JSON output: ReplayAnalyzer, BattleReport, event extraction. |
+| **wows-dumper** | CLI entry point + JSON pipeline: DumperPipeline, RichExtractor, PickleDecoder, MinimapData. |
 
-## 依赖关系
+## Dependencies
 
 ```
-wows-replay-wg-spec-api   (无内部依赖，仅 Jackson 3)
+wows-replay-wg-core        (zero internal deps, Jackson 3 only)
     ↑
-wows-replay-wg-core       (依赖 spec-api, 含 packets 解码)
+wows-replay-wg-game-data   (depends on core)
     ↑
-wows-replay-wg-analyzer   (依赖 core)
+wows-replay-wg-analyzer    (depends on core + game-data)
+    ↑
+wows-dumper                (depends on analyzer)
 ```
 
-## 快速开始
+## Quick start
 
 ```java
 import com.wows.replay.core.ReplayFile;
 import com.wows.replay.analyzer.ReplayAnalyzer;
 
-// 1. 解析回放文件
+// 1. Parse replay file
 ReplayFile replay = ReplayFile.fromFile(Path.of("replay.wowsreplay"));
 
-// 2. 快速分析 (无需游戏数据)
+// 2. Quick analysis (no game data needed)
 String json = ReplayAnalyzer.quick(replay);
 System.out.println(json);
 
-// 3. 遍历原始包
+// 3. Iterate raw packets
 replay.packets().forEach(pkt -> {
     System.out.println(pkt.packetType() + " @ " + pkt.clock());
 });
 
-// 4. 仅读取元数据 (不解密包流, 极快)
+// 4. Read metadata only (skip decryption, very fast)
 ReplayMeta meta = ReplayFile.metaFromFile(Path.of("replay.wowsreplay"));
 ```
 
-## 构建
+## Build
 
 ```bash
 cd wows-replay-wg
-mvn clean compile      # 编译
-mvn test               # 测试
-mvn package            # 打包
+mvn clean compile      # compile
+mvn test               # test
+mvn package            # package
 ```
 
-## 技术栈
+## Tech stack
 
 - **JDK 25** — Records, Pattern Matching, Sealed Types, Switch Expressions
-- **Jackson 3** — JSON 序列化
-- **BouncyCastle** — Blowfish-CBC 解密
-- **jlibdeflate** — zlib 解压
-- **Maven** — 构建管理
+- **Jackson 3** — JSON serialization
+- **BouncyCastle** — Blowfish-CBC decryption
+- **jlibdeflate** — zlib decompression
+- **Maven** — build management
 
-## wowsunpack 解耦
+## wowsunpack decoupling
 
-以下功能通过接口抽象，不依赖游戏安装目录：
+The following are abstract interfaces, no game install required:
 
-- `EntitySpecProvider` — 实体定义加载 (对接 wowsunpack 的 .def 文件)
-- `GameParamProvider` — 游戏参数查询 (船名/ID 映射)
-- `GameConstantsProvider` — 游戏常量查询 (消耗品/战斗阶段/死亡原因名)
+- `EntitySpecProvider` — entity definition loading (connects to wowsunpack .def files)
+- `GameParamProvider` — game parameter queries (ship name/ID mapping)
+- `GameConstantsProvider` — game constant queries (consumable/battle stage/death cause names)
 
-默认实现均为空操作，提供降级行为。接入真实游戏数据时只需实现这三个接口。
+Default implementations are no-ops with graceful degradation. Implement these three interfaces to integrate real game data.
 
-## 回放文件格式
+## Replay file format
 
 ```
 [magic: u32 0x12345678]
@@ -80,7 +83,7 @@ mvn package            # 打包
 [compressed_size: u32]
 [encrypted_packets: Blowfish-CBC + zlib]
 
-每个包: [size: u32][type: u32][clock: f32][payload: bytes]
+Each packet: [size: u32][type: u32][clock: f32][payload: bytes]
 ```
 
-解密密钥: `29 B7 C9 09 38 3F 84 88 FA 98 EC 4E 13 19 79 FB` (Blowfish-CBC, 全零 IV)
+Decryption key: `29 B7 C9 09 38 3F 84 88 FA 98 EC 4E 13 19 79 FB` (Blowfish-CBC, all-zero IV)

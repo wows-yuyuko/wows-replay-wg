@@ -2,11 +2,11 @@ package com.wows.dumper;
 
 import com.wows.replay.core.*;
 import com.wows.replay.packets.*;
-import com.wows.replay.spec.rpc.ArgValue;
-import com.wows.replay.spec.spi.EntitySpecProvider;
-import com.wows.replay.spec.types.EntityId;
-import com.wows.replay.spec.types.GameClock;
-import com.wows.replay.spec.types.Version;
+import com.wows.replay.core.rpc.ArgValue;
+import com.wows.replay.core.spi.EntitySpecProvider;
+import com.wows.replay.core.types.EntityId;
+import com.wows.replay.core.types.GameClock;
+import com.wows.replay.core.types.Version;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;

@@ -2,8 +2,8 @@ package com.wows.replay.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.wows.replay.spec.types.AccountId;
-import com.wows.replay.spec.types.GameParamId;
+import com.wows.replay.core.types.AccountId;
+import com.wows.replay.core.types.GameParamId;
 
 import java.util.List;
 import java.util.Map;

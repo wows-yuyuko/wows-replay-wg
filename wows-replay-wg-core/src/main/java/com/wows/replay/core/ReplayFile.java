@@ -1,8 +1,8 @@
 package com.wows.replay.core;
 
 import com.fulcrumgenomics.jlibdeflate.LibdeflateDecompressor;
-import com.wows.replay.spec.types.GameClock;
-import com.wows.replay.spec.types.Version;
+import com.wows.replay.core.types.GameClock;
+import com.wows.replay.core.types.Version;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.Cipher;

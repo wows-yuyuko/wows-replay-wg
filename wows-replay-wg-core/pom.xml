@@ -15,9 +15,5 @@
     <description>Core replay file I/O: parse .wowsreplay, Blowfish-CBC decrypt, zlib decompress, raw packet iteration</description>
 
     <dependencies>
-        <dependency>
-            <groupId>com.wows</groupId>
-            <artifactId>wows-replay-wg-spec-api</artifactId>
-        </dependency>
     </dependencies>
 </project>
