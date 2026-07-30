@@ -1,4 +1,5 @@
 package com.wows.replay.analyzer;
+import lombok.extern.slf4j.Slf4j;
 
 import com.wows.replay.core.ReplayException;
 import com.wows.replay.core.ReplayFile;
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>The test replay is expected at {@code temp/wg_15.6/} relative to the
  * project root.  Tests are skipped gracefully if the file is absent.</p>
  */
+@Slf4j
 class ReplayAnalyzerIT {
 
     private static final String REPLAY_PATH =
@@ -35,7 +37,7 @@ class ReplayAnalyzerIT {
     void quickAnalysisProducesJson() throws Exception {
         var path = resolveReplay();
         if (path == null) {
-            System.out.println("⚠ Skipping: replay file not found at " + REPLAY_PATH);
+            log.info("⚠ Skipping: replay file not found at " + REPLAY_PATH);
             return;
         }
 
@@ -47,9 +49,9 @@ class ReplayAnalyzerIT {
         assertTrue(json.contains("\"summary\""), "JSON should contain summary section");
         assertTrue(json.contains("\"packets\""), "JSON should contain packets section");
 
-        System.out.println("JSON length: " + json.length() + " chars");
+        log.info("JSON length: " + json.length() + " chars");
         // Print first ~500 chars for inspection
-        System.out.println(json);
+        log.info(json);
     }
 
     @Test
@@ -57,7 +59,7 @@ class ReplayAnalyzerIT {
     void quickAnalysisFromReplayFile() throws Exception {
         var path = resolveReplay();
         if (path == null) {
-            System.out.println("⚠ Skipping: replay file not found at " + REPLAY_PATH);
+            log.info("⚠ Skipping: replay file not found at " + REPLAY_PATH);
             return;
         }
 
@@ -66,8 +68,8 @@ class ReplayAnalyzerIT {
 
         assertNotNull(json);
         assertTrue(json.contains("\"meta\""));
-        System.out.println("Packet count: " + replay.packetCount());
-        System.out.println("JSON output:  " + json.length() + " chars");
+        log.info("Packet count: " + replay.packetCount());
+        log.info("JSON output:  " + json.length() + " chars");
     }
 
     @Test
@@ -75,7 +77,7 @@ class ReplayAnalyzerIT {
     void buildReportReturnsStructuredData() throws Exception {
         var path = resolveReplay();
         if (path == null) {
-            System.out.println("⚠ Skipping: replay file not found at " + REPLAY_PATH);
+            log.info("⚠ Skipping: replay file not found at " + REPLAY_PATH);
             return;
         }
 
@@ -89,11 +91,11 @@ class ReplayAnalyzerIT {
         assertNotNull(report.packets());
         assertTrue(report.summary().totalPackets() > 0, "should have at least one packet");
 
-        System.out.println("Player:      " + report.meta().playerName());
-        System.out.println("Map:         " + report.meta().mapName());
-        System.out.println("Total pkts:  " + report.summary().totalPackets());
-        System.out.println("Duration:    " + report.summary().totalDuration() + "s");
-        System.out.println("Packet types: " + report.packets().byType().size());
+        log.info("Player:      " + report.meta().playerName());
+        log.info("Map:         " + report.meta().mapName());
+        log.info("Total pkts:  " + report.summary().totalPackets());
+        log.info("Duration:    " + report.summary().totalDuration() + "s");
+        log.info("Packet types: " + report.packets().byType().size());
     }
 
     @Test

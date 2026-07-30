@@ -1,5 +1,7 @@
 package com.wows.dumper;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,6 +9,7 @@ import java.nio.file.Path;
 /**
  * 回放 JSON 导出命令行工具，对标 wows-toolkit 的 replay-dumper。
  */
+@Slf4j
 public final class Main {
 
     public static void main(String[] args) {
@@ -46,8 +49,8 @@ public final class Main {
             i++;
         }
 
-        if (replayPath == null) { System.err.println("错误：缺少回放文件参数"); printUsage(); System.exit(1); return; }
-        if (gameDataBase == null) { System.err.println("错误：缺少 -b/--game-data-base"); printUsage(); System.exit(1); return; }
+        if (replayPath == null) { log.error("缺少回放文件参数"); printUsage(); System.exit(1); return; }
+        if (gameDataBase == null) { log.error("缺少 -b/--game-data-base"); printUsage(); System.exit(1); return; }
 
         try {
             var pipeline = new DumperPipeline(gameDataBase);
@@ -58,13 +61,12 @@ public final class Main {
 
             if (outFile != null) {
                 Files.writeString(outFile, json);
-                System.err.println("已写入 " + outFile);
+                log.info("已写入 {}", outFile);
             } else {
                 System.out.println(json);
             }
         } catch (Exception e) {
-            System.err.println("错误：" + e.getMessage());
-            e.printStackTrace(System.err);
+            log.error("处理失败: {}", e.getMessage(), e);
             System.exit(1);
         }
     }

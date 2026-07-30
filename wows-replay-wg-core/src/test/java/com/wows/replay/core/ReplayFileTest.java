@@ -1,4 +1,5 @@
 package com.wows.replay.core;
+import lombok.extern.slf4j.Slf4j;
 
 import com.wows.replay.core.types.GameClock;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>The test replay is expected at {@code temp/wg_15.6/} relative to the
  * project root.  Tests are skipped gracefully if the file is absent.</p>
  */
+@Slf4j
 class ReplayFileTest {
 
     /** Path relative to project root. */
@@ -47,7 +49,7 @@ class ReplayFileTest {
 
         GameClock start = replay.battleStartClock();
         assertNotNull(start);
-        System.out.println("fromFile: " + count + " packets, " + replay.packetData().length + " bytes, start=" + start.seconds() + "s");
+        log.info("fromFile: " + count + " packets, " + replay.packetData().length + " bytes, start=" + start.seconds() + "s");
 
         // ── fromBytes ─────────────────────────────────────────────────────
         byte[] bytes = Files.readAllBytes(path);
@@ -67,7 +69,7 @@ class ReplayFileTest {
             sampled++;
         }
         assertTrue(sampled > 0, "should have parsed at least one packet");
-        System.out.println("fromBytes: first " + sampled + " packets OK");
+        log.info("fromBytes: first " + sampled + " packets OK");
     }
 
     // ── Error handling ───────────────────────────────────────────────────────

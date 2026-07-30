@@ -7,6 +7,7 @@ import com.wows.replay.core.spi.EntitySpecProvider;
 import com.wows.replay.core.types.EntityId;
 import com.wows.replay.core.types.GameClock;
 import com.wows.replay.core.types.Version;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -32,6 +33,7 @@ import java.util.function.Function;
  *   <li>小地图位置帧</li>
  * </ul>
  */
+@Slf4j
 final class RichExtractor {
 
     private final ReplayFile replay;
@@ -124,13 +126,13 @@ final class RichExtractor {
                 players.put(dbId, new PlayerInfo(name, 0));
             }
         }
-        System.err.println("[RichExtractor] 元数据玩家: " + metaPlayers.size());
+        log.info("元数据玩家: {}", metaPlayers.size());
 
         int specCount = this.parser.specs() != null ? this.parser.specs().size() : 0;
         if (specCount == 0) {
-            System.err.println("[RichExtractor] 警告：实体规范为空 — 玩家/事件/占点等数据将无法提取");
+            log.warn("实体规范为空 — 玩家/事件/占点等数据将无法提取");
         } else {
-            System.err.println("[RichExtractor] 已加载 " + specCount + " 个实体规范");
+            log.info("已加载 {} 个实体规范", specCount);
         }
     }
 
@@ -145,18 +147,12 @@ final class RichExtractor {
             if (processPacket(raw)) decodedPackets++;
         }
         finish();
-        System.err.println("[RichExtractor] CellPlayerCreate=" + cellPlayerCreateCount
-            + " VehicleCreate=" + vehicleCreateCount
-            + " metaPlayers=" + metaPlayers.size()
-            + " vehicleToOwner=" + vehicleToOwner.size());
-        System.err.println("[RichExtractor] 所有 EntityMethod(" + seenMethods.size() + "): " + seenMethods);
-        System.err.println("[RichExtractor] 数据包: " + totalPackets + " 总计, "
-            + decodedPackets + " 已解码, "
-            + players.size() + " 玩家, "
-            + killEvents.size() + " 击杀, "
-            + damageEvents.size() + " 伤害, "
-            + consumableEvents.size() + " 消耗品, "
-            + chatEvents.size() + " 聊天");
+        log.info("CellPlayerCreate={} VehicleCreate={} metaPlayers={} vehicleToOwner={}",
+            cellPlayerCreateCount, vehicleCreateCount, metaPlayers.size(), vehicleToOwner.size());
+        log.info("所有 EntityMethod({}): {}", seenMethods.size(), seenMethods);
+        log.info("数据包: {} 总计, {} 已解码, {} 玩家, {} 击杀, {} 伤害, {} 消耗品, {} 聊天",
+            totalPackets, decodedPackets, players.size(),
+            killEvents.size(), damageEvents.size(), consumableEvents.size(), chatEvents.size());
     }
 
     /** @return true if packet was decoded (not unknown/invalid) */
@@ -201,8 +197,7 @@ final class RichExtractor {
 
         var props = bp.props();
         if (props != null && !props.isEmpty()) {
-            System.err.println("[RichExtractor] BasePlayerCreate(" + entityType
-                + ") eid=" + eid + " 属性: " + props.keySet());
+            log.debug("BasePlayerCreate({}) eid={} 属性: {}", entityType, eid, props.keySet());
         }
 
         // dump componentData 前200字节用于分析 pickle 格式
@@ -215,8 +210,8 @@ final class RichExtractor {
                 hex.append(String.format("%02x ", compData[i] & 0xFF));
                 if ((i + 1) % 32 == 0) hex.append('\n');
             }
-            System.err.println("[RichExtractor] BasePlayerCreate(" + entityType
-                + ") componentData[" + compData.length + "] 前" + dumpLen + "字节:\n" + hex);
+            log.debug("BasePlayerCreate({}) componentData[{}] 前{}字节:\n{}",
+                entityType, compData.length, dumpLen, hex);
         }
 
         // 尝试多种可能的 db_id 属性名
@@ -261,8 +256,7 @@ final class RichExtractor {
                     var link = new PlayerLink(mp.dbId, mp.name);
                     entityToPlayer.put(eid, link);
                     players.put(mp.dbId, new PlayerInfo(mp.name, eid));
-                    System.err.println("[RichExtractor] 录制玩家: eid=" + eid
-                        + " db_id=" + mp.dbId + " name=" + mp.name);
+                    log.info("录制玩家: eid={} db_id={} name={}", eid, mp.dbId, mp.name);
                     break;
                 }
             }
@@ -271,9 +265,8 @@ final class RichExtractor {
         // 输出属性用于诊断
         var props = cp.props();
         if (props != null && !props.isEmpty() && cpEntityTypes.size() <= 3) {
-            System.err.println("[RichExtractor] CellPlayerCreate(" + entityType
-                + ") eid=" + eid + " vehicle=" + vehicleId
-                + " 属性: " + props.keySet());
+            log.debug("CellPlayerCreate({}) eid={} vehicle={} 属性: {}",
+                entityType, eid, vehicleId, props.keySet());
         }
     }
 
@@ -309,8 +302,7 @@ final class RichExtractor {
 
         // 输出前几个不同类型的属性
         if (!props.isEmpty() && entityCreateTypes.add("logged:" + type)) {
-            System.err.println("[RichExtractor] EntityCreate(" + type
-                + ") 属性: " + props.keySet());
+            log.debug("EntityCreate({}) 属性: {}", type, props.keySet());
         }
 
         // 提取 health / maxHealth / teamId / isAlive
@@ -552,8 +544,8 @@ final class RichExtractor {
                 updated++;
             }
         }
-        System.err.println("[RichExtractor] ArenaState: 解析 " + arenaPlayers.entityToDbId().size()
-            + " 玩家, 更新 " + updated + " / 总玩家 " + players.size());
+        log.info("ArenaState: 解析 {} 玩家, 更新 {} / 总玩家 {}",
+            arenaPlayers.entityToDbId().size(), updated, players.size());
     }
 
     private void handleMap(MapPacket mp) {
@@ -592,9 +584,8 @@ final class RichExtractor {
 
     private void finish() {
         // 输出诊断摘要
-        System.err.println("[RichExtractor] EntityTypes: BasePlayerCreate=" + bpEntityTypes
-            + ", CellPlayerCreate=" + cpEntityTypes
-            + ", EntityCreate=" + entityCreateTypes);
+        log.info("EntityTypes: BasePlayerCreate={}, CellPlayerCreate={}, EntityCreate={}",
+            bpEntityTypes, cpEntityTypes, entityCreateTypes);
 
         // 从 BattleResults 中提取 matchResult / finishType（如果尚未设置）
         if (battleResultsJson != null && (matchResult == null || finishType == null)) {

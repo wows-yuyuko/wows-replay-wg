@@ -1,4 +1,5 @@
 package com.wows.dumper;
+import lombok.extern.slf4j.Slf4j;
 
 import com.wows.replay.core.ReplayException;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +12,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Slf4j
 class DumperPipelineTest {
 
     private static final String REPLAY_PATH =
@@ -30,7 +32,7 @@ class DumperPipelineTest {
     void dumpWithDefaultOptions() throws Exception {
         var path = resolveReplay();
         if (path == null) {
-            System.out.println("⚠ Skipping: replay file not found");
+            log.info("⚠ Skipping: replay file not found");
             return;
         }
 
@@ -39,8 +41,8 @@ class DumperPipelineTest {
 
         assertNotNull(json);
         assertFalse(json.isBlank());
-        System.out.println("JSON length: " + json.length());
-        System.out.println(json);
+        log.info("JSON length: " + json.length());
+        log.info(json);
     }
 
     @Test
@@ -48,7 +50,7 @@ class DumperPipelineTest {
     void dumpFromBytes() throws Exception {
         var path = resolveReplay();
         if (path == null) {
-            System.out.println("⚠ Skipping: replay file not found");
+            log.info("⚠ Skipping: replay file not found");
             return;
         }
 

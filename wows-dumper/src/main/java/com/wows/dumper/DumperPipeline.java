@@ -8,6 +8,7 @@ import com.wows.replay.gamedata.GameDataCache;
 import com.wows.replay.gamedata.XmlEntitySpecProvider;
 import com.wows.replay.core.spi.DefFileLoader;
 import com.wows.replay.core.types.Version;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -26,6 +27,7 @@ import java.util.zip.GZIPOutputStream;
  * <p>支持：丰富的 JSON 输出、小地图位置时间线、Brotli 压缩、
  * BattleResults 解析、时间线事件、团队分数、占领点状态等。</p>
  */
+@Slf4j
 public final class DumperPipeline {
 
     private final Path gameDataBase;
@@ -102,10 +104,10 @@ public final class DumperPipeline {
         Path gameData = findGameData(replay);
 
         if (gameData == null) {
-            System.err.println("[wows-dumper] 警告：未找到版本匹配的游戏数据目录 (base="
-                + gameDataBase + ", version=" + replay.meta().clientVersionFromExe() + ")");
-            System.err.println("[wows-dumper] 玩家/事件/占点等数据将为空。请确认 "
-                + gameDataBase + "/data-{version}/live/ 目录存在且包含 scripts/entity_defs/");
+            log.warn("未找到版本匹配的游戏数据目录 (base={}, version={})",
+                gameDataBase, replay.meta().clientVersionFromExe());
+            log.warn("玩家/事件/占点等数据将为空。请确认 {}/data-{{version}}/live/ 目录存在且包含 scripts/entity_defs/",
+                gameDataBase);
         }
 
         // 加载 constants.json（显式路径优先，全局缓存）
@@ -142,7 +144,7 @@ public final class DumperPipeline {
             extractor = new RichExtractor(replay, specProvider);
             extractor.extract();
         } catch (Exception e) {
-            System.err.println("[wows-dumper] 警告：实体规范加载失败，回退到空规范: " + e);
+            log.warn("实体规范加载失败，回退到空规范", e);
             extractor = new RichExtractor(replay, com.wows.replay.core.spi.EntitySpecProvider.empty());
             extractor.extract();
         }

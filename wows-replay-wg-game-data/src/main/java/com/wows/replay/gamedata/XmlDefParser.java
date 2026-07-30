@@ -4,6 +4,7 @@ import com.wows.replay.core.entity.*;
 import com.wows.replay.core.rpc.ArgType;
 import com.wows.replay.core.spi.DefFileLoader;
 import com.wows.replay.core.types.Version;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -29,6 +30,7 @@ import java.util.*;
  * List<EntitySpec> specs = parser.parseAll(version);
  * }</pre>
  */
+@Slf4j
 public final class XmlDefParser {
 
     private final DefFileLoader loader;
@@ -52,7 +54,7 @@ public final class XmlDefParser {
         try {
             aliases = parseAliases();
         } catch (IOException e) {
-            System.err.println("[XmlDefParser] 错误：无法加载 scripts/entity_defs/alias.xml: " + e.getMessage());
+            log.error("无法加载 scripts/entity_defs/alias.xml: {}", e.getMessage());
             throw e;
         }
 
@@ -60,11 +62,11 @@ public final class XmlDefParser {
         try {
             entityNames = parseEntityList();
         } catch (IOException e) {
-            System.err.println("[XmlDefParser] 错误：无法加载 scripts/entities.xml: " + e.getMessage());
+            log.error("无法加载 scripts/entities.xml: {}", e.getMessage());
             throw e;
         }
 
-        System.err.println("[XmlDefParser] 发现 " + entityNames.size() + " 个实体类型，开始加载 .def 文件...");
+        log.info("发现 {} 个实体类型，开始加载 .def 文件...", entityNames.size());
 
         var result = new ArrayList<EntitySpec>(entityNames.size());
         int skipped = 0;
@@ -78,9 +80,9 @@ public final class XmlDefParser {
         }
 
         if (skipped > 0) {
-            System.err.println("[XmlDefParser] 跳过 " + skipped + " 个无法加载的 .def 文件");
+            log.warn("跳过 {} 个无法加载的 .def 文件", skipped);
         }
-        System.err.println("[XmlDefParser] 成功加载 " + result.size() + " 个实体规范");
+        log.info("成功加载 {} 个实体规范", result.size());
         return result;
     }
 
@@ -178,12 +180,14 @@ public final class XmlDefParser {
         // Sort client methods by wire size
         allClientMethods.sort(Comparator.comparingInt(m -> methodSortSize(m, aliases)));
 
-        // Debug: 输出 Avatar 的属性标记
+        // Debug: log Avatar properties
         if ("Avatar".equals(name)) {
-            System.err.println("[XmlDefParser] Avatar 属性总数=" + allProperties.size()
-                + " (自身=" + def.properties.size() + " 继承=" + inherited.properties.size() + ")");
-            for (var p : allProperties) {
-                System.err.println("  " + p.name() + " : " + p.flags() + " (type=" + p.propType().typeName() + ")");
+            log.debug("Avatar 属性总数={} (自身={} 继承={})",
+                allProperties.size(), def.properties.size(), inherited.properties.size());
+            if (log.isTraceEnabled()) {
+                for (var p : allProperties) {
+                    log.trace("  {} : {} (type={})", p.name(), p.flags(), p.propType().typeName());
+                }
             }
         }
 
@@ -201,12 +205,12 @@ public final class XmlDefParser {
             PropertyFlags.CELL_PUBLIC_AND_OWN);
 
         if ("Avatar".equals(name) || "Account".equals(name)) {
-            System.err.println("[XmlDefParser] " + name + " baseProps=" + baseProps.size()
-                + " clientProps=" + clientProps.size() + " internalProps=" + internalProps.size());
+            log.debug("{} baseProps={} clientProps={} internalProps={}",
+                name, baseProps.size(), clientProps.size(), internalProps.size());
             if (name.equals("Account")) {
-                System.err.println("[XmlDefParser] Account allProperties=" + allProperties.size()
-                    + " (own=" + def.properties.size() + " inherited=" + inherited.properties.size() + ")");
-                System.err.println("[XmlDefParser] Account 继承接口: " + def.implements_);
+                log.debug("Account allProperties={} (own={} inherited={})",
+                    allProperties.size(), def.properties.size(), inherited.properties.size());
+                log.debug("Account 继承接口: {}", def.implements_);
             }
         }
 

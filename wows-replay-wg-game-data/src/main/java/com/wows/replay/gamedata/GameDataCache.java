@@ -2,6 +2,7 @@ package com.wows.replay.gamedata;
 
 import com.wows.replay.core.JsonConstantsProvider;
 import com.wows.replay.core.spi.EntitySpecProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,6 +15,7 @@ import java.util.Map;
  *
  * <p>支持多版本并存，超过最大容量时淘汰最久未使用的条目。</p>
  */
+@Slf4j
 public final class GameDataCache {
 
     private final int maxSize;
@@ -52,8 +54,7 @@ public final class GameDataCache {
             var entitiesXml = gameDataDir.resolve("scripts/entities.xml");
             var aliasXml = gameDataDir.resolve("scripts/entity_defs/alias.xml");
             if (!Files.exists(entitiesXml) || !Files.exists(aliasXml)) {
-                System.err.println("[GameDataCache] 警告：" + gameDataDir
-                    + " 中缺少 scripts/entities.xml 或 scripts/entity_defs/alias.xml");
+                log.warn("{} 中缺少 scripts/entities.xml 或 scripts/entity_defs/alias.xml", gameDataDir);
                 return EntitySpecProvider.empty();
             }
             return new XmlEntitySpecProvider(path -> {
