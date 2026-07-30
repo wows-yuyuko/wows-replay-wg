@@ -14,13 +14,13 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 完整集成测试：回放文件 → parse → analyze → JSON.
  *
- * <p>The test replay is expected at {@code temp/wg_15.7/} relative to the
+ * <p>The test replay is expected at {@code temp/wg_15.6/} relative to the
  * project root.  Tests are skipped gracefully if the file is absent.</p>
  */
 class ReplayAnalyzerIT {
 
     private static final String REPLAY_PATH =
-        "temp/wg_15.7/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
+        "temp/wg_15.6/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
 
     private Path resolveReplay() {
         var candidate = Path.of(REPLAY_PATH);

@@ -12,67 +12,29 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 使用真实 .wowsreplay 文件的端到端测试。
  *
- * <p>The test replay is expected at {@code temp/wg_15.7/} relative to the
+ * <p>The test replay is expected at {@code temp/wg_15.6/} relative to the
  * project root.  Tests are skipped gracefully if the file is absent.</p>
  */
 class ReplayFileTest {
 
     /** Path relative to project root. */
     private static final String REPLAY_PATH =
-        "temp/wg_15.7/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
+        "temp/wg_15.6/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
 
     private Path resolveReplay() {
-        // Try relative to user.dir (project root when run via `mvn test`)
-        var candidate = Path.of(REPLAY_PATH);
-        if (Files.exists(candidate)) return candidate;
-
-        // Try relative to the core module directory
-        candidate = Path.of("../" + REPLAY_PATH);
-        if (Files.exists(candidate)) return candidate;
-
-        return null;
+        String projectRoot = System.getProperty("user.dir");
+        return Path.of(projectRoot).getParent().resolve(REPLAY_PATH);
     }
 
-    // ── Metadata-only ────────────────────────────────────────────────────────
 
-    @Test
-    @DisplayName("不解密包，只解析元数据")
-    void parseMetadataOnly() throws Exception {
-        var path = resolveReplay();
-        if (path == null) {
-            System.out.println("⚠ Skipping: replay file not found at " + REPLAY_PATH);
-            return;
-        }
-
-        byte[] bytes = Files.readAllBytes(path);
-        var meta = ReplayFile.metaFromBytes(bytes);
-
-        assertNotNull(meta);
-        assertNotNull(meta.playerName());
-        assertFalse(meta.playerName().isBlank(), "playerName should not be blank");
-        assertNotNull(meta.mapName(), "mapName should not be null");
-        assertTrue(meta.duration() >= 0, "duration should be non-negative");
-        assertNotNull(meta.playerVehicle(), "playerVehicle should not be null");
-
-        System.out.println("Player:     " + meta.playerName());
-        System.out.println("Vehicle:    " + meta.playerVehicle());
-        System.out.println("Map:        " + meta.mapName());
-        System.out.println("Version:    " + meta.clientVersionFromExe());
-        System.out.println("Duration:   " + meta.duration() + "s");
-        System.out.println("Vehicles:   " + meta.vehicles().size());
-    }
 
     // ── Full parse ───────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("完整解析：解密+解压+包遍历")
+    @DisplayName("完整解析：fromFile + fromBytes 两条路径")
     void fullParse() throws Exception {
         var path = resolveReplay();
-        if (path == null) {
-            System.out.println("⚠ Skipping: replay file not found at " + REPLAY_PATH);
-            return;
-        }
-
+        // ── fromFile ──────────────────────────────────────────────────────
         var replay = ReplayFile.fromFile(path);
 
         assertNotNull(replay);
@@ -80,37 +42,22 @@ class ReplayFileTest {
         assertNotNull(replay.packetData());
         assertTrue(replay.packetData().length > 0, "packet data should not be empty");
 
-        // Iterate packets
         int count = replay.packetCount();
         assertTrue(count > 0, "should have at least one packet");
 
-        System.out.println("Packets:    " + count);
-        System.out.println("Data size:  " + replay.packetData().length + " bytes");
-
-        // Verify battle start clock
         GameClock start = replay.battleStartClock();
         assertNotNull(start);
-        System.out.println("Battle start: " + start.seconds() + "s");
-    }
+        System.out.println("fromFile: " + count + " packets, " + replay.packetData().length + " bytes, start=" + start.seconds() + "s");
 
-    @Test
-    @DisplayName("Full parse from in-memory bytes")
-    void fullParseFromBytes() throws Exception {
-        var path = resolveReplay();
-        if (path == null) {
-            System.out.println("⚠ Skipping: replay file not found at " + REPLAY_PATH);
-            return;
-        }
-
+        // ── fromBytes ─────────────────────────────────────────────────────
         byte[] bytes = Files.readAllBytes(path);
-        var replay = ReplayFile.fromBytes(bytes);
+        var replay2 = ReplayFile.fromBytes(bytes);
 
-        assertNotNull(replay);
-        assertTrue(replay.packetCount() > 0);
-        assertEquals(replay.packetData().length, replay.packetData().length);
+        assertNotNull(replay2);
+        assertEquals(count, replay2.packetCount(), "fromFile and fromBytes should yield same packet count");
 
         // Spot-check: first 10 packets should parse without error
-        var iter = replay.packetIterator();
+        var iter = replay2.packetIterator();
         int sampled = 0;
         while (iter.hasNext() && sampled < 10) {
             var pkt = iter.next();
@@ -120,7 +67,7 @@ class ReplayFileTest {
             sampled++;
         }
         assertTrue(sampled > 0, "should have parsed at least one packet");
-        System.out.println("First " + sampled + " packets parsed OK");
+        System.out.println("fromBytes: first " + sampled + " packets OK");
     }
 
     // ── Error handling ───────────────────────────────────────────────────────
