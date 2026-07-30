@@ -7,7 +7,8 @@ import com.wows.replay.core.types.EntityId;
 import java.util.Map;
 
 /**
- * 0x00: 鍩虹鐜╁瀹炰綋鍒涘缓锛堝惈鍩虹灞炴€э級銆? */
+ * 0x00: 基础玩家实体创建（含基础属性）。
+ */
 public record BasePlayerCreatePacket(
     @JsonProperty("entity_id") EntityId entityId,
     @JsonProperty("entity_type") String entityType,

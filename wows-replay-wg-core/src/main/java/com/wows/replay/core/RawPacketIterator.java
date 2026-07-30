@@ -79,7 +79,7 @@ public class RawPacketIterator implements Iterator<RawPacket> {
                 ? PacketTypeId.fromRaw(rawType, version)
                 : PacketTypeId.fromRawModern(rawType);
 
-            nextPacket = new RawPacket(packetSize, typeId, new GameClock(rawClock), payload);
+            nextPacket = new RawPacket(packetSize, rawType, typeId, new GameClock(rawClock), payload);
         } catch (Exception e) {
             done = true;
             nextPacket = null;

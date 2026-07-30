@@ -1,12 +1,18 @@
 package com.wows.replay.core;
-import lombok.extern.slf4j.Slf4j;
+
 
 import com.wows.replay.core.types.GameClock;
+import com.wows.replay.core.types.Version;
+import com.wows.replay.gamedata.GameDataCache;
+import com.wows.replay.packets.Packet;
+import com.wows.replay.packets.PacketParser;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,11 +28,19 @@ class ReplayFileTest {
     /** Path relative to project root. */
     private static final String REPLAY_PATH =
         "temp/wg_15.6/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
+    private static final String WOWS_DATA_PATH =
+            "temp/wows-data";
 
     private Path resolveReplay() {
         String projectRoot = System.getProperty("user.dir");
         return Path.of(projectRoot).getParent().resolve(REPLAY_PATH);
     }
+
+    private Path resolveWowsData() {
+        String projectRoot = System.getProperty("user.dir");
+        return Path.of(projectRoot).getParent().resolve(WOWS_DATA_PATH);
+    }
+
 
 
 
@@ -70,6 +84,62 @@ class ReplayFileTest {
         }
         assertTrue(sampled > 0, "should have parsed at least one packet");
         log.info("fromBytes: first " + sampled + " packets OK");
+
+        // ── 全部 packet 解码（带 EntitySpec）──────────────────────────────
+        var wowsDataBase = resolveWowsData();
+        var version = Version.fromClientExe(replay.meta().clientVersionFromExe());
+        var gameData = findGameDataDir(wowsDataBase, version);
+        assertNotNull(gameData, "should find matching game data under " + wowsDataBase);
+
+        var cache = GameDataCache.withMaxSize(4);
+        var specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
+        assertNotNull(specProvider, "entity spec provider should not be null");
+
+        var parser = new PacketParser(specProvider, replay.version());
+        var byType = new LinkedHashMap<String, Integer>();
+        var unknownIds = new LinkedHashMap<Integer, Integer>();
+        int decoded = 0, unknown = 0, invalid = 0;
+
+        var iter2 = replay.packetIterator();
+        while (iter2.hasNext()) {
+            var raw = iter2.next();
+            if (raw.isUnknown()) {
+                // collect unknown raw type IDs before parser returns Packet.unknown
+                unknownIds.merge(raw.rawType(), 1, Integer::sum);
+            }
+            var pkt = parser.parse(raw);
+            if (pkt.payload() instanceof Packet.InvalidPayload) {
+                invalid++;
+            } else if (pkt.packetType() == null) {
+                unknown++;
+            } else {
+                decoded++;
+                byType.merge(pkt.packetType().name(), 1, Integer::sum);
+            }
+        }
+
+        log.info("全部解码: {} decoded, {} unknown, {} invalid ({} packet types)",
+            decoded, unknown, invalid, byType.size());
+        if (!unknownIds.isEmpty()) {
+            unknownIds.forEach((id, n) -> log.info("  Unknown rawType=0x{} ({}): {} packets", Integer.toHexString(id), id, n));
+        }
+        assertTrue(decoded > 0, "should decode at least some packets");
+        byType.forEach((type, n) -> log.info("  {}: {}", type, n));
+    }
+
+    /** 在 wows-data 目录下查找匹配版本的 data-{version}/live/ 目录。 */
+    private static Path findGameDataDir(Path wowsDataBase, Version version) {
+        var prefix = "data-" + version.major() + "." + version.minor() + ".";
+        var dir = wowsDataBase.toFile();
+        if (!dir.exists()) return null;
+        var children = dir.listFiles();
+        if (children == null) return null;
+        for (var f : children) {
+            if (f.isDirectory() && f.getName().startsWith(prefix)) {
+                return f.toPath().resolve("live");
+            }
+        }
+        return null;
     }
 
     // ── Error handling ───────────────────────────────────────────────────────

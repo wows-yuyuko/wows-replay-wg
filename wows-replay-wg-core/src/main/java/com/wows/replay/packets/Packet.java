@@ -6,24 +6,24 @@ import com.wows.replay.core.RawPacket;
 import com.wows.replay.core.types.GameClock;
 
 /**
- * 瀹屽叏瑙ｇ爜鐨勫甫绫诲瀷杞借嵎鐨勫洖鏀惧寘銆?
+ * 完全解码的带类型载荷的回放包。
  *
- * <p>瀵规爣 Rust {@code Packet<'replay, 'argtype>}.</p>
+ * <p>对标 Rust {@code Packet<'replay, 'argtype>}.</p>
  */
 public record Packet(
-    /** 鍖呮€诲ぇ灏忥紙鏉ヨ嚜澶撮儴锛夈€?*/
+    /** 包总大小（来自头部）。 */
     int packetSize,
 
     /** Wire packet type (for filtering). */
     PacketTypeId packetType,
 
-    /** 璁板綍鏃剁殑娓告垙鏃堕挓銆?*/
+    /** 记录时的游戏时钟。 */
     GameClock clock,
 
-    /** 宸茶В鐮佽浇鑽枫€?*/
+    /** 已解码载荷。 */
     Object payload,
 
-    /** 鍘熷杞借嵎瀛楄妭锛堣皟璇曠敤锛夈€?*/
+    /** 原始载荷字节（调试用）。 */
     byte[] raw,
 
     /** Bytes remaining after the parser consumed data (non-empty = parse mismatch). */
@@ -31,7 +31,7 @@ public record Packet(
     byte[] leftover
 ) {
     /**
-     * 浠?RawPacket 鍜屽凡瑙ｇ爜杞借嵎鍒涘缓銆?
+     * 从 RawPacket 和已解码载荷创建。
      */
     public static Packet fromRaw(RawPacket raw, Object payload, byte[] leftover) {
         return new Packet(
@@ -45,7 +45,7 @@ public record Packet(
     }
 
     /**
-     * 鍒涘缓鏃犳晥鍖咃紙瑙ｆ瀽澶辫触锛夈€?
+     * 创建无效包（解析失败）。
      */
     public static Packet invalid(RawPacket raw, String errorMessage) {
         return new Packet(
@@ -59,7 +59,7 @@ public record Packet(
     }
 
     /**
-     * 鍒涘缓鏈煡杞借嵎鍖呫€?
+     * 创建未知载荷包。
      */
     public static Packet unknown(RawPacket raw) {
         return new Packet(
@@ -73,7 +73,7 @@ public record Packet(
     }
 
     /**
-     * 鏃犳晥鍖呰浇鑽枫€?
+     * 无效包载荷。
      */
     public record InvalidPayload(String error) {}
 }

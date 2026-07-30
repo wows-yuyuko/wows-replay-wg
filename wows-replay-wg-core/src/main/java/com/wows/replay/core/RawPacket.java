@@ -15,6 +15,7 @@ import com.wows.replay.core.types.GameClock;
  */
 public record RawPacket(
     int packetSize,
+    int rawType,
     PacketTypeId packetType,
     GameClock clock,
     byte[] payload
@@ -26,7 +27,7 @@ public record RawPacket(
 
     @Override
     public String toString() {
-        var typeStr = packetType != null ? packetType.displayName() + "(0x" + Integer.toHexString(packetType.raw()) + ")" : "UNKNOWN";
+        var typeStr = packetType != null ? packetType.displayName() + "(0x" + Integer.toHexString(rawType) + ")" : "UNKNOWN(0x" + Integer.toHexString(rawType) + ")";
         return "RawPacket[type=" + typeStr + ", clock=" + clock + ", size=" + packetSize + "]";
     }
 }

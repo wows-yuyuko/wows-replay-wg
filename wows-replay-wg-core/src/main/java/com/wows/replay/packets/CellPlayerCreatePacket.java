@@ -10,7 +10,8 @@ import com.wows.replay.core.types.Vec3;
 import java.util.Map;
 
 /**
- * 0x01: Cell 鐜╁瀹炰綋鍒涘缓锛堝惈鍐呴儴灞炴€?浣嶇疆锛夈€? */
+ * 0x01: Cell 玩家实体创建（含内部属性+位置）。
+ */
 public record CellPlayerCreatePacket(
     @JsonProperty("entity_id") EntityId entityId,
     @JsonProperty("entity_type") String entityType,

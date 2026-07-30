@@ -10,7 +10,8 @@ import com.wows.replay.core.types.Vec3;
 import java.util.Map;
 
 /**
- * 0x05: 瀹炰綋鍒涘缓銆? */
+ * 0x05: 实体创建。
+ */
 public record EntityCreatePacket(
     @JsonProperty("entity_id") EntityId entityId,
     @JsonProperty("spec_idx") int specIdx,

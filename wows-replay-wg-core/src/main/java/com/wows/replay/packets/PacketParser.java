@@ -107,7 +107,6 @@ public class PacketParser {
         };
     }
 
-    // 鈹€鈹€ Spec-independent parsers 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
     private Packet parsePosition(RawPacket raw) {
         var buf = buffer(raw.payload());
