@@ -1,101 +1,197 @@
 package com.wows.replay.analyzer;
-import lombok.extern.slf4j.Slf4j;
 
 import com.wows.replay.core.ReplayException;
 import com.wows.replay.core.ReplayFile;
+import com.wows.replay.core.spi.EntitySpecProvider;
+import com.wows.replay.core.types.Version;
+import com.wows.replay.gamedata.GameDataCache;
+import com.wows.replay.packets.PacketParser;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 完整集成测试：回放文件 → parse → analyze → JSON.
+ * 完整集成测试：回放文件 → PacketParser → PacketDecoder → BattleWorld.
  *
- * <p>The test replay is expected at {@code temp/wg_15.6/} relative to the
- * project root.  Tests are skipped gracefully if the file is absent.</p>
+ * <p>Mirrors Rust {@code replay-dumper} pipeline.</p>
  */
 @Slf4j
 class ReplayAnalyzerIT {
 
+    /** Path relative to project root. */
     private static final String REPLAY_PATH =
-        "temp/wg_15.6/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
+            "temp/wg_15.6/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
+    private static final String REPLAY_PATH2 =
+            "temp/wg_15.6/20260730_013138_PASB720-Rhode-Island_56_AngelWings.wowsreplay";
+    private static final String WOWS_DATA_PATH =
+            "temp/wows-data";
 
     private Path resolveReplay() {
-        var candidate = Path.of(REPLAY_PATH);
-        if (Files.exists(candidate)) return candidate;
-        candidate = Path.of("../" + REPLAY_PATH);
-        if (Files.exists(candidate)) return candidate;
+        String projectRoot = System.getProperty("user.dir");
+        return Path.of(projectRoot).getParent().resolve(REPLAY_PATH);
+    }
+
+    private Path resolveReplay2() {
+        String projectRoot = System.getProperty("user.dir");
+        return Path.of(projectRoot).getParent().resolve(REPLAY_PATH2);
+    }
+
+    private Path resolveWowsData() {
+        String projectRoot = System.getProperty("user.dir");
+        return Path.of(projectRoot).getParent().resolve(WOWS_DATA_PATH);
+    }
+
+
+    @Test
+    @DisplayName("BattleWorld 完整管线：PacketParser → PacketDecoder → BattleWorld")
+    void battleWorldFullPipeline() throws Exception {
+        var path = resolveReplay();
+        var replay = ReplayFile.fromFile(path);
+        var version = replay.version();
+
+        // ── 加载 EntitySpec ──────────────────────────────────────────────
+        var wowsData = resolveWowsData();
+        var gameData = findGameDataDir(wowsData, version);
+        assertNotNull(gameData, "should find game data under " + wowsData);
+
+        var cache = GameDataCache.withMaxSize(4);
+        EntitySpecProvider specProvider = cache.entitySpecs(
+            GameDataCache.VersionKey.from(gameData), gameData);
+        assertNotNull(specProvider, "entity spec provider should not be null");
+
+        // ── Layer 1: PacketParser ───────────────────────────────────────
+        var parser = new PacketParser(specProvider, version);
+
+        // ── Layer 2: PacketDecoder ──────────────────────────────────────
+        var decoder = new PacketDecoder(version);
+
+        // ── Layer 3: BattleWorld ────────────────────────────────────────
+        var world = new BattleWorld(replay.meta(), version);
+
+        // ── 主循环：遍历所有 packet ──────────────────────────────────────
+        int totalPackets = 0;
+        int decodedPackets = 0;
+        int entityMethods = 0;
+        int entityCreates = 0;
+        int positions = 0;
+
+        var iter = replay.packetIterator();
+        while (iter.hasNext()) {
+            var raw = iter.next();
+            totalPackets++;
+
+            var packet = parser.parse(raw);
+            if (packet == null || packet.payload() instanceof com.wows.replay.packets.Packet.InvalidPayload) {
+                continue;
+            }
+            if (packet.packetType() == null) continue;
+
+            var payload = decoder.decode(packet);
+            world.process(payload, raw.clock());
+            decodedPackets++;
+
+            // 统计
+            if (packet.packetType().name().contains("ENTITY_METHOD")) entityMethods++;
+            if (packet.packetType().name().contains("ENTITY_CREATE")) entityCreates++;
+            if (packet.packetType().name().contains("POSITION")) positions++;
+        }
+
+        world.finish();
+
+        // ── 验证 ─────────────────────────────────────────────────────────
+        log.info("数据包: {} 总计, {} 已解码, {} EntityMethod, {} EntityCreate, {} Position",
+            totalPackets, decodedPackets, entityMethods, entityCreates, positions);
+        log.info("实体: {} 个, 类型: {}", world.entities.size(), world.entityTypes);
+        log.info("玩家: {} 个, entity→player: {} 映射",
+            world.players.size(), world.entityToPlayer.size());
+        log.info("击杀: {} 条, 伤害: {} 条, 聊天: {} 条, 消耗品: {} 条",
+            world.killLog.size(), world.damageEvents.size(),
+            world.chatLog.size(), world.consumableLog.size());
+        log.info("占点: {} 个, Buff区域: {} 个, 天气: {} 个, 建筑: {} 个",
+            world.capturePoints.size(), world.buffZones.size(),
+            world.weatherZones.size(), world.buildings.size());
+        log.info("mapName={}, winningTeam={}, finishType={}, matchResult={}",
+            world.mapName, world.winningTeam, world.finishType, world.matchResult);
+
+        assertTrue(totalPackets > 0, "should have packets");
+        assertTrue(decodedPackets > 0, "should decode packets");
+        assertFalse(world.entities.isEmpty(), "should have entities");
+
+        // 验证玩家数据
+        int playersWithName = 0;
+        for (var es : world.entities.values()) {
+            if (es.playerName != null && !es.playerName.isEmpty()) {
+                playersWithName++;
+                log.info("玩家实体: eid={} type={} team={} hp={}/{} name={} dbId={}",
+                    es.id, es.type, es.teamId, es.health, es.maxHealth,
+                    es.playerName, es.dbId);
+            }
+        }
+        log.info("有名称的玩家实体: {} 个", playersWithName);
+        assertTrue(playersWithName > 0, "should find at least one named player entity");
+
+        // 打印玩家信息
+        for (var entry : world.players.entrySet()) {
+            var pi = entry.getValue();
+            log.info("Player dbId={} name={} entityId={} team={}",
+                entry.getKey(), pi.username, pi.entityId, pi.teamId);
+        }
+    }
+
+    @Test
+    @DisplayName("BattleWorld: 第二个 replay 文件")
+    void battleWorldReplay2() throws Exception {
+        var path = resolveReplay2();
+        var replay = ReplayFile.fromFile(path);
+        var version = replay.version();
+
+        var wowsData = resolveWowsData();
+        var gameData = findGameDataDir(wowsData, version);
+        assertNotNull(gameData, "should find game data");
+
+        var cache = GameDataCache.withMaxSize(4);
+        var specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
+
+        var parser = new PacketParser(specProvider, version);
+        var decoder = new PacketDecoder(version);
+        var world = new BattleWorld(replay.meta(), version);
+
+        int decoded = 0;
+        var iter = replay.packetIterator();
+        while (iter.hasNext()) {
+            var raw = iter.next();
+            var packet = parser.parse(raw);
+            if (packet == null || packet.payload() instanceof com.wows.replay.packets.Packet.InvalidPayload) continue;
+            if (packet.packetType() == null) continue;
+
+            var payload = decoder.decode(packet);
+            world.process(payload, raw.clock());
+            decoded++;
+        }
+
+        world.finish();
+        log.info("Replay2: {} decoded, {} entities, {} players, {} kills",
+            decoded, world.entities.size(), world.players.size(), world.killLog.size());
+        assertTrue(decoded > 0);
+    }
+
+    private static Path findGameDataDir(Path wowsDataBase, Version version) {
+        var prefix = "data-" + version.major() + "." + version.minor() + ".";
+        var dir = wowsDataBase.toFile();
+        if (!dir.exists()) return null;
+        var children = dir.listFiles();
+        if (children == null) return null;
+        for (var f : children) {
+            if (f.isDirectory() && f.getName().startsWith(prefix)) {
+                return f.toPath().resolve("live");
+            }
+        }
         return null;
-    }
-
-    @Test
-    @DisplayName("快速分析生成有效 JSON")
-    void quickAnalysisProducesJson() throws Exception {
-        var path = resolveReplay();
-        if (path == null) {
-            log.info("⚠ Skipping: replay file not found at " + REPLAY_PATH);
-            return;
-        }
-
-        String json = ReplayAnalyzer.quick(path);
-
-        assertNotNull(json);
-        assertFalse(json.isBlank(), "JSON output should not be blank");
-        assertTrue(json.contains("\"meta\""), "JSON should contain meta section");
-        assertTrue(json.contains("\"summary\""), "JSON should contain summary section");
-        assertTrue(json.contains("\"packets\""), "JSON should contain packets section");
-
-        log.info("JSON length: " + json.length() + " chars");
-        // Print first ~500 chars for inspection
-        log.info(json);
-    }
-
-    @Test
-    @DisplayName("从内存 ReplayFile 快速分析")
-    void quickAnalysisFromReplayFile() throws Exception {
-        var path = resolveReplay();
-        if (path == null) {
-            log.info("⚠ Skipping: replay file not found at " + REPLAY_PATH);
-            return;
-        }
-
-        var replay = ReplayFile.fromFile(path);
-        String json = ReplayAnalyzer.quick(replay);
-
-        assertNotNull(json);
-        assertTrue(json.contains("\"meta\""));
-        log.info("Packet count: " + replay.packetCount());
-        log.info("JSON output:  " + json.length() + " chars");
-    }
-
-    @Test
-    @DisplayName("buildReport 返回结构化数据")
-    void buildReportReturnsStructuredData() throws Exception {
-        var path = resolveReplay();
-        if (path == null) {
-            log.info("⚠ Skipping: replay file not found at " + REPLAY_PATH);
-            return;
-        }
-
-        var replay = ReplayFile.fromFile(path);
-        var analyzer = ReplayAnalyzer.builder().build();
-        var report = analyzer.buildReport(replay);
-
-        assertNotNull(report);
-        assertNotNull(report.meta());
-        assertNotNull(report.summary());
-        assertNotNull(report.packets());
-        assertTrue(report.summary().totalPackets() > 0, "should have at least one packet");
-
-        log.info("Player:      " + report.meta().playerName());
-        log.info("Map:         " + report.meta().mapName());
-        log.info("Total pkts:  " + report.summary().totalPackets());
-        log.info("Duration:    " + report.summary().totalDuration() + "s");
-        log.info("Packet types: " + report.packets().byType().size());
     }
 
     @Test

@@ -416,121 +416,87 @@ public final class RichExtractor {
     /** Vehicle entity_id → Avatar entity_id (owner) */
     private final Map<Integer, Integer> vehicleToOwner = new HashMap<>();
 
-    /** Method name → handler. 新增方法只需加一行映射。 */
+    /** Event → handler. 解码层 {@link DecodedEvent#decode} 已在调用前完成所有 arg 解析。 */
     @FunctionalInterface
-    private interface MethodHandler {
-        void handle(int eid, NamedArgs args, float elapsed);
+    private interface EventHandler {
+        void handle(int eid, DecodedEvent event, float elapsed);
     }
 
-    private final Map<String, MethodHandler> methodHandlers = new LinkedHashMap<>();
+    private final Map<String, EventHandler> eventHandlers = new LinkedHashMap<>();
     {
-        methodHandlers.put("receiveDamagesOnShip",      this::handleDamage);
-        methodHandlers.put("receiveVehicleDeath",       this::handleKill);
-        methodHandlers.put("onChatMessage",              this::handleChat);
-        methodHandlers.put("onConsumableUsed",           this::handleConsumable);
-        methodHandlers.put("onArenaStateReceived",       this::handleArenaState);
-        methodHandlers.put("onNewPlayerSpawnedInBattle", this::handleNewPlayer);
+        eventHandlers.put("receiveDamagesOnShip",      this::handleDamage);
+        eventHandlers.put("receiveVehicleDeath",       this::handleKill);
+        eventHandlers.put("onChatMessage",              this::handleChat);
+        eventHandlers.put("onConsumableUsed",           this::handleConsumable);
+        eventHandlers.put("onArenaStateReceived",       this::handleArenaState);
+        eventHandlers.put("onNewPlayerSpawnedInBattle", this::handleNewPlayer);
     }
 
     private void handleEntityMethod(EntityMethodPacket em, float elapsed) {
         int eid = em.entityId().value();
         String method = em.method();
-        NamedArgs args = em.args();
         seenMethods.add(method);
 
-        var handler = methodHandlers.get(method);
+        var handler = eventHandlers.get(method);
         if (handler != null) {
-            handler.handle(eid, args, elapsed);
-        }
-    }
-
-    // ── 方法处理器 ──────────────────────────────────────────────────────
-    // 参数名来自 .def 文件中的 <Args> 定义。
-    // 标注 "无名" 的表示 .def 使用 <Arg> 内联写法，spec 自动命名为 arg0,arg1...
-    // 标注 "未在 spec" 的方法在 .def 中找不到定义，暂用位置索引。
-
-    /** receiveDamagesOnShip(Vehicle): arg0=ARRAY&lt;DAMAGES&gt; (无名) */
-    private void handleDamage(int eid, NamedArgs args, float elapsed) {
-        if (!args.isEmpty() && args.getFirst() instanceof ArgValue.ArrayVal arr) {
-            for (ArgValue elem : arr.elements()) {
-                if (elem instanceof ArgValue.DictVal dict) {
-                    var d = dict.entries();
-                    int aggressorVe = intFromArg(d.get("vehicleID"));
-                    int aggressorAv = vehicleToOwner.getOrDefault(aggressorVe, aggressorVe);
-                    float amount = floatFromArg(d.get("damage"));
-                    damageEvents.add(new DamageEvent(elapsed, aggressorAv, eid, amount));
-                }
+            var event = DecodedEvent.decode(method, em.args());
+            if (event != null) {
+                handler.handle(eid, event, elapsed);
             }
         }
     }
 
-    /** receiveVehicleDeath(Avatar): arg0=victimVe, arg1=killerVe, arg2=cause (无名) */
-    private void handleKill(int eid, NamedArgs args, float elapsed) {
-        if (args.size() >= 2) {
-            int victimVe = intFromArg(args.get("arg0"));
-            int killerVe = intFromArg(args.get("arg1"));
-            int cause = args.size() >= 3 ? intFromArg(args.get("arg2")) : 0;
-            int victimAv = vehicleToOwner.getOrDefault(victimVe, victimVe);
-            int killerAv = vehicleToOwner.getOrDefault(killerVe, killerVe);
+    // ── 事件处理器（纯业务逻辑，已由 DecodedEvent.decode 完成参数解析） ──
+
+    private void handleDamage(int eid, DecodedEvent event, float elapsed) {
+        if (event instanceof DecodedEvent.DamageStat ds) {
+            for (var e : ds.entries()) {
+                int aggressorAv = vehicleToOwner.getOrDefault(e.aggressorEntityId(), e.aggressorEntityId());
+                damageEvents.add(new DamageEvent(elapsed, aggressorAv, eid, e.amount()));
+            }
+        }
+    }
+
+    private void handleKill(int eid, DecodedEvent event, float elapsed) {
+        if (event instanceof DecodedEvent.ShipDestroyed sd) {
+            int victimAv = vehicleToOwner.getOrDefault(sd.victimEntityId(), sd.victimEntityId());
+            int killerAv = vehicleToOwner.getOrDefault(sd.killerEntityId(), sd.killerEntityId());
             var kl = entityToPlayer.get(killerAv);
             var vl = entityToPlayer.get(victimAv);
             killEvents.add(new KillEvent(elapsed, killerAv, victimAv,
                 kl != null ? kl.dbId : 0, kl != null ? kl.username : "",
-                vl != null ? vl.dbId : 0, vl != null ? vl.username : "", cause));
-            getOrCreate(victimVe, null).isAlive = false;
+                vl != null ? vl.dbId : 0, vl != null ? vl.username : "", sd.cause()));
+            getOrCreate(sd.victimEntityId(), null).isAlive = false;
         }
     }
 
-    /** onChatMessage(Account): arg0=DB_ID(senderId), arg1=STRING(channel), arg2=STRING(message) */
-    private void handleChat(int eid, NamedArgs args, float elapsed) {
-        if (args.size() >= 4) {
-            String channel = args.get(0) instanceof ArgValue.StrVal sv ? sv.value() : "";
-            String sender = args.get(1) instanceof ArgValue.StrVal sv ? sv.value() : "";
-            String message = args.get(2) instanceof ArgValue.StrVal sv ? sv.value() : "";
+    private void handleChat(int eid, DecodedEvent event, float elapsed) {
+        if (event instanceof DecodedEvent.ChatMessage cm) {
             var pl = entityToPlayer.get(eid);
             chatEvents.add(new ChatEvent(elapsed, eid,
-                pl != null ? pl.dbId : 0, sender, channel, message));
+                pl != null ? pl.dbId : 0,
+                String.valueOf(cm.senderId()), cm.channel(), cm.message()));
         }
     }
 
-    /**
-     * onConsumableUsed(Vehicle): 15.2+ arg0=BLOB(packed struct), arg1=FLOAT32(duration).
-     * <pre>
-     * Blob format (UsageConverter struct.pack):
-     *   type=0: 1 byte (NONE)
-     *   type=1: 2 bytes BB  (usage_type, consumable_id)
-     *   type=2: 10 bytes BBff (usage_type, consumable_id, x, z)
-     *   type=3: 11 bytes BBbQ (usage_type, consumable_id, target_type, target_id)
-     * </pre>
-     */
-    private void handleConsumable(int eid, NamedArgs args, float elapsed) {
-        if (args.isEmpty()) return;
-        // 15.2+: first arg is BLOB with packed usage params
-        if (args.getFirst() instanceof ArgValue.BlobVal blob) {
-            byte[] b = blob.value();
-            if (b.length < 1) return;
-            int usageType = b[0] & 0xFF;
-            int consumableId = b.length >= 2 ? b[1] & 0xFF : 0;
-            if (usageType == 0) return; // NONE
-            float duration = args.size() >= 2 ? floatFromArg(args.get(1)) : 0f;
+    private void handleConsumable(int eid, DecodedEvent event, float elapsed) {
+        if (event instanceof DecodedEvent.ConsumableUsed cu) {
             var pl = entityToPlayer.get(eid);
             consumableEvents.add(new ConsumableEvent(elapsed, eid,
                 pl != null ? pl.dbId : 0, pl != null ? pl.username : "",
-                consumableId, duration));
+                cu.consumableId(), cu.duration()));
         }
     }
 
-    /** onArenaStateReceived(Avatar): playersStates=BLOB */
-    private void handleArenaState(int eid, NamedArgs args, float elapsed) {
-        if (args.has("playersStates") && args.get("playersStates") instanceof ArgValue.BlobVal blob) {
-            applyArenaPlayers(blob.value());
+    private void handleArenaState(int eid, DecodedEvent event, float elapsed) {
+        if (event instanceof DecodedEvent.ArenaState as) {
+            applyArenaPlayers(as.playersBlob());
         }
     }
 
-    /** onNewPlayerSpawnedInBattle(Avatar): playersData=BLOB (第1个参数) */
-    private void handleNewPlayer(int eid, NamedArgs args, float elapsed) {
-        if (args.has("playersData") && args.get("playersData") instanceof ArgValue.BlobVal blob) {
-            applyArenaPlayers(blob.value());
+    private void handleNewPlayer(int eid, DecodedEvent event, float elapsed) {
+        if (event instanceof DecodedEvent.PlayerSpawned ps) {
+            applyArenaPlayers(ps.playersBlob());
         }
     }
 

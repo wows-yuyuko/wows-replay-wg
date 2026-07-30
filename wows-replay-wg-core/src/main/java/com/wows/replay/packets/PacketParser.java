@@ -461,8 +461,6 @@ public class PacketParser {
     }
 
     private Packet parseNestedPropertyUpdate(RawPacket raw) {
-        // Nested property updates are complex 鈥?for initial implementation,
-        // return as unknown if no specs
         if (specs.isEmpty()) return Packet.unknown(raw);
         try {
             var buf = buffer(raw.payload());
@@ -473,10 +471,62 @@ public class PacketParser {
             byte[] payload = new byte[Math.min(payloadSize, buf.remaining())];
             buf.get(payload);
 
-            // For now, treat nested property updates as raw blobs
-            return Packet.fromRaw(raw, new PropertyUpdatePacket(eid, "nested", payload), new byte[0]);
+            // Resolve property name from bit-packed prop_idx in the payload
+            String propertyName = "nested";
+            var state = entities.get(eid.value());
+            if (state != null) {
+                var spec = getSpec(state.entityType, "NestedPropertyUpdate");
+                if (!spec.clientProperties().isEmpty()) {
+                    int numProps = spec.clientProperties().size();
+                    int bitWidth = Integer.SIZE - Integer.numberOfLeadingZeros(
+                        Integer.highestOneBit(numProps - 1) << 1);
+                    var bits = new BitReader(payload);
+                    // cont flag (must be 1)
+                    int cont = bits.read(1);
+                    if (cont == 1 && bits.remaining() >= bitWidth) {
+                        int propIdx = bits.read(bitWidth);
+                        if (propIdx < numProps) {
+                            propertyName = spec.clientProperties().get(propIdx).name();
+                        }
+                    }
+                }
+            }
+
+            return Packet.fromRaw(raw, new PropertyUpdatePacket(eid, propertyName, payload), new byte[0]);
         } catch (Exception e) {
             return Packet.invalid(raw, "NestedPropertyUpdate parse error: " + e.getMessage());
+        }
+    }
+
+    /** Minimal big-endian bit reader for nested-property payloads. */
+    private static final class BitReader {
+        private final byte[] data;
+        private int bytePos;
+        private int bitPos;  // 0..7 within current byte
+        private final int totalBits;
+
+        BitReader(byte[] data) {
+            this.data = data;
+            this.totalBits = data.length * 8;
+        }
+
+        int read(int nBits) {
+            int value = 0;
+            for (int i = 0; i < nBits; i++) {
+                if (bytePos >= data.length) break;
+                int bit = (data[bytePos] >> (7 - bitPos)) & 1;
+                value = (value << 1) | bit;
+                bitPos++;
+                if (bitPos == 8) {
+                    bitPos = 0;
+                    bytePos++;
+                }
+            }
+            return value;
+        }
+
+        int remaining() {
+            return totalBits - (bytePos * 8 + bitPos);
         }
     }
 
