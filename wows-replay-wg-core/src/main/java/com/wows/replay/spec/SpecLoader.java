@@ -265,7 +265,12 @@ public final class SpecLoader {
                     var ofNode = childByName(node, "of");
                     var sizeNode = childByName(node, "size");
                     var elemType = ofNode != null ? parseType(ofNode, aliases) : ArgType.Primitive.BLOB;
-                    yield new ArgType.Array(elemType);
+                    OptionalInt fixedSize = OptionalInt.empty();
+                    if (sizeNode != null) {
+                        try { fixedSize = OptionalInt.of(Integer.parseInt(sizeNode.getTextContent().trim())); }
+                        catch (NumberFormatException ignored) {}
+                    }
+                    yield new ArgType.Array(fixedSize, elemType);
                 } else if (text.startsWith("TUPLE")) {
                     var ofNode = childByName(node, "of");
                     var elemType = ofNode != null ? parseType(ofNode, aliases) : ArgType.Primitive.BLOB;

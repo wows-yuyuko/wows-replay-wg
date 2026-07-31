@@ -8,6 +8,7 @@ import com.wows.replay.types.ArgType;
 import com.wows.replay.types.ArgValue;
 import com.wows.replay.spi.EntitySpecProvider;
 import com.wows.replay.model.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,7 +26,12 @@ import java.util.*;
  *
  * <p>Spec-independent packets (Position, Camera, Map, GunMarker, PlayerNetStats,
  * etc.) are always decoded regardless of whether specs are available.</p>
+ *
+ * <p>Entity-dependent parsing is fail-soft: a property/method payload that cannot
+ * be decoded logs a warning and is skipped rather than aborting the whole replay
+ * (see doc §11.5).</p>
  */
+@Slf4j
 public class Parser {
 
     private final List<EntitySpec> specs;
@@ -309,7 +315,7 @@ public class Parser {
 
             return Packet.fromRaw(raw, new BasePlayerCreatePacket(eid, spec.name(), props, componentData), new byte[0]);
         } catch (Exception e) {
-            return Packet.invalid(raw, "BasePlayerCreate parse error: " + e.getMessage());
+            return Packet.invalid(raw, "BasePlayerCreate parse error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -328,7 +334,7 @@ public class Parser {
 
             return Packet.fromRaw(raw, new BasePlayerCreatePacket(eid, spec.name(), Map.of(), componentData), new byte[0]);
         } catch (Exception e) {
-            return Packet.invalid(raw, "BasePlayerCreateStub parse error: " + e.getMessage());
+            return Packet.invalid(raw, "BasePlayerCreateStub parse error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -353,8 +359,14 @@ public class Parser {
             var props = new LinkedHashMap<String, ArgValue>();
             for (int i = 0; i < spec.internalProperties().size() && propsBuffer.hasRemaining(); i++) {
                 var propSpec = spec.internalProperties().get(i);
-                var value = parseValue(propsBuffer, propSpec.propType());
-                props.put(propSpec.name(), value);
+                try {
+                    var value = parseValue(propsBuffer, propSpec.propType());
+                    props.put(propSpec.name(), value);
+                } catch (Exception e) {
+                    log.warn("CellPlayerCreate {} {}: internal prop[{}]={} parse failed: {}",
+                        eid, spec.name(), i, propSpec.name(), e.toString());
+                    break;
+                }
             }
 
             byte[] componentData = new byte[buf.remaining()];
@@ -362,7 +374,7 @@ public class Parser {
 
             return Packet.fromRaw(raw, new CellPlayerCreatePacket(eid, spec.name(), spaceId, vehicleId, pos, rot, props, componentData), remaining(raw, buf));
         } catch (Exception e) {
-            return Packet.invalid(raw, "CellPlayerCreate parse error: " + e.getMessage());
+            return Packet.invalid(raw, "CellPlayerCreate parse error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -380,6 +392,9 @@ public class Parser {
 
             var spec = getSpec(entityType, "EntityCreate");
 
+            // 先注册实体，即使属性解析失败，后续 EntityMethod/EntityProperty 仍可解析
+            entities.put(eid.value(), new EntityState(entityType, new ArrayList<>()));
+
             // Parse state: [num_props: u8][(prop_id: u8, value)...]
             int numProps = buf.get() & 0xFF;
             var props = new LinkedHashMap<String, ArgValue>();
@@ -388,16 +403,24 @@ public class Parser {
                 int propId = buf.get() & 0xFF;
                 if (propId >= spec.clientProperties().size()) break;
                 var propSpec = spec.clientProperties().get(propId);
-                var value = parseValue(buf, propSpec.propType());
-                props.put(propSpec.name(), value);
-                storedProps.add(value);
+                try {
+                    var value = parseValue(buf, propSpec.propType());
+                    props.put(propSpec.name(), value);
+                    storedProps.add(value);
+                } catch (Exception e) {
+                    log.warn("EntityCreate {} {}: prop[{}]={} parse failed: {}",
+                        eid, spec.name(), propId, propSpec.name(), e.toString());
+                    break;
+                }
             }
 
-            entities.put(eid.value(), new EntityState(entityType, storedProps));
+            if (!storedProps.isEmpty()) {
+                entities.put(eid.value(), new EntityState(entityType, storedProps));
+            }
 
             return Packet.fromRaw(raw, new EntityCreatePacket(eid, entityType, spec.name(), spaceId, vehicleId, pos, rot, stateLen, props), remaining(raw, buf));
         } catch (Exception e) {
-            return Packet.invalid(raw, "EntityCreate parse error: " + e.getMessage());
+            return Packet.invalid(raw, "EntityCreate parse error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -426,7 +449,7 @@ public class Parser {
 
             return Packet.fromRaw(raw, new EntityPropertyPacket(eid, propSpec.name(), value), remaining(raw, buf));
         } catch (Exception e) {
-            return Packet.invalid(raw, "EntityProperty parse error: " + e.getMessage());
+            return Packet.invalid(raw, "EntityProperty parse error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -464,7 +487,7 @@ public class Parser {
             return Packet.fromRaw(raw, new EntityMethodPacket(eid, method.name(),
                 new NamedArgs(argNames, argValues)), remaining(raw, buf));
         } catch (Exception e) {
-            return Packet.invalid(raw, "EntityMethod parse error: " + e.getMessage());
+            return Packet.invalid(raw, "EntityMethod parse error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -502,7 +525,7 @@ public class Parser {
 
             return Packet.fromRaw(raw, new PropertyUpdatePacket(eid, propertyName, payload), new byte[0]);
         } catch (Exception e) {
-            return Packet.invalid(raw, "NestedPropertyUpdate parse error: " + e.getMessage());
+            return Packet.invalid(raw, "NestedPropertyUpdate parse error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -564,7 +587,7 @@ public class Parser {
                 case VECTOR3 -> new ArgValue.Vec3Val(buf.getFloat(), buf.getFloat(), buf.getFloat());
                 case VECTOR4 -> new ArgValue.Vec4Val(buf.getFloat(), buf.getFloat(), buf.getFloat(), buf.getFloat());
             };
-            case ArgType.Array(var elem)  -> readArray(buf, elem);
+            case ArgType.Array(var fixed, var elem)  -> readArray(buf, fixed, elem);
             case ArgType.Tuple(var elems) -> readTuple(buf, elems);
             case ArgType.FixedDict fixed -> readFixedDict(buf, fixed);
             case ArgType.NamedType(var _, var inner) -> parseValue(buf, inner);
@@ -594,9 +617,15 @@ public class Parser {
         return bytes;
     }
 
-    private ArgValue readArray(ByteBuffer buf, ArgType elementType) {
-        int count = buf.get() & 0xFF;  // BigWorld RPC: 1-byte variable-length array count
-        if (count > 250) count = 0;     // sanity guard
+    private ArgValue readArray(ByteBuffer buf, OptionalInt fixedSize, ArgType elementType) {
+        int count;
+        if (fixedSize.isPresent()) {
+            // 固定长度数组：线路上没有计数字节，数量由 spec 决定
+            count = fixedSize.getAsInt();
+        } else {
+            count = buf.get() & 0xFF;  // BigWorld RPC: 1-byte variable-length array count
+            if (count > 250) count = 0; // sanity guard
+        }
         var elements = new ArrayList<ArgValue>(count);
         for (int i = 0; i < count && buf.hasRemaining(); i++) {
             elements.add(parseValue(buf, elementType));

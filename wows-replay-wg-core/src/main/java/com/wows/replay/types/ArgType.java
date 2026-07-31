@@ -3,6 +3,7 @@ package com.wows.replay.types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.regex.Pattern;
 
 /**
@@ -30,8 +31,16 @@ public sealed interface ArgType {
 
     // ── Compound types ───────────────────────────────────────────────────────
 
-    /** Array of a single element type. 对标 Rust {@code Array(Option<usize>, Box<ArgType>)}. */
-    record Array(ArgType elementType) implements ArgType {}
+    /**
+     * Array of a single element type. 对标 Rust {@code Array(Option<usize>, Box<ArgType>)}.
+     *
+     * <p>When {@code fixedSize} is present the wire format has <em>no</em> count byte
+     * (the count is known from the spec); otherwise a u8 count precedes the elements.</p>
+     */
+    record Array(OptionalInt fixedSize, ArgType elementType) implements ArgType {
+        /** 无固定长度数组（线路上带 u8 计数字节）。 */
+        Array(ArgType elementType) { this(OptionalInt.empty(), elementType); }
+    }
 
     /** Fixed-size tuple of heterogeneous types. 对标 Rust {@code Tuple(Box<ArgType>, usize)}. */
     record Tuple(List<ArgType> elementTypes) implements ArgType {}
@@ -57,6 +66,10 @@ public sealed interface ArgType {
     /** 匹配 "ARRAY <of> element" / "ARRAY element". */
     Pattern ARRAY_PATTERN = Pattern.compile(
         "ARRAY\\s*(?:<OF>)?\\s*(.+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+    /** 匹配描述符中的固定长度标记：{@code <SIZE>N</SIZE>}. */
+    Pattern ARRAY_SIZE_PATTERN = Pattern.compile(
+        "<SIZE>\\s*(\\d+)\\s*</SIZE>", Pattern.CASE_INSENSITIVE);
 
     /** 匹配 "TUPLE <of> type1,type2,..." / "TUPLE type1,type2,...". */
     Pattern TUPLE_PATTERN = Pattern.compile(
@@ -111,7 +124,14 @@ public sealed interface ArgType {
         // ARRAY <of> ELEMENT_TYPE
         var arrMatch = ARRAY_PATTERN.matcher(trimmed);
         if (arrMatch.matches()) {
-            return new Array(fromDescriptor(arrMatch.group(1).trim()));
+            var rest = arrMatch.group(1).trim();
+            var sizeMatch = ARRAY_SIZE_PATTERN.matcher(rest);
+            OptionalInt size = OptionalInt.empty();
+            if (sizeMatch.find()) {
+                try { size = OptionalInt.of(Integer.parseInt(sizeMatch.group(1))); } catch (NumberFormatException ignored) {}
+                rest = sizeMatch.replaceFirst("").trim();
+            }
+            return new Array(size, fromDescriptor(rest));
         }
 
         // TUPLE <of> TYPE1,TYPE2,...
@@ -169,7 +189,13 @@ public sealed interface ArgType {
                 case VECTOR4 -> 16;
                 default      -> SORT_INFINITY; // STRING, BLOB, PYTHON
             };
-            case Array(var elem) -> elem.sortSize(); // variable count, same as element
+            case Array(var fixed, var elem) -> {
+                if (fixed.isEmpty()) {
+                    yield SORT_INFINITY; // 变长数组无法估算固定尺寸
+                }
+                int s = elem.sortSize();
+                yield s == SORT_INFINITY ? SORT_INFINITY : s * fixed.getAsInt();
+            }
             case Tuple(var elems) -> {
                 int total = 0;
                 for (var e : elems) {
@@ -182,7 +208,10 @@ public sealed interface ArgType {
                 }
                 yield total;
             }
-            case FixedDict(var _, var props) -> {
+            case FixedDict(var allowNone, var props) -> {
+                if (allowNone) {
+                    yield SORT_INFINITY; // 可空类型无法估算固定尺寸
+                }
                 int total = props.stream().mapToInt(p -> p.propType().sortSize()).sum();
                 yield total == 0 ? SORT_INFINITY : total;
             }
@@ -198,7 +227,8 @@ public sealed interface ArgType {
     default String typeName() {
         return switch (this) {
             case Primitive p  -> p.name();
-            case Array(var e) -> "ARRAY<" + e.typeName() + ">";
+            case Array(var fixed, var e) -> "ARRAY<"
+                + (fixed.isPresent() ? fixed.getAsInt() + " x " : "") + e.typeName() + ">";
             case Tuple(var es) -> "TUPLE<" + es.stream()
                 .map(ArgType::typeName)
                 .collect(java.util.stream.Collectors.joining(",")) + ">";
