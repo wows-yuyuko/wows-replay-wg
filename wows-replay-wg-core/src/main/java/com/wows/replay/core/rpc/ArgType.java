@@ -36,6 +36,12 @@ public sealed interface ArgType {
     /** Fixed-size tuple of heterogeneous types. 对标 Rust {@code Tuple(Box<ArgType>, usize)}. */
     record Tuple(List<ArgType> elementTypes) implements ArgType {}
 
+    /** FIXED_DICT with inline property definitions. 对标 Rust {@code FixedDict(bool, Vec<FixedDictProperty>)}. */
+    record FixedDict(boolean allowNone, List<FixedDictProperty> properties) implements ArgType {}
+
+    /** A single field within a FIXED_DICT. */
+    record FixedDictProperty(String name, ArgType propType) {}
+
     /**
      * 具名类型引用 — resolved via EntitySpec definitions.
      * 对标 Rust {@code Named { name, inner }}.
@@ -176,6 +182,10 @@ public sealed interface ArgType {
                 }
                 yield total;
             }
+            case FixedDict(var _, var props) -> {
+                int total = props.stream().mapToInt(p -> p.propType().sortSize()).sum();
+                yield total == 0 ? SORT_INFINITY : total;
+            }
             case NamedType(var _, var inner) -> inner.sortSize();
         };
     }
@@ -192,6 +202,9 @@ public sealed interface ArgType {
             case Tuple(var es) -> "TUPLE<" + es.stream()
                 .map(ArgType::typeName)
                 .collect(java.util.stream.Collectors.joining(",")) + ">";
+            case FixedDict(var _, var props) -> "FIXED_DICT{" +
+                props.stream().map(p -> p.name() + ":" + p.propType().typeName())
+                    .collect(java.util.stream.Collectors.joining(",")) + "}";
             case NamedType(var n, var _) -> "FIXED_DICT 解析<" + n + ">";
         };
     }

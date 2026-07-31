@@ -447,10 +447,18 @@ public class PacketParser {
 
             var argNames = new ArrayList<String>();
             var argValues = new ArrayList<ArgValue>();
+
             for (int i = 0; i < methodSpec.args().size() && buf.hasRemaining(); i++) {
                 var argSpec = methodSpec.args().get(i);
                 argNames.add(argSpec.name());
                 argValues.add(parseValue(buf, argSpec.argType()));
+            }
+            // Capture any remaining wire data that the spec didn't account for
+            if (buf.hasRemaining()) {
+                byte[] rest = new byte[buf.remaining()];
+                buf.get(rest);
+                argNames.add("__rest");
+                argValues.add(new com.wows.replay.core.rpc.ArgValue.BlobVal(rest));
             }
 
             return Packet.fromRaw(raw, new EntityMethodPacket(eid, methodSpec.name(),
@@ -558,38 +566,55 @@ public class PacketParser {
             };
             case ArgType.Array(var elem)  -> readArray(buf, elem);
             case ArgType.Tuple(var elems) -> readTuple(buf, elems);
+            case ArgType.FixedDict fixed -> readFixedDict(buf, fixed);
             case ArgType.NamedType(var _, var inner) -> parseValue(buf, inner);
         };
     }
 
     private ArgValue readString(ByteBuffer buf) {
-        int len = buf.getInt();
-        if (len < 0 || len > buf.remaining()) {
-            return new ArgValue.StrVal("[invalid string length: " + len + "]");
-        }
-        byte[] bytes = new byte[len];
-        buf.get(bytes);
+        byte[] bytes = readLengthPrefixedBytes(buf);
         return new ArgValue.StrVal(new String(bytes, StandardCharsets.UTF_8));
     }
 
     private ArgValue readBlob(ByteBuffer buf) {
-        int len = buf.getInt();
-        if (len < 0 || len > buf.remaining()) {
-            return new ArgValue.BlobVal(new byte[0]);
-        }
-        byte[] bytes = new byte[len];
-        buf.get(bytes);
+        byte[] bytes = readLengthPrefixedBytes(buf);
         return new ArgValue.BlobVal(bytes);
     }
 
+    /** BigWorld RPC variable-length encoding: 1 byte if < 0xFF, else 0xFF + u16 + 1 unknown byte. */
+    private byte[] readLengthPrefixedBytes(ByteBuffer buf) {
+        int len = buf.get() & 0xFF;
+        if (len == 0xFF) {
+            len = buf.getShort() & 0xFFFF;
+            buf.get(); // skip 1 unknown byte
+        }
+        if (len < 0 || len > buf.remaining()) len = 0;
+        byte[] bytes = new byte[len];
+        buf.get(bytes);
+        return bytes;
+    }
+
     private ArgValue readArray(ByteBuffer buf, ArgType elementType) {
-        int count = buf.getInt();
-        if (count < 0 || count > 100000) count = 0;
+        int count = buf.get() & 0xFF;  // BigWorld RPC: 1-byte variable-length array count
+        if (count > 250) count = 0;     // sanity guard
         var elements = new ArrayList<ArgValue>(count);
         for (int i = 0; i < count && buf.hasRemaining(); i++) {
             elements.add(parseValue(buf, elementType));
         }
         return new ArgValue.ArrayVal(elements);
+    }
+
+    private ArgValue readFixedDict(ByteBuffer buf, ArgType.FixedDict fixed) {
+        // AllowNone flag
+        if (fixed.allowNone()) {
+            int flag = buf.get() & 0xFF;
+            if (flag == 0) return new com.wows.replay.core.rpc.ArgValue.NullVal();
+        }
+        var entries = new LinkedHashMap<String, ArgValue>();
+        for (var prop : fixed.properties()) {
+            entries.put(prop.name(), parseValue(buf, prop.propType()));
+        }
+        return new com.wows.replay.core.rpc.ArgValue.DictVal(entries);
     }
 
     private ArgValue readTuple(ByteBuffer buf, List<ArgType> elementTypes) {

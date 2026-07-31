@@ -280,12 +280,20 @@ public final class XmlDefParser {
                     for (int i = 0; i < size; i++) elems.add(elemType);
                     yield new ArgType.Tuple(elems);
                 } else if (text.startsWith("FIXED_DICT")) {
+                    boolean allowNone = childByName(node, "AllowNone") != null;
                     var propsNode = childByName(node, "Properties");
                     if (propsNode == null) {
-                        yield new ArgType.NamedType(text);
+                        yield new ArgType.FixedDict(allowNone, List.of());
                     }
-                    // FIXED_DICT with inline Properties → treat as named for now
-                    yield new ArgType.NamedType(text);
+                    // Parse inline Properties → FixedDict with field definitions
+                    var props = new ArrayList<ArgType.FixedDictProperty>();
+                    for (var prop : children(propsNode)) {
+                        var propName = prop.getNodeName();
+                        var typeNode = childByName(prop, "Type");
+                        var propType = typeNode != null ? parseType(typeNode, aliases) : ArgType.Primitive.BLOB;
+                        props.add(new ArgType.FixedDictProperty(propName, propType));
+                    }
+                    yield new ArgType.FixedDict(allowNone, props);
                 } else if (aliases.containsKey(text)) {
                     var resolved = aliases.get(text);
                     yield new ArgType.NamedType(text, resolved);

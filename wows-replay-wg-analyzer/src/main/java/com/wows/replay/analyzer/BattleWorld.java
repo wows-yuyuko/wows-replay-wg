@@ -491,29 +491,43 @@ public class BattleWorld {
         }
     }
 
+    private int bpCount;
+
     private void ingestBasePlayerCreate(BasePlayerCreatePacket bp) {
         int eid = bp.entityId().value();
         getOrCreateEntity(eid, bp.entityType());
 
         var props = bp.props();
         if (props != null) {
-            // Try to link to player
-            for (String key : new String[]{"accountDBID", "db_id", "databaseID", "dbid", "playerID"}) {
-                if (props.get(key) instanceof ArgValue.IntVal iv) {
-                    long dbId = iv.value();
-                    var nameVal = props.get("username");
-                    String name = nameVal instanceof ArgValue.StrVal sv ? sv.value() : "";
-                    entityToPlayer.put(eid, new PlayerLink(dbId, name));
-                    var pi = players.get(dbId);
-                    if (pi != null) {
-                        pi.entityId = eid;
-                    } else {
-                        players.put(dbId, new PlayerInfo(name, eid, 0));
+            // Log first BasePlayerCreate to see actual prop names and componentData
+            if (bpCount++ == 0) {
+                log.info("First BasePlayerCreate eid={} type={} props={} componentData={}bytes",
+                    eid, bp.entityType(),
+                    props.keySet(),
+                    bp.componentData() != null ? bp.componentData().length : 0);
+            }
+
+            // Try to link to player by db_id
+            for (String key : props.keySet()) {
+                if (key.toLowerCase().contains("dbid") || key.toLowerCase().contains("account")
+                    || key.toLowerCase().contains("playerid")) {
+                    if (props.get(key) instanceof ArgValue.IntVal iv) {
+                        long dbId = iv.value();
+                        var es = getOrCreateEntity(eid, null);
+                        es.dbId = dbId;
+                        // Find player name from meta
+                        for (var mp : metaPlayers) {
+                            if (mp.dbId == dbId) {
+                                es.playerName = mp.name;
+                                es.relation = mp.relation;
+                                entityToPlayer.put(eid, new PlayerLink(dbId, mp.name));
+                                var pi = players.get(dbId);
+                                if (pi != null) pi.entityId = eid;
+                                break;
+                            }
+                        }
+                        break;
                     }
-                    var es = getOrCreateEntity(eid, null);
-                    es.dbId = dbId;
-                    es.playerName = name;
-                    break;
                 }
             }
         }

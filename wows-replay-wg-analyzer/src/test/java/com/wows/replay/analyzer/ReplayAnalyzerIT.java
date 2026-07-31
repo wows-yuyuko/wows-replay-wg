@@ -5,6 +5,7 @@ import com.wows.replay.core.ReplayFile;
 import com.wows.replay.core.spi.EntitySpecProvider;
 import com.wows.replay.core.types.Version;
 import com.wows.replay.gamedata.GameDataCache;
+import com.wows.replay.packets.EntityMethodPacket;
 import com.wows.replay.packets.PacketParser;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,10 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 class ReplayAnalyzerIT {
 
-    /** Path relative to project root. */
+
     private static final String REPLAY_PATH =
-            "temp/wg_15.6/20260727_230908_PJSB720-Aki_18_NE_ice_islands.wowsreplay";
-    private static final String REPLAY_PATH2 =
             "temp/wg_15.6/20260730_013138_PASB720-Rhode-Island_56_AngelWings.wowsreplay";
     private static final String WOWS_DATA_PATH =
             "temp/wows-data";
@@ -36,16 +37,57 @@ class ReplayAnalyzerIT {
         return Path.of(projectRoot).getParent().resolve(REPLAY_PATH);
     }
 
-    private Path resolveReplay2() {
-        String projectRoot = System.getProperty("user.dir");
-        return Path.of(projectRoot).getParent().resolve(REPLAY_PATH2);
-    }
+
 
     private Path resolveWowsData() {
         String projectRoot = System.getProperty("user.dir");
         return Path.of(projectRoot).getParent().resolve(WOWS_DATA_PATH);
     }
 
+
+    @Test
+    @DisplayName("基础解析验证：对比 Rust 和 Java 对同一 packet 的输出")
+    void verifyBasicParsing() throws Exception {
+        var path = resolveReplay();
+        var replay = ReplayFile.fromFile(path);
+        var version = replay.version();
+        log.info("Replay: v{} {} players", version, replay.meta().vehicles().size());
+
+        var wowsData = resolveWowsData();
+        var gameData = findGameDataDir(wowsData, version);
+        assertNotNull(gameData, "should find game data");
+        var cache = GameDataCache.withMaxSize(4);
+        var specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
+        var parser = new PacketParser(specProvider, version);
+
+        int total = 0, entityMethods = 0, unknownTypes = 0;
+        var methodArgs = new LinkedHashMap<String, Integer>();
+
+        var iter = replay.packetIterator();
+        while (iter.hasNext()) {
+            var raw = iter.next();
+            total++;
+            if (raw.isUnknown()) { unknownTypes++; continue; }
+
+            var packet = parser.parse(raw);
+            if (packet.payload() instanceof com.wows.replay.packets.Packet.InvalidPayload) continue;
+            if (packet.packetType() == null) continue;
+
+            if (packet.payload() instanceof EntityMethodPacket em) {
+                entityMethods++;
+                methodArgs.merge(em.method(), em.args().size(), (a, b) -> a);
+            }
+        }
+
+        log.info("Total packets: {} (unknown type: {})", total, unknownTypes);
+        log.info("EntityMethods: {}", entityMethods);
+        log.info("Method → arg-count (from spec):");
+        var sorted = new ArrayList<>(methodArgs.entrySet());
+        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+        for (var e : sorted) {
+            log.info("  {} → {} args", e.getKey(), e.getValue());
+        }
+    }
 
     @Test
     @DisplayName("BattleWorld 完整管线：PacketParser → PacketDecoder → BattleWorld")
@@ -102,6 +144,7 @@ class ReplayAnalyzerIT {
         }
 
         world.finish();
+        decoder.dumpMethodStats();
 
         // ── 验证 ─────────────────────────────────────────────────────────
         log.info("数据包: {} 总计, {} 已解码, {} EntityMethod, {} EntityCreate, {} Position",
@@ -146,7 +189,7 @@ class ReplayAnalyzerIT {
     @Test
     @DisplayName("BattleWorld: 第二个 replay 文件")
     void battleWorldReplay2() throws Exception {
-        var path = resolveReplay2();
+        var path = resolveReplay();
         var replay = ReplayFile.fromFile(path);
         var version = replay.version();
 
