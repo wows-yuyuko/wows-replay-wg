@@ -391,6 +391,66 @@ class ReplayAnalyzerIT {
         assertTrue(world.players.size() >= 20, "players (12v12 + bots)");
         log.info("kills: {} (may be 0 if full pipeline not reached)", world.killLog.size());
         assertNotNull(world.mapName, "mapName");
+
+        dumpSummaryJson();
+    }
+
+    /** 将 summary 表落成 JSON（temp/compare/java_summary.json），与 Rust 侧 compare_java 输出对齐。 */
+    private void dumpSummaryJson() {
+        try {
+            var o = com.wows.replay.JsonMapper.getMapper().createObjectNode();
+            o.put("replay", REPLAY_PATH.substring(REPLAY_PATH.lastIndexOf('/') + 1));
+            o.put("version", version.toString());
+            o.put("mapName", world.mapName == null ? "" : world.mapName);
+            o.put("mapArenaId", world.mapArenaId);
+            o.put("gameMode", world.gameMode);
+            if (world.matchGroup != null) o.put("matchGroup", world.matchGroup);
+
+            o.put("totalPackets", totalPackets);
+            o.put("decodedPackets", decodedPackets);
+            o.put("entities", world.entities.size());
+            o.put("entityKinds", world.entityKinds());
+            o.put("entityTypes", world.entityTypes.size());
+            var eTypes = com.wows.replay.JsonMapper.getMapper().createObjectNode();
+            for (var es : world.entities.values()) {
+                eTypes.put(es.type, eTypes.path(es.type).asInt(0) + 1);
+            }
+            o.set("entitiesByType", eTypes);
+            o.put("players", world.players.size());
+            o.put("entityToPlayer", world.entityToPlayer.size());
+            o.put("kills", world.killLog.size());
+            o.put("damageEvents", world.damageEvents.size());
+            o.put("chatMessages", world.chatLog.size());
+            o.put("consumables", world.consumableLog.size());
+            o.put("salvos", world.firedSalvos.size());
+            o.put("torpedoes", world.torpedoes.size());
+            o.put("shotHits", world.shotHits.size());
+            o.put("planeEvents", world.planeEvents.size());
+            o.put("activeWards", world.activeWards.size());
+            o.put("ribbons", world.ribbonLog.size());
+            o.put("voiceLines", world.voiceLineLog.size());
+            o.put("capturePoints", world.capturePoints.size());
+            o.put("buffZones", world.buffZones.size());
+            o.put("weatherZones", world.weatherZones.size());
+            o.put("buildings", world.buildings.size());
+            o.put("deadShips", world.deadShips.size());
+
+            if (world.winningTeam != null) o.put("winningTeam", world.winningTeam);
+            if (world.finishType != null) o.put("finishType", world.finishType);
+            if (world.matchResult != null) o.put("matchResult", world.matchResult);
+            if (world.maxDuration != null) o.put("maxDuration", world.maxDuration);
+            if (world.playedDuration != null) o.put("playedDuration", world.playedDuration);
+            if (world.extraDuration != null) o.put("extraDuration", world.extraDuration);
+
+            var out = Path.of(System.getProperty("user.dir")).getParent()
+                .resolve("temp").resolve("compare").resolve("java_summary.json");
+            java.nio.file.Files.createDirectories(out.getParent());
+            java.nio.file.Files.writeString(out,
+                com.wows.replay.JsonMapper.getMapper().writerWithDefaultPrettyPrinter().writeValueAsString(o));
+            log.info("已写入 {}", out);
+        } catch (Exception e) {
+            log.warn("dumpSummaryJson 失败: {}", e.toString());
+        }
     }
 
     // ── 错误处理测试 ───────────────────────────────────────────────

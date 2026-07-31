@@ -46,7 +46,8 @@ public class BattleWorld {
     final List<ChatEvent>      chatLog           = new ArrayList<>();
     final List<ConsumableEvent> consumableLog    = new ArrayList<>();
     final List<CapturePointState> capturePoints  = new ArrayList<>();
-    final List<BuffZoneState>  buffZones         = new ArrayList<>();
+    /** Active buff zones keyed by entity id (despawned on EntityLeave, mirrors Rust). */
+    final Map<Integer, BuffZoneState> buffZones  = new LinkedHashMap<>();
     final List<WeatherZoneState> weatherZones    = new ArrayList<>();
     final List<BuildingState>  buildings         = new ArrayList<>();
     final List<DeadShipRecord> deadShips         = new ArrayList<>();
@@ -74,6 +75,9 @@ public class BattleWorld {
     Float  maxDuration;
     Float  playedDuration;
     Float  extraDuration;
+    Float  battleStartClock;
+    Float  battleResultClock;
+    Float  battleEndClock;
 
     // ── Player mapping ─────────────────────────────────────────────────
     /** entity_id → (db_id, username) */
@@ -94,6 +98,9 @@ public class BattleWorld {
         this.meta = meta;
         this.version = version;
         this.metaPlayers = new ArrayList<>();
+        this.gameMode = meta.gameMode();
+        this.matchGroup = meta.matchGroup();
+        this.maxDuration = (float) meta.duration();
 
         // Pre-seed players from replay metadata
         var vehicles = meta.vehicles();
@@ -136,12 +143,13 @@ public class BattleWorld {
                 // entity_id → space
             }
             case DecodedPayload.EntityLeavePayload el -> {
-                var es = entities.get(el.packet().entityId().value());
+                int eid = el.packet().entityId().value();
+                var es = entities.get(eid);
                 if (es != null) es.isAlive = false;
-                // Despawn smoke screens and buff zones
-                if ("SmokeScreen".equals(es != null ? es.type : null)
-                    || "BuffZone".equals(es != null ? es.type : null)) {
-                    entities.remove(el.packet().entityId().value());
+                // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
+                // buff zones are removed from the active set on EntityLeave)
+                if ("SmokeScreen".equals(es != null ? es.type : null) || buffZones.remove(eid) != null) {
+                    entities.remove(eid);
                 }
             }
             case DecodedPayload.BasePlayerCreatePayload bp -> {
@@ -197,6 +205,8 @@ public class BattleWorld {
                 // 发送者是 args[0] 的账号 ID（与 meta/arena 的 id 字段一致），
                 // 不能用接收方 entity_id（即 replay 主视角 Avatar）来归属消息。
                 long senderDbId = Integer.toUnsignedLong(chat.senderId().value());
+                // System messages carry sender_id 0 and are dropped (mirrors Rust).
+                if (senderDbId == 0) break;
                 var pl = players.get(senderDbId);
                 chatLog.add(new ChatEvent(elapsed, chat.entityId().value(),
                     senderDbId,
@@ -216,6 +226,7 @@ public class BattleWorld {
             case DecodedPayload.BattleEndPayload be -> {
                 if (be.winningTeam() != null) winningTeam = be.winningTeam();
                 if (be.finishType() != 0) finishType = String.valueOf(be.finishType());
+                battleEndClock = elapsed;
             }
 
             // ── Battle results ─────────────────────────────────────────
@@ -406,6 +417,7 @@ public class BattleWorld {
         int eid = ec.entityId().value();
         String type = ec.entityType();
         var es = getOrCreateEntity(eid, type);
+        es.kind = type; // created kind; a player's Vehicle reuses the Avatar id, so kind is the authoritative marker
         es.vehicleId = ec.vehicleId();
         if (ec.position() != null) {
             es.x = ec.position().x();
@@ -481,7 +493,7 @@ public class BattleWorld {
                 float bfr = getFloatProp(props, "radius");
                 int bfTeam = getIntProp(props, "teamId");
                 boolean bfActive = getBoolProp(props, "isActive", true);
-                buffZones.add(new BuffZoneState(eid, bfx, bfz, bfr, bfTeam, bfActive, null));
+                buffZones.put(eid, new BuffZoneState(eid, bfx, bfz, bfr, bfTeam, bfActive, null));
             }
         }
     }
@@ -565,7 +577,7 @@ public class BattleWorld {
             } else {
                 // Buff zone
                 boolean active = getBoolProp(props, "isActive", true);
-                buffZones.add(new BuffZoneState(eid, px, pz, radius, teamId, active, null));
+                buffZones.put(eid, new BuffZoneState(eid, px, pz, radius, teamId, active, null));
             }
         }
     }
@@ -665,6 +677,31 @@ public class BattleWorld {
             case EXTRA_DURATION -> { if (val instanceof ArgValue.FloatVal fv) extraDuration = (float) fv.value(); }
             case FINISH_TYPE -> { if (val instanceof ArgValue.StrVal sv) finishType = sv.value(); }
             case MATCH_RESULT -> { if (val instanceof ArgValue.StrVal sv) matchResult = sv.value(); }
+            // 15.x: onBattleEnd carries no args; win/finish arrive via BattleLogic
+            // `battleResult` property: { winnerTeamId, finishReason }.
+            case BATTLE_RESULT -> {
+                if (val instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+                    ArgValue winner = d.get("winnerTeamId");
+                    if (winner instanceof ArgValue.IntVal iv) {
+                        long w = iv.value();
+                        if (w >= -1) {
+                            winningTeam = (int) w;
+                            battleResultClock = elapsed;
+                        }
+                    }
+                    ArgValue reason = d.get("finishReason");
+                    if (reason instanceof ArgValue.IntVal iv2 && iv2.value() > 0) {
+                        finishType = finishTypeName((int) iv2.value());
+                    }
+                }
+            }
+            case BATTLE_STAGE -> {
+                // BATTLE_STAGES: 0=Waiting, 1=Battle, 2=Results, 3=Finishing, 4=Ended.
+                if (val instanceof ArgValue.IntVal iv && iv.value() == 0 && battleStartClock == null) {
+                    battleStartClock = elapsed;
+                }
+            }
+            case TIME_LEFT -> { /* seconds remaining; not surfaced in summary */ }
             case STATE -> traverseStateDict(eid, val, elapsed);
             case SHIP_CONFIG, VEHICLE_ID, OWNER_ID, OTHER -> { /* recorded but not yet handled */ }
         }
@@ -942,8 +979,33 @@ public class BattleWorld {
 
     /** Called after all packets have been processed. */
     public void finish() {
-        log.info("BattleWorld finish: {} entities, {} players, {} kills, {} damage, {} chat, {} consumables",
-            entities.size(), players.size(), killLog.size(),
+        // Played/extra duration, mirroring Rust report.rs: battle start (BattleStage
+        // → Waiting) through match end (battleResult clock, else BattleEnd clock).
+        if (battleStartClock != null) {
+            Float matchEnd = battleResultClock != null ? battleResultClock : battleEndClock;
+            if (matchEnd != null) playedDuration = matchEnd - battleStartClock;
+        }
+        if (battleResultClock != null && battleEndClock != null && battleEndClock > battleResultClock) {
+            extraDuration = battleEndClock - battleResultClock;
+        }
+
+        // Match result (Win/Loss/Draw) from winning team vs the recording player's team.
+        if (matchResult == null && winningTeam != null && battleEndClock != null) {
+            int selfTeam = -1;
+            for (var pi : players.values()) {
+                if (pi.relation == 0) { selfTeam = pi.teamId; break; }
+            }
+            if (selfTeam >= 0) {
+                if (winningTeam == -1) matchResult = "Draw";
+                else if (winningTeam == selfTeam) matchResult = "Win";
+                else matchResult = "Loss";
+            }
+        }
+
+        var entityTypeCounts = new LinkedHashMap<String, Integer>();
+        for (var es : entities.values()) entityTypeCounts.merge(es.type, 1, Integer::sum);
+        log.info("BattleWorld finish: {} entities (by type: {}, kinds={}), {} players, {} kills, {} damage, {} chat, {} consumables",
+            entities.size(), entityTypeCounts, entityKinds(), players.size(), killLog.size(),
             damageEvents.size(), chatLog.size(), consumableLog.size());
         log.info("  Vehicle Creates: {}, CellPlayer Creates: {}", vehicleCreateCount, cellPlayerCreateCount);
         log.info("  Entity types: {}", entityTypes);
@@ -955,6 +1017,21 @@ public class BattleWorld {
     }
 
     // ── Helpers: Entity management ─────────────────────────────────────
+
+    /**
+     * 存活实体按 kind 统计，镜像 Rust {@code entity_kinds()}：只数携带
+     * Vehicle/Building/SmokeScreen 类型组件且仍存活的实体。玩家船复用 Avatar id，
+     * 故以 EntityCreate 时记录的 {@code kind} 为准。
+     */
+    public int entityKinds() {
+        return (int) entities.values().stream()
+            .filter(es -> es.kind != null)
+            .filter(es -> switch (es.kind) {
+                case "Vehicle", "Building", "SmokeScreen" -> true;
+                default -> false;
+            })
+            .count();
+    }
 
     EntityState getOrCreateEntity(int eid, String type) {
         var e = entities.get(eid);
@@ -1025,6 +1102,25 @@ public class BattleWorld {
     }
 
     // ── Static helpers ─────────────────────────────────────────────────
+
+    /** Resolve a FINISH_TYPE id from battle.xml to a display name. */
+    static String finishTypeName(int id) {
+        return switch (id) {
+            case 0 -> "Unknown";
+            case 1 -> "Extermination";
+            case 2 -> "BaseCaptured";
+            case 3 -> "Timeout";
+            case 4 -> "Failure";
+            case 5 -> "Technical";
+            case 8 -> "Score";
+            case 9 -> "ScoreOnTimeout";
+            case 10 -> "PveMainTaskSucceeded";
+            case 11 -> "PveMainTaskFailed";
+            case 12 -> "ScoreZero";
+            case 13 -> "ScoreExcess";
+            default -> "FinishType(" + id + ")";
+        };
+    }
 
     static int intFromArg(ArgValue v) {
         return switch (v) {

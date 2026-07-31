@@ -55,6 +55,9 @@ public final class PropertyDecoder {
         EXTRA_DURATION,
         FINISH_TYPE,
         MATCH_RESULT,
+        BATTLE_RESULT,  // BattleLogic: { winnerTeamId, finishReason } — 15.x win/finish source
+        BATTLE_STAGE,   // BattleLogic: numeric battle stage (0=Waiting, 1=Battle, ...)
+        TIME_LEFT,      // BattleLogic: seconds remaining
         STATE,        // complex state dict (battle logic, control points, etc.)
         SHIP_CONFIG,  // ship configuration blob
         VEHICLE_ID,   // vehicle game param ID
@@ -77,6 +80,9 @@ public final class PropertyDecoder {
                 case "extraDuration"                               -> EXTRA_DURATION;
                 case "finishType", "finishType_"                   -> FINISH_TYPE;
                 case "matchResult"                                 -> MATCH_RESULT;
+                case "battleResult"                                -> BATTLE_RESULT;
+                case "battleStage", "battleStage_"                 -> BATTLE_STAGE;
+                case "timeLeft"                                    -> TIME_LEFT;
                 case "state", "state_"                             -> STATE;
                 case "shipConfig", "shipConfigDump"                -> SHIP_CONFIG;
                 case "vehicleID", "vehicleId"                      -> VEHICLE_ID;

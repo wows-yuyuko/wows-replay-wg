@@ -16,6 +16,8 @@ public final class EntityState {
 
     public final EntityId id;
     public String type;
+    /** Kind from the EntityCreate packet (Vehicle/Building/SmokeScreen/InteractiveZone/...). */
+    public String kind;
     public float health = -1f;
     public float maxHealth = -1f;
     public boolean isAlive = true;

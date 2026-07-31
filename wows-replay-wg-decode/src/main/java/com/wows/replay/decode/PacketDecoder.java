@@ -113,13 +113,12 @@ public class PacketDecoder {
             case "receiveDamageReport" -> decodeDamageReceived(em.entityId(), args);
             case "receiveVehicleDeath" -> decodeShipDestroyed(args);
             case "onConsumableUsed" -> decodeConsumable(em.entityId(), args);
-            case "setConsumables" -> decodeConsumable(em.entityId(), args);
             case "receiveDamageStat" -> decodeDamageStat(args);
             case "onBattleEnd" -> decodeBattleEnd(args);
             case "onShotFired",
-                 "receiveArtilleryShots" -> decodeArtilleryShots(args);
-            case "receiveTorpedoes" -> decodeTorpedoes(args);
-            case "receiveShotKills" -> decodeShotKills(args);
+                 "receiveArtilleryShots" -> decodeArtilleryShots(em.entityId(), args);
+            case "receiveTorpedoes" -> decodeTorpedoes(em.entityId(), args);
+            case "receiveShotKills" -> decodeShotKills(em.entityId(), args);
             case "receive_wardAdded" -> decodeWardAdded(em.entityId(), args);
             case "receive_wardRemoved" -> decodeWardRemoved(em.entityId(), args);
             case "onPlaneAdded",
@@ -411,11 +410,24 @@ public class PacketDecoder {
 
     private DecodedPayload decodeDamageReceived(EntityId victim, NamedArgs args) {
         var entries = new ArrayList<DecodedPayload.DamageReceivedEntry>();
-        // spec-defined arg: args[0] = victim entity_id
-        // Try args[1] as damages array (if spec had it), otherwise try __rest blob
-        ArgValue damagesArg = args.size() >= 2 ? args.get(1) : null;
+        // receiveDamagesOnShip (Vehicle.def): single Arg = ARRAY<DAMAGES> at args[0],
+        // DAMAGES = { vehicleID: ENTITY_ID, damage: FLOAT }.
+        // receiveDamageReport (Avatar.def): args = (BLOB, INT16, BOOL); the BLOB at
+        // args[0] carries the same damage entries as a pickle.
+        ArgValue damagesArg = !args.isEmpty() ? args.get(0) : null;
         if (damagesArg instanceof ArgValue.ArrayVal arr) {
             parseDamageEntries(arr, entries);
+        } else if (damagesArg instanceof ArgValue.BlobVal) {
+            Object parsed = tryParseRest(blobFromArg(damagesArg));
+            if (parsed instanceof List<?> list) {
+                for (var item : list) {
+                    if (item instanceof Map<?, ?> m) {
+                        int agg = (int) longFromPickle(m.get("vehicleID"));
+                        float dmg = (float) doubleFromPickle(m.get("damage"));
+                        entries.add(new DecodedPayload.DamageReceivedEntry(new EntityId(agg), dmg));
+                    }
+                }
+            }
         } else if (args.has("__rest")) {
             byte[] rest = blobFromArg(args.get("__rest"));
             Object parsed = tryParseRest(rest);
@@ -561,10 +573,12 @@ public class PacketDecoder {
 
     // ── Artillery / Torpedo ────────────────────────────────────────────
 
-    private DecodedPayload decodeArtilleryShots(NamedArgs args) {
-        AvatarId avatarId = new AvatarId(args.isEmpty() ? 0 : intFromArg(args.getFirst()));
+    private DecodedPayload decodeArtilleryShots(EntityId entityId, NamedArgs args) {
+        // receiveArtilleryShots (Avatar.def): single Arg = ARRAY<SHOTS_PACK> at args[0].
+        // The avatar is the packet's entity (receiver), mirroring the Rust decoder.
+        AvatarId avatarId = new AvatarId(entityId.value());
         var salvos = new ArrayList<DecodedPayload.ArtillerySalvo>();
-        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
+        if (!args.isEmpty() && args.get(0) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
             for (var sv : elements) {
                 if (sv instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
                     var shots = new ArrayList<DecodedPayload.ArtilleryShotData>();
@@ -573,9 +587,9 @@ public class PacketDecoder {
                             if (sh instanceof ArgValue.DictVal(Map<String, ArgValue> entries)) shots.add(parseShotData(entries));
                     }
                     salvos.add(new DecodedPayload.ArtillerySalvo(
-                            new EntityId(intFromArg(d.get("owner_id"))),
-                            new GameParamId(longFromArg(d.get("params_id"))),
-                            intFromArg(d.get("salvo_id")), shots));
+                            new EntityId((int) longFromArg(d.get("ownerID"))),
+                            new GameParamId(longFromArg(d.get("paramsID"))),
+                            (int) longFromArg(d.get("salvoID")), shots));
                 }
             }
         }
@@ -584,24 +598,37 @@ public class PacketDecoder {
 
     private DecodedPayload.ArtilleryShotData parseShotData(Map<String, ArgValue> d) {
         return new DecodedPayload.ArtilleryShotData(
-                extractVec3(d.get("origin")), floatFromArg(d.get("pitch")), floatFromArg(d.get("speed")),
-                extractVec3(d.get("target")), intFromArg(d.get("shot_id")), intFromArg(d.get("gun_barrel_id")),
-                floatFromArg(d.get("server_time_left")), floatFromArg(d.get("shooter_height")),
-                floatFromArg(d.get("hit_distance")));
+                extractVec3(d.get("pos")), floatFromArg(d.get("pitch")), floatFromArg(d.get("speed")),
+                extractVec3(d.get("tarPos")), (int) longFromArg(d.get("shotID")),
+                (int) longFromArg(d.get("gunBarrelID")),
+                floatFromArg(d.get("serverTimeLeft")), floatFromArg(d.get("shooterHeight")),
+                floatFromArg(d.get("hitDistance")));
     }
 
-    private DecodedPayload decodeTorpedoes(NamedArgs args) {
-        AvatarId avatarId = new AvatarId(args.isEmpty() ? 0 : intFromArg(args.getFirst()));
+    private DecodedPayload decodeTorpedoes(EntityId entityId, NamedArgs args) {
+        // receiveTorpedoes (Avatar.def): single Arg = ARRAY<TORPEDOES_PACK> at args[0].
+        // Each pack holds { ownerID, paramsID, salvoID, skinID, torpedoes: [...] } and
+        // each torpedo holds { pos, dir, shotID, armed }.
+        AvatarId avatarId = new AvatarId(entityId.value());
         var torpedoes = new ArrayList<DecodedPayload.TorpedoData>();
-        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
+        if (!args.isEmpty() && args.get(0) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
             for (var tv : elements) {
                 if (tv instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
-                    torpedoes.add(new DecodedPayload.TorpedoData(
-                            new EntityId(intFromArg(d.get("owner_id"))),
-                            new GameParamId(longFromArg(d.get("params_id"))),
-                            intFromArg(d.get("salvo_id")), intFromArg(d.get("skin_id")),
-                            intFromArg(d.get("shot_id")), extractVec3(d.get("origin")),
-                            extractVec3(d.get("direction")), intFromArg(d.get("armed")) != 0));
+                    int ownerId = (int) longFromArg(d.get("ownerID"));
+                    long paramsId = longFromArg(d.get("paramsID"));
+                    int salvoId = (int) longFromArg(d.get("salvoID"));
+                    int skinId = (int) longFromArg(d.get("skinID"));
+                    if (d.get("torpedoes") instanceof ArgValue.ArrayVal(List<ArgValue> elements1)) {
+                        for (var torp : elements1) {
+                            if (torp instanceof ArgValue.DictVal(Map<String, ArgValue> entries)) {
+                                torpedoes.add(new DecodedPayload.TorpedoData(
+                                        new EntityId(ownerId), new GameParamId(paramsId), salvoId, skinId,
+                                        (int) longFromArg(entries.get("shotID")),
+                                        extractVec3(entries.get("pos")), extractVec3(entries.get("dir")),
+                                        intFromArg(entries.get("armed")) != 0));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -616,20 +643,29 @@ public class PacketDecoder {
                 args.size() >= 5 ? floatFromArg(args.get(4)) : 0f);
     }
 
-    private DecodedPayload decodeShotKills(NamedArgs args) {
-        AvatarId avatarId = new AvatarId(args.isEmpty() ? 0 : intFromArg(args.getFirst()));
+    private DecodedPayload decodeShotKills(EntityId entityId, NamedArgs args) {
+        // receiveShotKills (Avatar.def): single Arg = ARRAY<SHOTKILLS_PACK> at args[0].
+        // Pack: { ownerID, hitType: UINT8, kills: Array<SHOTKILL> };
+        // SHOTKILL: { pos: VECTOR3, shotID, terminalBallisticsInfo (AllowNone) }.
+        AvatarId avatarId = new AvatarId(entityId.value());
         var hits = new ArrayList<DecodedPayload.ShotHitEntry>();
-        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
-            for (var hv : elements) {
-                if (hv instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
-                    int raw = intFromArg(d.get("hit_type"));
+        if (!args.isEmpty() && args.get(0) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
+            for (var pack : elements) {
+                if (pack instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+                    int ownerId = (int) longFromArg(d.get("ownerID"));
+                    int raw = (int) longFromArg(d.get("hitType"));
                     var hitType = new DecodedPayload.HitType((raw >> 5) & 0x07, raw & 0x1F, raw);
-                    DecodedPayload.TerminalBallistics tb = null;
-                    if (d.containsKey("terminal_ballistics"))
-                        tb = parseTerminalBallistics(d.get("terminal_ballistics"));
-                    hits.add(new DecodedPayload.ShotHitEntry(
-                            new EntityId(intFromArg(d.get("owner_id"))), hitType,
-                            intFromArg(d.get("shot_id")), extractVec3(d.get("position")), tb));
+                    if (d.get("kills") instanceof ArgValue.ArrayVal(List<ArgValue> elements1)) {
+                        for (var kill : elements1) {
+                            if (kill instanceof ArgValue.DictVal(Map<String, ArgValue> entries)) {
+                                hits.add(new DecodedPayload.ShotHitEntry(
+                                        new EntityId(ownerId), hitType,
+                                        (int) longFromArg(entries.get("shotID")),
+                                        extractVec3(entries.get("pos")),
+                                        parseTerminalBallistics(entries.get("terminalBallisticsInfo"))));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -640,7 +676,7 @@ public class PacketDecoder {
         if (val instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
             return new DecodedPayload.TerminalBallistics(
                     extractVec3(d.get("position")), extractVec3(d.get("velocity")),
-                    intFromArg(d.get("detonator_activated")) != 0, floatFromArg(d.get("material_angle")));
+                    intFromArg(d.get("detonatorActivated")) != 0, floatFromArg(d.get("materialAngle")));
         }
         return null;
     }
