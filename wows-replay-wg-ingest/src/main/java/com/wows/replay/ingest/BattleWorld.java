@@ -99,7 +99,7 @@ public class BattleWorld {
         var vehicles = meta.vehicles();
         if (vehicles != null) {
             for (var v : vehicles) {
-                long dbId = v.id().value();
+                long dbId = Integer.toUnsignedLong(v.id().value());
                 String name = v.name();
                 metaPlayers.add(new MetaPlayer(dbId, name, v.relation(), v.shipId().value()));
                 players.put(dbId, new PlayerInfo(name, 0, v.relation()));
@@ -194,10 +194,13 @@ public class BattleWorld {
             }
             // ── Chat ───────────────────────────────────────────────────
             case DecodedPayload.ChatMessagePayload chat -> {
-                var pl = entityToPlayer.get(chat.entityId().value());
+                // 发送者是 args[0] 的账号 ID（与 meta/arena 的 id 字段一致），
+                // 不能用接收方 entity_id（即 replay 主视角 Avatar）来归属消息。
+                long senderDbId = Integer.toUnsignedLong(chat.senderId().value());
+                var pl = players.get(senderDbId);
                 chatLog.add(new ChatEvent(elapsed, chat.entityId().value(),
-                    pl != null ? pl.dbId : chat.senderId().value(),
-                    pl != null ? pl.username : String.valueOf(chat.senderId().value()),
+                    senderDbId,
+                    pl != null ? pl.username : "account " + senderDbId,
                     chat.audience(), chat.message()));
             }
 

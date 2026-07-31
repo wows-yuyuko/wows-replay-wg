@@ -99,7 +99,7 @@ public final class PickleReader {
                     stack.add(new ArrayList<>());
                     break;
                 case ')': // EMPTY_TUPLE
-                    stack.add(List.of());
+                    stack.add(new ArrayList<>());
                     break;
                 case 'a': { // APPEND
                     var val = stack.removeLast();
@@ -119,25 +119,32 @@ public final class PickleReader {
                 }
                 case 't': { // TUPLE
                     int mark = marks.isEmpty() ? 0 : marks.removeLast();
-                    var tuple = List.copyOf(stack.subList(mark, stack.size()));
+                    var tuple = new ArrayList<>(stack.subList(mark, stack.size()));
                     stack.subList(mark, stack.size()).clear();
                     stack.add(tuple);
                     break;
                 }
                 case 0x85: // TUPLE1
-                    stack.add(List.of(stack.removeLast()));
+                    stack.add(new ArrayList<>(List.of(stack.removeLast())));
                     break;
                 case 0x86: { // TUPLE2
                     var v2 = stack.removeLast();
                     var v1 = stack.removeLast();
-                    stack.add(List.of(v1, v2));
+                    var tuple = new ArrayList<>(2);
+                    tuple.add(v1);
+                    tuple.add(v2);
+                    stack.add(tuple);
                     break;
                 }
                 case 0x87: { // TUPLE3
                     var v3 = stack.removeLast();
                     var v2 = stack.removeLast();
                     var v1 = stack.removeLast();
-                    stack.add(List.of(v1, v2, v3));
+                    var tuple = new ArrayList<>(3);
+                    tuple.add(v1);
+                    tuple.add(v2);
+                    tuple.add(v3);
+                    stack.add(tuple);
                     break;
                 }
                 case 'K': // BININT1 (1 byte unsigned)
@@ -180,7 +187,15 @@ public final class PickleReader {
                     stack.add(s);
                     break;
                 }
-                case 'T': { // BINUNICODE
+                case 'T': { // BINSTRING（4 字节长度，字节串；协议 0/1）
+                    int len = readInt32();
+                    if (len < 0 || pos + len > data.length || len > 100_000_000) { stack.add("[invalid]"); break; }
+                    var s = new String(data, pos, len, StandardCharsets.ISO_8859_1);
+                    pos += len;
+                    stack.add(s);
+                    break;
+                }
+                case 'X': { // BINUNICODE（4 字节长度，UTF-8；协议 2）
                     int len = readInt32();
                     if (len < 0 || pos + len > data.length || len > 100_000_000) { stack.add("[invalid]"); break; }
                     var s = new String(data, pos, len, StandardCharsets.UTF_8);
@@ -215,37 +230,58 @@ public final class PickleReader {
                     stack.add(memo.get(idx));
                     break;
                 }
-                case 'r': { // SETITEM
-                    var val = stack.removeLast();
-                    var key = stack.removeLast();
-                    @SuppressWarnings("unchecked")
-                    var dict = (Map<Object, Object>) stack.getLast();
-                    dict.put(key, val);
+                case 'j': { // LONG_BINGET (4-byte memo key) — 协议 2 中 'j' = LONG_BINGET
+                    int idx = readInt32();
+                    stack.add(memo.get(idx));
+                    break;
+                }
+                case 'r': { // LONG_BINPUT (4-byte memo key) — 协议 2 中 'r' = LONG_BINPUT（非 SETITEM）
+                    int idx = readInt32();
+                    memo.put(idx, stack.getLast());
                     break;
                 }
                 case 'u': { // SETITEMS
                     int mark = marks.isEmpty() ? 0 : marks.removeLast();
+                    // 字典在 MARK 标记的下方一个位置（mark-1），键值对在 mark..end。
+                    if (mark - 1 < 0 || mark - 1 >= stack.size()) break;
                     @SuppressWarnings("unchecked")
-                    var dict = (Map<Object, Object>) stack.get(stack.size() - mark - 1);
-                    for (int i = mark; i < stack.size(); i += 2) {
+                    var dict = (Map<Object, Object>) stack.get(mark - 1);
+                    for (int i = mark; i + 1 < stack.size(); i += 2) {
                         dict.put(stack.get(i), stack.get(i + 1));
                     }
                     stack.subList(mark, stack.size()).clear();
                     break;
                 }
-                case '{': // EMPTY_DICT
+                case '}': // EMPTY_DICT
                     stack.add(new LinkedHashMap<>());
                     break;
-                case 0x81: { // LONG_BINPUT (4-byte memo key)
-                    int idx = readInt32();
-                    memo.put(idx, stack.getLast());
+                case 'c': { // GLOBAL: 读取 module\n name\n，压入不透明标记
+                    var module = readLine();
+                    var name = readLine();
+                    stack.add(new PickleObject(module + "." + name));
                     break;
                 }
-                case 0x82: { // LONG_BINGET (4-byte memo key)
-                    int idx = readInt32();
-                    stack.add(memo.get(idx));
+                case 'b': { // BUILD: 弹出 state，instance 保留在栈上（不透明）
+                    if (!stack.isEmpty()) stack.removeLast();
                     break;
                 }
+                case 0x81: { // NEWOBJ: 弹出 args 与 class，压入不透明标记
+                    if (stack.size() >= 2) {
+                        stack.removeLast(); // args tuple
+                        stack.removeLast(); // class
+                        stack.add(new PickleObject("newobj"));
+                    }
+                    break;
+                }
+                case 0x82: // EXT2（无需解析的扩展码，跳过 2 字节）
+                    pos += 2;
+                    break;
+                case 0x88: // NEWTRUE
+                    stack.add(Boolean.TRUE);
+                    break;
+                case 0x89: // NEWFALSE
+                    stack.add(Boolean.FALSE);
+                    break;
                 case 0x8a: { // LONG1 (length-prefixed long, 1-byte length)
                     int len = data[pos++] & 0xFF;
                     if (pos + len > data.length) { stack.add(0L); break; }
@@ -298,6 +334,20 @@ public final class PickleReader {
     private int readInt32() {
         return (data[pos++] & 0xFF) | ((data[pos++] & 0xFF) << 8)
              | ((data[pos++] & 0xFF) << 16) | (data[pos++] << 24);
+    }
+
+    /** 读取到换行符为止的字符串（用于 GLOBAL 的 module/name）。 */
+    private String readLine() {
+        var sb = new StringBuilder();
+        while (pos < data.length && data[pos] != '\n') sb.append((char) data[pos++]);
+        if (pos < data.length) pos++; // skip '\n'
+        return sb.toString();
+    }
+
+    /** 不透明对象标记：GLOBAL/NEWOBJ 等无需解析的自定义对象。 */
+    public record PickleObject(String name) {
+        @Override
+        public String toString() { return "<" + name + ">"; }
     }
 
     // ── 高层 API：解析 ArenaState 玩家列表 ──────────────────────────────

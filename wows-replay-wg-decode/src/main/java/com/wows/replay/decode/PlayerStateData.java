@@ -72,6 +72,8 @@ public final class PlayerStateData {
     private long    clanId;
     private long    clanColor;
     private long    dbId;
+    /** 原始 accountDBID 字段（key 0）——15.x 中与 id 字段（key 11）不同 */
+    private long    accountDbId;
     private String  realm;
     private long    metaShipId;
     private int     entityId;
@@ -123,13 +125,16 @@ public final class PlayerStateData {
         psd.raw.putAll(rawValues);
 
         // Extract known fields by name
-        psd.dbId        = getLong(rawValues, keyMap, KEY_ACCOUNT_DBID);
+        // 15.x：`id` 字段（key 11）才是与 meta/聊天一致的账号 ID；
+        // `accountDBID`（key 0）是另一套 ID（哈希值），不能用于玩家匹配。
+        psd.accountDbId = getLong(rawValues, keyMap, KEY_ACCOUNT_DBID);
+        psd.dbId        = getLong(rawValues, keyMap, KEY_ID);
         psd.username    = getString(rawValues, keyMap, KEY_NAME);
         psd.clan        = getString(rawValues, keyMap, KEY_CLAN_TAG);
         psd.clanId      = getLong(rawValues, keyMap, KEY_CLAN_ID);
         psd.clanColor   = getLong(rawValues, keyMap, KEY_CLAN_COLOR);
         psd.realm       = getStringOrNull(rawValues, keyMap, KEY_REALM);
-        psd.metaShipId  = getLong(rawValues, keyMap, KEY_ID);
+        psd.metaShipId  = psd.accountDbId;
         psd.entityId    = (int) getLong(rawValues, keyMap, KEY_SHIP_ID);
         psd.teamId      = getLong(rawValues, keyMap, KEY_TEAM_ID);
         psd.maxHealth   = getLong(rawValues, keyMap, KEY_MAX_HEALTH);
@@ -449,7 +454,10 @@ public final class PlayerStateData {
     public String clan()           { return clan; }
     public long clanId()           { return clanId; }
     public long clanColor()        { return clanColor; }
+    /** 账号 ID（15.x 中取自 `id` 字段，与 meta/聊天一致）。 */
     public long dbId()             { return dbId; }
+    /** 原始 accountDBID 字段（key 0）——15.x 中为另一套 ID。 */
+    public long accountDbId()      { return accountDbId; }
     public String realm()          { return realm; }
     public long metaShipId()       { return metaShipId; }
     public int entityId()          { return entityId; }
