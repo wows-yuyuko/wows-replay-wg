@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.model.Vec3;
 
 /**
- * 0x18: 鐐爣/鐬勫噯鐘舵€侊紙姣?tick, 52 瀛楄妭锛夈€? */
+ * 0x18: 枪标/瞄准状态(每 tick, 52 字节)。 */
 public record GunMarkerPacket(
     @JsonProperty("target_point") Vec3 targetPoint,
     @JsonProperty("diameter") float diameter,

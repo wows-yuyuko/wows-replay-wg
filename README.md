@@ -51,10 +51,10 @@ var analyzer = new ReplayAnalyzer.Builder()
     .specProvider(specProvider)
     .config(config)
     .build();
-String report = analyzer.buildReport(replay);
+String report = analyzer.analyze(replay);   // JSON report
 
-// 4. Dump decoded packets only (Layer 0-2, no ECS)
-String decoded = analyzer.dumpDecoded(replay);
+// 4. Structured report (BattleReport record tree)
+BattleReport report2 = analyzer.buildReport(replay);
 
 // 5. Read metadata only (skip decryption, very fast)
 ReplayMeta meta = ReplayFile.metaFromFile(Path.of("replay.wowsreplay"));

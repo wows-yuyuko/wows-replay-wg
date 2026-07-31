@@ -8,9 +8,8 @@ import java.util.*;
 /**
  * Unified entity state — the single representation of an entity across the ingest layer.
  *
- * <p>Merges the previous {@code EntityState} (from RichExtractor) and
- * {@code EntityComponents} (BattleWorld inner class) into one class.
- * Uses sentinel values for missing data ({@code -1f} for health, {@code NaN} for heading,
+ * <p>Unified representation of an entity across the ingest layer. Uses sentinel
+ * values for missing data ({@code -1f} for health, {@code NaN} for heading,
  * {@code -1} for teamId, {@code null} for dbId/playerName).</p>
  */
 public final class EntityState {

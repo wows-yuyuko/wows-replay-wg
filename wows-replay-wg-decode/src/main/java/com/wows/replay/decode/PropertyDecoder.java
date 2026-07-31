@@ -11,8 +11,7 @@ import java.util.Optional;
  *
  * <p>The {@link Kind} enum is the single source of truth for property-name→semantics
  * mapping. Ingest code switches on {@code Kind} instead of property name strings,
- * eliminating the duplicated property-switch logic previously present in both
- * {@code BattleWorld} and {@code RichExtractor}.</p>
+ * eliminating duplicated property-switch logic.</p>
  */
 public final class PropertyDecoder {
 

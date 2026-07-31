@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.model.EntityId;
 
 /**
- * 0x20: 灏?Avatar 鍏宠仈鍒板叾鎺у埗鐨勮埌鑸瑰疄浣撱€? */
+ * 0x20: 将 Avatar 关联到其控制的舰船实体。 */
 public record OwnShipPacket(
     @JsonProperty("entity_id") EntityId entityId
 ) {}

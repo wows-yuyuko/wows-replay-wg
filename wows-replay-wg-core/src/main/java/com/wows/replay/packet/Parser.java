@@ -185,7 +185,7 @@ public class Parser {
         byte[] nameBytes = new byte[strLen];
         buf.get(nameBytes);
         String mapName = new String(nameBytes, StandardCharsets.UTF_8);
-        byte[] matrix = new byte[64]; // 4脳4 f32 matrix
+        byte[] matrix = new byte[64]; // 4×4 f32 matrix
         buf.get(matrix);
         int unknown = buf.get() & 0xFF;
         return Packet.fromRaw(raw, new MapPacket(spaceId, arenaId, u1, u2, blob, mapName, unknown), remaining(raw, buf));
@@ -283,7 +283,7 @@ public class Parser {
         return Packet.fromRaw(raw, new InitFlagPacket(buf.get() & 0xFF), remaining(raw, buf));
     }
 
-    // 鈹€鈹€ Entity-dependent parsers (require EntitySpec) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── Entity-dependent parsers (require EntitySpec) ─────────────────
 
     private Packet parseBasePlayerCreate(RawPacket raw) {
         if (specs.isEmpty()) return Packet.unknown(raw);
@@ -443,13 +443,13 @@ public class Parser {
             if (methodId >= spec.clientMethods().size()) {
                 return Packet.invalid(raw, "Method id " + methodId + " out of bounds for " + spec.name());
             }
-            var Method = spec.clientMethods().get(methodId);
+            var method = spec.clientMethods().get(methodId);
 
             var argNames = new ArrayList<String>();
             var argValues = new ArrayList<ArgValue>();
 
-            for (int i = 0; i < Method.args().size() && buf.hasRemaining(); i++) {
-                var argSpec = Method.args().get(i);
+            for (int i = 0; i < method.args().size() && buf.hasRemaining(); i++) {
+                var argSpec = method.args().get(i);
                 argNames.add(argSpec.name());
                 argValues.add(parseValue(buf, argSpec.argType()));
             }
@@ -461,7 +461,7 @@ public class Parser {
                 argValues.add(new com.wows.replay.types.ArgValue.BlobVal(rest));
             }
 
-            return Packet.fromRaw(raw, new EntityMethodPacket(eid, Method.name(),
+            return Packet.fromRaw(raw, new EntityMethodPacket(eid, method.name(),
                 new NamedArgs(argNames, argValues)), remaining(raw, buf));
         } catch (Exception e) {
             return Packet.invalid(raw, "EntityMethod parse error: " + e.getMessage());
@@ -538,7 +538,7 @@ public class Parser {
         }
     }
 
-    // 鈹€鈹€ RPC value parsing 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── RPC value parsing ─────────────────────────────────────────────
 
     /**
      * Parse a single RPC value according to its type definition.
@@ -626,7 +626,7 @@ public class Parser {
         return new ArgValue.TupleVal(elements);
     }
 
-    // 鈹€鈹€ Helpers 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── Helpers ────────────────────────────────────────────────────────────
 
     private Vec3 readVec3(ByteBuffer buf) {
         return new Vec3(buf.getFloat(), buf.getFloat(), buf.getFloat());
@@ -674,7 +674,7 @@ public class Parser {
         // No-op: leftover is captured in remaining() call
     }
 
-    // 鈹€鈹€ Inner types 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── Inner types ─────────────────────────────────────────────────────────
 
     private record EntityState(int entityType, List<ArgValue> properties) {}
 

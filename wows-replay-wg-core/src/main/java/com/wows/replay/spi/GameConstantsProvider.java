@@ -9,11 +9,9 @@ import java.util.Optional;
 
 /**
  * 提供游戏常量查找（消耗品、死亡原因、战斗阶段、相机模式等）。
- * battle stages, camera modes, etc.).
  *
- * <p>These constants are extracted from game Scripts/ directory or
- * provided as a JSON dump. Falls back to hardcoded defaults when
- * no provider is available.</p>
+ * <p>常量从游戏 Scripts/ 目录提取，或通过 JSON dump 提供。
+ * 无可用 provider 时回退到默认空实现。</p>
  */
 public interface GameConstantsProvider {
 

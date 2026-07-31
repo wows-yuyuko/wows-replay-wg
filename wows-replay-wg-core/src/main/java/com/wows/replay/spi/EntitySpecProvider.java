@@ -8,10 +8,7 @@ import java.util.List;
 /**
  * 提供实体规范定义（来自游戏 .def 文件）。
  *
- * <p>解耦 wowsunpack 的主要抽象。
- * 从游戏数据加载实体规范并按版本缓存。
- * by version. A JSON-file-based default implementation is provided
- * for testing without a game install.</p>
+ * <p>解耦 wowsunpack 的主要抽象：从游戏数据加载实体规范并按版本缓存。</p>
  */
 @FunctionalInterface
 public interface EntitySpecProvider {

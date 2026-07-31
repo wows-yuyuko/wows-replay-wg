@@ -5,7 +5,6 @@ import java.util.List;
 /**
  * 从游戏 .def 文件加载的实体类型定义。
  * 将 entity_type（u16 索引）映射到名称、属性和方法。
- * properties, and methods.
  */
 public record EntitySpec(
     /** Entity type name (e.g. "Avatar", "Vehicle", "Sector") */

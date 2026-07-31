@@ -1,6 +1,5 @@
 package com.wows.replay.spec;
 
-import com.wows.replay.spec.*;
 import com.wows.replay.types.ArgType;
 import com.wows.replay.spi.DefFileLoader;
 import com.wows.replay.model.Version;

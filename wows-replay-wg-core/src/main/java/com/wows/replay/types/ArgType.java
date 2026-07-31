@@ -96,15 +96,15 @@ public sealed interface ArgType {
     /**
      * 从 .def 文件解析类型描述符字符串。
      * Examples: "UINT8", "FLOAT32", "STRING", "ARRAY 解析",
-     * "TUPLE <of> FLOAT,FLOAT,FLOAT", "FIXED_DICT 解析 AvatarCommon".
+     * "TUPLE <of> FLOAT,FLOAT,FLOAT", "FIXED_DICT AvatarCommon".
      */
     static ArgType fromDescriptor(String descriptor) {
         if (descriptor == null) return Primitive.BLOB;
         var trimmed = descriptor.trim().toUpperCase();
 
-        // FIXED_DICT 解析 → NamedType reference (resolved later via EntitySpec)
-        if (trimmed.startsWith("FIXED_DICT 解析")) {
-            var name = trimmed.substring("FIXED_DICT 解析".length()).trim();
+        // FIXED_DICT <name> → NamedType reference (resolved later via EntitySpec)
+        if (trimmed.startsWith("FIXED_DICT")) {
+            var name = trimmed.substring("FIXED_DICT".length()).trim();
             return new NamedType(name);
         }
 
@@ -205,7 +205,7 @@ public sealed interface ArgType {
             case FixedDict(var _, var props) -> "FIXED_DICT{" +
                 props.stream().map(p -> p.name() + ":" + p.propType().typeName())
                     .collect(java.util.stream.Collectors.joining(",")) + "}";
-            case NamedType(var n, var _) -> "FIXED_DICT 解析<" + n + ">";
+            case NamedType(var n, var _) -> "FIXED_DICT<" + n + ">";
         };
     }
 }
