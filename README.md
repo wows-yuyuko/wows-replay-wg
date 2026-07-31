@@ -2,46 +2,61 @@
 
 World of Warships WG (Wargaming) server replay parser — pure Java, JDK 25.
 
+## Architecture
+
+4-layer pipeline aligned with the reference document:
+
+```
+Layer 0: ReplayFile    → file I/O, Blowfish-CBC decrypt, zlib decompress
+Layer 1: Parser        → byte stream → framed packets { type, clock, payload }
+Layer 2: PacketDecoder → Packet → semantic decode → DecodedPayload
+Layer 3: BattleWorld   → DecodedPayload → ECS world (entities, resources, events)
+```
+
 ## Module structure
 
-| Module | Description |
-|--------|-------------|
-| **wows-replay-wg-core** | Self-contained replay parsing — zero internal deps, no game data required. Types (EntityId, GameClock, Version, ArgType/ArgValue...), file I/O (ReplayFile, Blowfish-CBC decrypt, zlib decompress), 30+ packet types + PacketParser, SPI interfaces. |
-| **wows-replay-wg-game-data** | Entity spec XML loading from game data directory: XmlEntitySpecProvider, XmlDefParser, GameDataCache. Requires game install. |
-| **wows-replay-wg-analyzer** | High-level analysis + JSON output: ReplayAnalyzer, BattleReport, event extraction. |
-| **wows-dumper** | CLI entry point + JSON pipeline: DumperPipeline, RichExtractor, PickleDecoder, MinimapData. |
+| Module | Layer | Description |
+|--------|-------|-------------|
+| **wows-replay-wg-core** | 0-1 | Replay file I/O, Blowfish-CBC decrypt, zlib decompress, packet framing, type system (ArgType/ArgValue), entity specs, SPI interfaces |
+| **wows-replay-wg-decode** | 2 | Semantic decode: PacketDecoder, MethodDecoder, PropertyDecoder, PickleReader |
+| **wows-replay-wg-ingest** | 3 | ECS ingest: BattleWorld, EntityManager, EntityState, ReplayAnalyzer, BattleReport |
 
 ## Dependencies
 
 ```
-wows-replay-wg-core        (zero internal deps, Jackson 3 only)
+wows-replay-wg-core        (zero internal deps)
     ↑
-wows-replay-wg-game-data   (depends on core)
+wows-replay-wg-decode      (depends on core)
     ↑
-wows-replay-wg-analyzer    (depends on core + game-data)
-    ↑
-wows-dumper                (depends on analyzer)
+wows-replay-wg-ingest      (depends on decode)
 ```
+
+Layer 3 is optional — if you only need JSON output of decoded packets, depend on `core` + `decode` only.
 
 ## Quick start
 
 ```java
-import com.wows.replay.core.ReplayFile;
-import com.wows.replay.analyzer.ReplayAnalyzer;
+import com.wows.replay.ReplayFile;
+import com.wows.replay.ingest.ReplayAnalyzer;
 
 // 1. Parse replay file
 ReplayFile replay = ReplayFile.fromFile(Path.of("replay.wowsreplay"));
 
-// 2. Quick analysis (no game data needed)
+// 2. Quick analysis (framing stats only, no game data)
 String json = ReplayAnalyzer.quick(replay);
-System.out.println(json);
 
-// 3. Iterate raw packets
-replay.packets().forEach(pkt -> {
-    System.out.println(pkt.packetType() + " @ " + pkt.clock());
-});
+// 3. Full analysis (requires game data for entity specs)
+var config = ReplayAnalyzerConfig.DEFAULT;
+var analyzer = new ReplayAnalyzer.Builder()
+    .specProvider(specProvider)
+    .config(config)
+    .build();
+String report = analyzer.buildReport(replay);
 
-// 4. Read metadata only (skip decryption, very fast)
+// 4. Dump decoded packets only (Layer 0-2, no ECS)
+String decoded = analyzer.dumpDecoded(replay);
+
+// 5. Read metadata only (skip decryption, very fast)
 ReplayMeta meta = ReplayFile.metaFromFile(Path.of("replay.wowsreplay"));
 ```
 
@@ -62,15 +77,15 @@ mvn package            # package
 - **jlibdeflate** — zlib decompression
 - **Maven** — build management
 
-## wowsunpack decoupling
+## SPI interfaces
 
 The following are abstract interfaces, no game install required:
 
-- `EntitySpecProvider` — entity definition loading (connects to wowsunpack .def files)
-- `GameParamProvider` — game parameter queries (ship name/ID mapping)
+- `EntitySpecProvider` — entity definition loading (connects to .def files from game data)
 - `GameConstantsProvider` — game constant queries (consumable/battle stage/death cause names)
+- `DefFileLoader` — abstract filesystem access for .def files
 
-Default implementations are no-ops with graceful degradation. Implement these three interfaces to integrate real game data.
+Default implementations are no-ops with graceful degradation.
 
 ## Replay file format
 
