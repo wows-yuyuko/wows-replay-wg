@@ -8,13 +8,16 @@ import com.wows.replay.packet.*;
 import com.wows.replay.spi.EntitySpecProvider;
 import com.wows.replay.spi.GameConstantsProvider;
 import com.wows.replay.model.GameClock;
+import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.JsonMapper;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 回放分析入口，对标 wows-toolkit 的 replay-dumper 管线。
@@ -80,6 +83,11 @@ public final class ReplayAnalyzer {
                 ? new Parser(specProvider, replay.version())
                 : new Parser();
 
+        // 战斗状态容器：chat/damage/vehicles/players 等字段统一来自 world.intoReport()，
+        // 避免与 BattleWorld 内部状态两套来源漂移。
+        var world = config.decodePackets() ? new BattleWorld(replay.meta(), replay.version()) : null;
+        var decoder = config.decodePackets() ? new PacketDecoder(replay.version()) : null;
+
         var packetCounts = new LinkedHashMap<String, Integer>();
         int unknownCount = 0;
         int invalidCount = 0;
@@ -88,7 +96,6 @@ public final class ReplayAnalyzer {
         int entityMethodCount = 0;
 
         var entityEvents = new ArrayList<BattleReport.EntityEvent>();
-        var chatMessages = new ArrayList<BattleReport.ChatMessage>();
         var minimapFrames = new ArrayList<BattleReport.MinimapFrame>();
         int minimapTickCounter = 0;
         int minimapStep = config.minimapStep();
@@ -113,7 +120,7 @@ public final class ReplayAnalyzer {
                 }
             }
 
-            if (config.decodePackets()) {
+            if (world != null && decoder != null) {
                 var packet = parser.parse(raw);
                 Object payload = packet.payload();
                 if (payload instanceof Packet.InvalidPayload) invalidCount++;
@@ -131,6 +138,8 @@ public final class ReplayAnalyzer {
                             raw.clock().seconds(), "leave", elp.entityId().value(),
                             null, 0));
                 }
+
+                world.process(decoder.decode(packet), raw.clock());
             }
 
             if (config.minimap() && minimapTickCounter % minimapStep == 0) {
@@ -139,6 +148,13 @@ public final class ReplayAnalyzer {
                 }
             }
             minimapTickCounter++;
+        }
+
+        // 终局快照：战斗状态字段的唯一权威来源。
+        BattleSnapshot snapshot = null;
+        if (world != null) {
+            world.finish();
+            snapshot = world.intoReport();
         }
 
         var resolvedVehicles = resolveVehicleNames(replay);
@@ -151,10 +167,41 @@ public final class ReplayAnalyzer {
                         positionCount, entityCreateCount, entityMethodCount),
                 new BattleReport.PacketsSection(packetCounts, unknownCount, invalidCount),
                 entityEvents.isEmpty() ? null : entityEvents,
-                null, chatMessages.isEmpty() ? null : chatMessages,
-                null,
+                snapshot != null ? buildVehicleTimelines(snapshot, replay) : null,
+                snapshot != null && !snapshot.chat().isEmpty()
+                        ? snapshot.chat().stream()
+                            .map(c -> new BattleReport.ChatMessage(c.clock(), (int) c.senderDbId(), c.message()))
+                            .toList()
+                        : null,
+                snapshot != null ? buildDamageSection(snapshot) : null,
                 minimapFrames.isEmpty() ? null : new BattleReport.MinimapSection(minimapStep, minimapFrames),
                 resolvedVehicles.isEmpty() ? null : resolvedVehicles);
+    }
+
+    /** 从终局快照构建每玩家车辆时间线（原为 null 占位）。 */
+    private List<BattleReport.VehicleTimeline> buildVehicleTimelines(BattleSnapshot snapshot, ReplayFile replay) {
+        var shipIdByDbId = new HashMap<Long, Long>();
+        if (replay.meta().vehicles() != null) {
+            for (var v : replay.meta().vehicles()) {
+                shipIdByDbId.put(Integer.toUnsignedLong(v.id().value()), v.shipId().value());
+            }
+        }
+        var out = new ArrayList<BattleReport.VehicleTimeline>();
+        for (var p : snapshot.players()) {
+            long shipId = shipIdByDbId.getOrDefault(p.dbId(), 0L);
+            out.add(new BattleReport.VehicleTimeline(
+                    p.entityId(), shipId,
+                    List.of(Map.of("clock", snapshot.playedDuration() != null ? snapshot.playedDuration() : 0f,
+                            "type", "damage", "amount", p.totalDamage()))));
+        }
+        return out.isEmpty() ? null : out;
+    }
+
+    /** 从终局快照构建伤害汇总（原为 null 占位）。 */
+    private BattleReport.DamageSection buildDamageSection(BattleSnapshot snapshot) {
+        long dealt = Math.round(snapshot.players().stream()
+                .mapToDouble(BattleSnapshot.Player::totalDamage).sum());
+        return new BattleReport.DamageSection(dealt, 0, Map.of());
     }
 
     /** 从回放元数据中提取车辆列表。 */

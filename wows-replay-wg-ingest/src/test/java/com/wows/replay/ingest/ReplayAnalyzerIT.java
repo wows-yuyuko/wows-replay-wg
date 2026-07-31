@@ -6,6 +6,7 @@ import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.decode.DecodedPayload;
 import com.wows.replay.model.Version;
 import com.wows.replay.spec.GameDataCache;
+import com.wows.replay.spi.EntitySpecProvider;
 import com.wows.replay.packet.Parser;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
@@ -59,6 +60,7 @@ class ReplayAnalyzerIT {
 
     private static ReplayFile replay;
     private static Version version;
+    private static EntitySpecProvider specProvider;
     private static BattleWorld world;
     private static int totalPackets;
     private static int decodedPackets;
@@ -78,7 +80,7 @@ class ReplayAnalyzerIT {
         assertNotNull(gameData, "游戏数据未找到: " + wowsData);
 
         var cache = GameDataCache.withMaxSize(4);
-        var specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
+        specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
         assertNotNull(specProvider, "EntitySpecProvider 不应为 null");
 
         // ── Layer 1: Parser ─────────────────────────────────────────
@@ -448,9 +450,124 @@ class ReplayAnalyzerIT {
             java.nio.file.Files.writeString(out,
                 com.wows.replay.JsonMapper.getMapper().writerWithDefaultPrettyPrinter().writeValueAsString(o));
             log.info("已写入 {}", out);
+            log.info("输出 World Json");
+            var jsonPath = Path.of(System.getProperty("user.dir")).getParent()
+                    .resolve("temp").resolve("compare").resolve("java_summary-world.json");
+            java.nio.file.Files.createDirectories(jsonPath.getParent());
+            java.nio.file.Files.writeString(jsonPath,
+                    com.wows.replay.JsonMapper.getMapper().writerWithDefaultPrettyPrinter().writeValueAsString(world));
+            log.info("已写入 {}", jsonPath);
         } catch (Exception e) {
             log.warn("dumpSummaryJson 失败: {}", e.toString());
         }
+    }
+
+    // ── ReplayAnalyzer：quick / analyze 端到端 ──────────────────────
+
+    @Test
+    @DisplayName("quick(): 无 spec 快速 JSON（元数据 + 包类型统计）")
+    void quickJson() throws Exception {
+        String json = ReplayAnalyzer.quick(replay);
+        var node = com.wows.replay.JsonMapper.readTree(json);
+
+        assertNotNull(node.get("meta"), "应有 meta section");
+        assertEquals("spaces/56_AngelWings",
+            node.get("meta").get("map_name").asText(), "meta.map_name");
+
+        assertNotNull(node.get("packets"), "应有 packets section");
+        var byType = node.get("packets").get("by_type");
+        assertNotNull(byType, "应有 by_type 统计");
+        assertTrue(byType.size() > 0, "by_type 不应为空");
+        assertTrue(byType.get("entity method").asInt() > 10_000, "EntityMethod 应超过 1 万");
+
+        log.info("quick() ✓: {} bytes, {} packet types", json.length(), byType.size());
+    }
+
+    @Test
+    @DisplayName("analyze(): 完整解码 JSON（meta/packets/chat/damage/vehicles）")
+    void analyzeJson() throws Exception {
+        var analyzer = ReplayAnalyzer.builder()
+            .specProvider(specProvider)
+            .config(ReplayAnalyzerConfig.builder().decodePackets(true).build())
+            .build();
+        String json = analyzer.analyze(replay);
+        var node = com.wows.replay.JsonMapper.readTree(json);
+
+        assertNotNull(node.get("meta"), "应有 meta section");
+        assertNotNull(node.get("packets"), "应有 packets section");
+        assertTrue(node.get("packets").get("invalid_packets").asInt() >= 0, "invalid_packets 应 >= 0");
+
+        assertNotNull(node.get("chat"), "应有 chat section");
+        assertTrue(node.get("chat").size() > 0, "chat 应非空");
+        assertNotNull(node.get("damage"), "应有 damage section");
+        assertTrue(node.get("damage").get("total_damage_dealt").asLong() > 0, "total_damage_dealt 应 > 0");
+        assertNotNull(node.get("vehicles"), "应有 vehicles section");
+        assertEquals(24, node.get("vehicles").size(), "应有 24 辆玩家船");
+
+        log.info("analyze() ✓: {} bytes, chat={}, damage_dealt={}, vehicles={}",
+            json.length(),
+            node.get("chat").size(),
+            node.get("damage").get("total_damage_dealt").asLong(),
+            node.get("vehicles").size());
+    }
+
+    // ── ReplayAnalyzer.buildReport（基于 BattleWorld.intoReport）──────
+
+    @Test
+    @DisplayName("buildReport: 战斗状态字段来自 intoReport 快照")
+    void buildReportFromWorld() {
+        var analyzer = ReplayAnalyzer.builder()
+            .specProvider(specProvider)
+            .config(ReplayAnalyzerConfig.builder().decodePackets(true).build())
+            .build();
+        var report = analyzer.buildReport(replay);
+
+        assertNotNull(report, "report 不应为 null");
+        assertNotNull(report.meta(), "meta 不应为 null");
+        assertNotNull(report.packets(), "packets 不应为 null");
+        assertTrue(report.packets().byType().containsKey("entity method"), "应有 EntityMethod 统计");
+        assertTrue(report.packets().byType().get("entity method") > 10_000, "EntityMethod 应超过 1 万");
+
+        // chat/damage/vehicles 现在来自 world.intoReport()，不再为空占位
+        assertNotNull(report.chat(), "chat 不应为 null");
+        assertTrue(report.chat().size() > 0, "应有聊天消息");
+        assertNotNull(report.damage(), "damage 不应为 null");
+        assertTrue(report.damage().totalDamageDealt() > 0, "应有造成伤害");
+        assertNotNull(report.vehicles(), "vehicles 不应为 null");
+        assertEquals(24, report.vehicles().size(), "应有 24 辆玩家船");
+
+        log.info("buildReport ✓: chat={}, damage_dealt={}, vehicles={}",
+            report.chat().size(), report.damage().totalDamageDealt(), report.vehicles().size());
+    }
+
+    // ── BattleSnapshot ────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("intoReport: 终局快照与 summary 一致")
+    void battleSnapshot() {
+        var snap = world.intoReport();
+        assertEquals("spaces/56_AngelWings", snap.mapName());
+        assertEquals(Integer.valueOf(1), snap.winningTeam());
+        assertEquals("Loss", snap.matchResult());
+        assertEquals(world.players.size(), snap.players().size());
+        assertEquals(world.killLog.size(), snap.kills().size());
+        assertEquals(world.chatLog.size(), snap.chat().size());
+        assertEquals(1200f, snap.maxDuration(), 0.001f);
+        assertNotNull(snap.playedDuration());
+        assertTrue(snap.players().stream().allMatch(p -> p.dbId() > 0));
+
+        log.info("BattleSnapshot: map={} winner={} finish={} result={} players={} kills={} chat={}",
+            snap.mapName(), snap.winningTeam(), snap.finishType(), snap.matchResult(),
+            snap.players().size(), snap.kills().size(), snap.chat().size());
+        log.info("  maxDuration={} played={} extra={}",
+            snap.maxDuration(), snap.playedDuration(), snap.extraDuration());
+        for (var p : snap.players()) {
+            log.info("  player dbId={} name={} team={} damage={}", p.dbId(), p.username(), p.teamId(), p.totalDamage());
+        }
+
+        var json = com.wows.replay.JsonMapper.toPrettyJson(snap);
+        assertTrue(json.contains("\"map_name\""));
+        log.info("BattleSnapshot JSON (head): {}", json.substring(0, Math.min(300, json.length())));
     }
 
     // ── 错误处理测试 ───────────────────────────────────────────────

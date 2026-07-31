@@ -127,7 +127,10 @@ public class BattleWorld {
         switch (payload) {
             // ── Arena / Player state ───────────────────────────────────
             case DecodedPayload.OnArenaStateReceivedPayload as -> {
-                arenaId = String.valueOf(as.arenaId());
+                // 保留首个 arena id（onWorldStateReceived 等后续包 arenaId=0，不覆盖）
+                if (arenaId == null && as.arenaId() != 0) {
+                    arenaId = String.valueOf(as.arenaId());
+                }
                 ingestArenaPlayers(as.playerStates(), as.botStates(), clock);
             }
             case DecodedPayload.NewPlayerSpawnedInBattlePayload ns -> {
@@ -1017,6 +1020,82 @@ public class BattleWorld {
     }
 
     // ── Helpers: Entity management ─────────────────────────────────────
+
+    /**
+     * 消费当前状态，产出一个可序列化的终局快照（对标 Rust
+     * {@code BattleWorld::into_report()}）。应在 {@link #finish()} 之后调用。
+     */
+    public BattleSnapshot intoReport() {
+        var playerSnapshots = new ArrayList<BattleSnapshot.Player>();
+        for (var e : players.entrySet()) {
+            var pi = e.getValue();
+            var es = entities.get(pi.entityId);
+            boolean dead = es != null && !es.isAlive;
+            double damage = damageByAggressor.getOrDefault(pi.entityId, List.of())
+                .stream().mapToDouble(d -> d.amount).sum();
+            playerSnapshots.add(new BattleSnapshot.Player(
+                e.getKey(), pi.username, pi.entityId, pi.teamId, pi.relation,
+                es != null && es.isBot, dead, damage));
+        }
+        playerSnapshots.sort(Comparator.comparingLong(BattleSnapshot.Player::dbId));
+
+        var killSnapshots = killLog.stream()
+            .map(k -> new BattleSnapshot.Kill(k.clock(), k.killerEid(), k.killerName(),
+                k.victimEid(), k.victimName(), k.cause()))
+            .toList();
+        var chatSnapshots = chatLog.stream()
+            .map(c -> new BattleSnapshot.Chat(c.clock(), c.dbId(), c.senderName(), c.channel(), c.message()))
+            .toList();
+        var cpSnapshots = capturePoints.stream()
+            .map(cp -> new BattleSnapshot.CapturePoint(cp.index, cp.teamId, cp.invaderTeam,
+                cp.progress, cp.isEnabled,
+                cp.position != null && cp.position.length >= 2 ? cp.position[0] : 0,
+                cp.position != null && cp.position.length >= 2 ? cp.position[1] : 0))
+            .toList();
+        var deadShipSnapshots = deadShips.stream()
+            .map(ds -> new BattleSnapshot.DeadShip(ds.clock(), ds.victimId(), ds.x(), ds.z()))
+            .toList();
+
+        Long arenaIdLong = null;
+        if (arenaId != null) {
+            try {
+                arenaIdLong = Long.parseLong(arenaId);
+            } catch (NumberFormatException ignored) { }
+        }
+
+        return new BattleSnapshot(
+            version.toString(),
+            mapName,
+            arenaIdLong,
+            gameMode,
+            meta.gameType(),
+            matchGroup,
+            winningTeam,
+            finishType,
+            matchResult,
+            maxDuration != null ? maxDuration : 0f,
+            playedDuration,
+            extraDuration,
+            battleStartClock,
+            playerSnapshots,
+            killSnapshots,
+            chatSnapshots,
+            damageEvents.size(),
+            consumableLog.size(),
+            ribbonLog.size(),
+            voiceLineLog.size(),
+            firedSalvos.size(),
+            torpedoes.size(),
+            shotHits.size(),
+            planeEvents.size(),
+            activeWards.size(),
+            cpSnapshots,
+            buffZones.size(),
+            weatherZones.size(),
+            buildings.size(),
+            deadShipSnapshots
+        );
+    }
 
     /**
      * 存活实体按 kind 统计，镜像 Rust {@code entity_kinds()}：只数携带
