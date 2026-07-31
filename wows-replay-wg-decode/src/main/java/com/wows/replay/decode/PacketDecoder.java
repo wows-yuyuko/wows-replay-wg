@@ -1,15 +1,17 @@
 package com.wows.replay.decode;
 
-import com.wows.replay.types.ArgValue;
 import com.wows.replay.model.*;
 import com.wows.replay.packet.*;
 import com.wows.replay.pickle.PickleReader;
+import com.wows.replay.types.ArgValue;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.*;
-
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Layer-2 packet decoder — converts {@link Parser} output into
@@ -32,12 +34,15 @@ public class PacketDecoder {
     public void dumpMethodStats() {
         if (methodStats.isEmpty()) return;
         log.info("EntityMethod stats ({} unique, {} total):",
-            methodStats.size(), methodStats.values().stream().mapToInt(Integer::intValue).sum());
+                methodStats.size(), methodStats.values().stream().mapToInt(Integer::intValue).sum());
         var sorted = new ArrayList<>(methodStats.entrySet());
         sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
         int shown = 0;
         for (var e : sorted) {
-            if (shown++ >= 15) { log.info("  ... and {} more method types", sorted.size() - 15); break; }
+            if (shown++ >= 15) {
+                log.info("  ... and {} more method types", sorted.size() - 15);
+                break;
+            }
             log.info("  {}: {}", e.getKey(), e.getValue());
         }
     }
@@ -46,44 +51,42 @@ public class PacketDecoder {
      * Decode a parsed {@link Packet} into a {@link DecodedPayload}.
      */
     public DecodedPayload decode(Packet packet) {
-        if (packet == null || packet.payload() instanceof Packet.InvalidPayload) {
+        if (packet == null) {
             return new DecodedPayload.InvalidPayload("null or invalid packet");
         }
-
         Object payload = packet.payload();
-
         return switch (payload) {
-            case EntityMethodPacket em        -> decodeEntityMethod(em);
-            case EntityCreatePacket ec        -> new DecodedPayload.EntityCreatePayload(ec);
-            case BasePlayerCreatePacket bp    -> new DecodedPayload.BasePlayerCreatePayload(bp);
-            case CellPlayerCreatePacket cp    -> new DecodedPayload.CellPlayerCreatePayload(cp);
-            case EntityEnterPacket ee         -> new DecodedPayload.EntityEnterPayload(ee);
-            case EntityLeavePacket el         -> new DecodedPayload.EntityLeavePayload(el);
-            case EntityPropertyPacket ep      -> PropertyDecoder.decode(ep)
-                .<DecodedPayload>map(DecodedPayload.PropertyChangePayload::new)
-                .orElseGet(() -> new DecodedPayload.InvalidPayload("unrecognized property: " + ep.property()));
-            case EntityControlPacket ec2      -> new DecodedPayload.EntityControlPayload(ec2);
-            case PositionPacket pos           -> new DecodedPayload.PositionPayload(pos);
-            case PlayerOrientationPacket po   -> new DecodedPayload.PlayerOrientationPayload(po);
+            case EntityMethodPacket em -> decodeEntityMethod(em);
+            case EntityCreatePacket ec -> new DecodedPayload.EntityCreatePayload(ec);
+            case BasePlayerCreatePacket bp -> new DecodedPayload.BasePlayerCreatePayload(bp);
+            case CellPlayerCreatePacket cp -> new DecodedPayload.CellPlayerCreatePayload(cp);
+            case EntityEnterPacket ee -> new DecodedPayload.EntityEnterPayload(ee);
+            case EntityLeavePacket el -> new DecodedPayload.EntityLeavePayload(el);
+            case EntityPropertyPacket ep -> PropertyDecoder.decode(ep)
+                    .<DecodedPayload>map(DecodedPayload.PropertyChangePayload::new)
+                    .orElseGet(() -> new DecodedPayload.InvalidPayload("unrecognized property: " + ep.property()));
+            case EntityControlPacket ec2 -> new DecodedPayload.EntityControlPayload(ec2);
+            case PositionPacket pos -> new DecodedPayload.PositionPayload(pos);
+            case PlayerOrientationPacket po -> new DecodedPayload.PlayerOrientationPayload(po);
             case NonVolatilePositionPacket nvp -> new DecodedPayload.NonVolatilePositionPayload(nvp);
-            case PropertyUpdatePacket pu      -> new DecodedPayload.PropertyUpdatePayload(pu);
-            case MapPacket mp                 -> new DecodedPayload.MapPayload(mp);
-            case VersionPacket vp             -> new DecodedPayload.VersionPayload(vp.version());
-            case CameraPacket cp2             -> new DecodedPayload.CameraPayload(cp2);
-            case CameraModePacket cm          -> new DecodedPayload.CameraModePayload(cm.mode());
-            case CameraFreeLookPacket cfl     -> new DecodedPayload.CameraFreeLookPayload(cfl.freeLook() != 0);
-            case CruiseStatePacket cs         -> new DecodedPayload.CruiseStatePayload(cs.key(), cs.value());
-            case OwnShipPacket os             -> new DecodedPayload.OwnShipPayload(os);
-            case SetWeaponLockPacket swl      -> new DecodedPayload.SetWeaponLockPayload(swl);
-            case ServerTimestampPacket st     -> new DecodedPayload.ServerTimestampPayload(st.timestamp());
-            case ServerTickPacket st2         -> new DecodedPayload.ServerTickPayload(st2.tickRate());
-            case SubControllerPacket sc       -> new DecodedPayload.SubControllerPayload(sc);
-            case ShotTrackingPacket st3       -> new DecodedPayload.ShotTrackingPayload(st3);
-            case GunMarkerPacket gm           -> new DecodedPayload.GunMarkerPayload(gm);
-            case PlayerNetStatsPacket pns     -> new DecodedPayload.PlayerNetStatsPayload(pns);
-            case InitFlagPacket iff           -> new DecodedPayload.InitFlagPayload(iff.flag());
-            case BattleResultsPacket br       -> new DecodedPayload.BattleResultsPayload(br.json());
-            case Packet.InvalidPayload inv    -> new DecodedPayload.InvalidPayload(inv.error());
+            case PropertyUpdatePacket pu -> new DecodedPayload.PropertyUpdatePayload(pu);
+            case MapPacket mp -> new DecodedPayload.MapPayload(mp);
+            case VersionPacket vp -> new DecodedPayload.VersionPayload(vp.version());
+            case CameraPacket cp2 -> new DecodedPayload.CameraPayload(cp2);
+            case CameraModePacket cm -> new DecodedPayload.CameraModePayload(cm.mode());
+            case CameraFreeLookPacket cfl -> new DecodedPayload.CameraFreeLookPayload(cfl.freeLook() != 0);
+            case CruiseStatePacket cs -> new DecodedPayload.CruiseStatePayload(cs.key(), cs.value());
+            case OwnShipPacket os -> new DecodedPayload.OwnShipPayload(os);
+            case SetWeaponLockPacket swl -> new DecodedPayload.SetWeaponLockPayload(swl);
+            case ServerTimestampPacket st -> new DecodedPayload.ServerTimestampPayload(st.timestamp());
+            case ServerTickPacket st2 -> new DecodedPayload.ServerTickPayload(st2.tickRate());
+            case SubControllerPacket sc -> new DecodedPayload.SubControllerPayload(sc);
+            case ShotTrackingPacket st3 -> new DecodedPayload.ShotTrackingPayload(st3);
+            case GunMarkerPacket gm -> new DecodedPayload.GunMarkerPayload(gm);
+            case PlayerNetStatsPacket pns -> new DecodedPayload.PlayerNetStatsPayload(pns);
+            case InitFlagPacket iff -> new DecodedPayload.InitFlagPayload(iff.flag());
+            case BattleResultsPacket br -> new DecodedPayload.BattleResultsPayload(br.json());
+            case Packet.InvalidPayload inv -> new DecodedPayload.InvalidPayload(inv.error());
             case null, default -> {
                 if (payload instanceof String s && s.equals("init_marker"))
                     yield new DecodedPayload.InitMarkerPayload();
@@ -100,39 +103,39 @@ public class PacketDecoder {
         methodStats.merge(method, 1, Integer::sum);
 
         return switch (method) {
-            case "onChatMessage"           -> decodeChat(em.entityId(), args);
-            case "receive_CommonCMD"       -> decodeVoiceLine(args);
+            case "onChatMessage" -> decodeChat(em.entityId(), args);
+            case "receive_CommonCMD" -> decodeVoiceLine(args);
             case "onArenaStateReceived",
-                 "onWorldStateReceived"    -> decodeArenaState(args);
-            case "onGameRoomStateChanged"  -> decodeGameRoomStateChanged(args);
+                 "onWorldStateReceived" -> decodeArenaState(args);
+            case "onGameRoomStateChanged" -> decodeGameRoomStateChanged(args);
             case "onNewPlayerSpawnedInBattle" -> decodeNewPlayerSpawned(args);
-            case "receiveDamagesOnShip"    -> decodeDamageReceived(em.entityId(), args);
-            case "receiveDamageReport"     -> decodeDamageReceived(em.entityId(), args);
-            case "receiveVehicleDeath"     -> decodeShipDestroyed(args);
-            case "onConsumableUsed"        -> decodeConsumable(em.entityId(), args);
-            case "setConsumables"          -> decodeConsumable(em.entityId(), args);
-            case "receiveDamageStat"       -> decodeDamageStat(args);
-            case "onBattleEnd"             -> decodeBattleEnd(args);
+            case "receiveDamagesOnShip" -> decodeDamageReceived(em.entityId(), args);
+            case "receiveDamageReport" -> decodeDamageReceived(em.entityId(), args);
+            case "receiveVehicleDeath" -> decodeShipDestroyed(args);
+            case "onConsumableUsed" -> decodeConsumable(em.entityId(), args);
+            case "setConsumables" -> decodeConsumable(em.entityId(), args);
+            case "receiveDamageStat" -> decodeDamageStat(args);
+            case "onBattleEnd" -> decodeBattleEnd(args);
             case "onShotFired",
-                 "receiveArtilleryShots"   -> decodeArtilleryShots(args);
-            case "receiveTorpedoes"        -> decodeTorpedoes(args);
-            case "receiveShotKills"        -> decodeShotKills(args);
-            case "receive_wardAdded"       -> decodeWardAdded(em.entityId(), args);
-            case "receive_wardRemoved"     -> decodeWardRemoved(em.entityId(), args);
+                 "receiveArtilleryShots" -> decodeArtilleryShots(args);
+            case "receiveTorpedoes" -> decodeTorpedoes(args);
+            case "receiveShotKills" -> decodeShotKills(args);
+            case "receive_wardAdded" -> decodeWardAdded(em.entityId(), args);
+            case "receive_wardRemoved" -> decodeWardRemoved(em.entityId(), args);
             case "onPlaneAdded",
-                 "receive_addSquadron"     -> decodePlaneAdded(em.entityId(), args);
+                 "receive_addSquadron" -> decodePlaneAdded(em.entityId(), args);
             case "onPlaneRemoved",
-                 "receive_removeSquadron"  -> decodePlaneRemoved(em.entityId(), args);
+                 "receive_removeSquadron" -> decodePlaneRemoved(em.entityId(), args);
             case "onPlanePosition",
-                 "receive_updateSquadron"  -> decodePlanePosition(em.entityId(), args);
-            case "onGunSync", "syncGun"    -> decodeGunSync(em.entityId(), args);
+                 "receive_updateSquadron" -> decodePlanePosition(em.entityId(), args);
+            case "onGunSync", "syncGun" -> decodeGunSync(em.entityId(), args);
             case "onSetAmmoForWeapon",
-                 "setAmmoForWeapon"        -> decodeSetAmmo(em.entityId(), args);
+                 "setAmmoForWeapon" -> decodeSetAmmo(em.entityId(), args);
             case "receiveTorpedoDirection" -> decodeTorpedoDirection(args);
-            case "onRibbon"                -> decodeRibbon(args);
+            case "onRibbon" -> decodeRibbon(args);
             case "updateMinimapVisionInfo" -> decodeMinimapVision(args);
-            case "syncShipCracks"          -> new DecodedPayload.EntityMethodPayload(em);
-            default                        -> new DecodedPayload.EntityMethodPayload(em);
+            case "syncShipCracks" -> new DecodedPayload.EntityMethodPayload(em);
+            default -> new DecodedPayload.EntityMethodPayload(em);
         };
     }
 
@@ -149,14 +152,16 @@ public class PacketDecoder {
                 Object extraObj = PickleReader.decode(pickleBytes);
                 if (extraObj instanceof Map<?, ?> dict) {
                     extra = new DecodedPayload.ChatExtra(
-                        longFromPickle(dict.get("preBattleSign")),
-                        longFromPickle(dict.get("prebattleId")),
-                        strFromPickle(dict.get("playerClanTag")),
-                        longFromPickle(dict.get("type")),
-                        new EntityId((int) longFromPickle(dict.get("playerAvatarId"))),
-                        strFromPickle(dict.get("playerName")));
+                            longFromPickle(dict.get("preBattleSign")),
+                            longFromPickle(dict.get("prebattleId")),
+                            strFromPickle(dict.get("playerClanTag")),
+                            longFromPickle(dict.get("type")),
+                            new EntityId((int) longFromPickle(dict.get("playerAvatarId"))),
+                            strFromPickle(dict.get("playerName")));
                 }
-            } catch (Exception e) { log.debug("Chat extra parse failed: {}", e.getMessage()); }
+            } catch (Exception e) {
+                log.debug("Chat extra parse failed: {}", e.getMessage());
+            }
         }
         return new DecodedPayload.ChatMessagePayload(entityId, new AccountId(senderId), audience, message, extra);
     }
@@ -189,29 +194,49 @@ public class PacketDecoder {
         return switch (line) {
             case 1 -> "AttentionToSquare(" + buf.getShort() + "," + buf.getShort() + ")";
             case 2 -> "QuickTactic(" + buf.getShort() + "," + buf.getLong() + ")";
-            case 3 -> "RequestingSupport";  case 5 -> "Wilco";  case 6 -> "Negative";
-            case 7 -> "WellDone";  case 8 -> "FairWinds";  case 9 -> "Curses";
-            case 10 -> "DefendTheBase";  case 11 -> "ProvideAntiAircraft";
-            case 12 -> { buf.getShort(); long id = buf.getLong();
-                yield "Retreat" + (id != 0 ? "(" + id + ")" : ""); }
-            case 13 -> "IntelRequired";  case 14 -> "SetSmokeScreen";
-            case 15 -> "UsingRadar";  case 16 -> "UsingHydroSearch";
-            case 17 -> "FollowMe";  case 18 -> "MapPointAttention(" + buf.getFloat() + "," + buf.getFloat() + ")";
+            case 3 -> "RequestingSupport";
+            case 5 -> "Wilco";
+            case 6 -> "Negative";
+            case 7 -> "WellDone";
+            case 8 -> "FairWinds";
+            case 9 -> "Curses";
+            case 10 -> "DefendTheBase";
+            case 11 -> "ProvideAntiAircraft";
+            case 12 -> {
+                buf.getShort();
+                long id = buf.getLong();
+                yield "Retreat" + (id != 0 ? "(" + id + ")" : "");
+            }
+            case 13 -> "IntelRequired";
+            case 14 -> "SetSmokeScreen";
+            case 15 -> "UsingRadar";
+            case 16 -> "UsingHydroSearch";
+            case 17 -> "FollowMe";
+            case 18 -> "MapPointAttention(" + buf.getFloat() + "," + buf.getFloat() + ")";
             case 19 -> "UsingSubmarineLocator";
             default -> "UnknownVoiceLine(" + line + ")";
         };
     }
+
     private static String voiceLineNameOld(int line, int a, long b) {
         return switch (line) {
             case 1 -> "AttentionToSquare(" + a + "," + b + ")";
             case 2 -> "QuickTactic(" + a + "," + b + ")";
-            case 3 -> "RequestingSupport";  case 5 -> "Wilco";  case 6 -> "Negative";
-            case 7 -> "WellDone";  case 8 -> "FairWinds";  case 9 -> "Curses";
-            case 10 -> "DefendTheBase";  case 11 -> "ProvideAntiAircraft";
+            case 3 -> "RequestingSupport";
+            case 5 -> "Wilco";
+            case 6 -> "Negative";
+            case 7 -> "WellDone";
+            case 8 -> "FairWinds";
+            case 9 -> "Curses";
+            case 10 -> "DefendTheBase";
+            case 11 -> "ProvideAntiAircraft";
             case 12 -> "Retreat" + (b != 0 ? "(" + b + ")" : "");
-            case 13 -> "IntelRequired";  case 14 -> "SetSmokeScreen";
-            case 15 -> "UsingRadar";  case 16 -> "UsingHydroSearch";
-            case 17 -> "FollowMe";  case 18 -> "MapPointAttention(" + a + "," + b + ")";
+            case 13 -> "IntelRequired";
+            case 14 -> "SetSmokeScreen";
+            case 15 -> "UsingRadar";
+            case 16 -> "UsingHydroSearch";
+            case 17 -> "FollowMe";
+            case 18 -> "MapPointAttention(" + a + "," + b + ")";
             case 19 -> "UsingSubmarineLocator";
             default -> "UnknownVoiceLine(" + line + ")";
         };
@@ -253,7 +278,9 @@ public class PacketDecoder {
                         return new DecodedPayload.OnArenaStateReceivedPayload(0, 0, Map.of(), players, List.of());
                 }
             }
-        } catch (Exception e) { log.debug("decodeArenaStateFromRawBlob failed: {}", e.getMessage()); }
+        } catch (Exception e) {
+            log.debug("decodeArenaStateFromRawBlob failed: {}", e.getMessage());
+        }
         return new DecodedPayload.OnArenaStateReceivedPayload(0, 0, Map.of(), List.of(), List.of());
     }
 
@@ -292,7 +319,9 @@ public class PacketDecoder {
                     result.put(key, list);
                 }
             }
-        } catch (Exception e) { log.debug("preBattlesInfo parse failed: {}", e.getMessage()); }
+        } catch (Exception e) {
+            log.debug("preBattlesInfo parse failed: {}", e.getMessage());
+        }
         return result;
     }
 
@@ -313,23 +342,41 @@ public class PacketDecoder {
                     }
                 }
             }
-        } catch (Exception e) { log.debug("onGameRoomStateChanged: {}", e.getMessage()); }
+        } catch (Exception e) {
+            log.debug("onGameRoomStateChanged: {}", e.getMessage());
+        }
         return new DecodedPayload.OnGameRoomStateChangedPayload(states);
     }
 
     private static ArgValue pickleToArgValue(Object v) {
-        if (v == null) return new ArgValue.NullVal();
-        if (v instanceof Long l) return new ArgValue.IntVal(l);
-        if (v instanceof Double d) return new ArgValue.FloatVal(d);
-        if (v instanceof String s) return new ArgValue.StrVal(s);
-        if (v instanceof Boolean b) return new ArgValue.BoolVal(b);
-        if (v instanceof List<?> l) {
-            return new ArgValue.ArrayVal(l.stream().map(PacketDecoder::pickleToArgValue).toList());
-        }
-        if (v instanceof Map<?, ?> m) {
-            var entries = new LinkedHashMap<String, ArgValue>();
-            for (var e : m.entrySet()) entries.put(String.valueOf(e.getKey()), pickleToArgValue(e.getValue()));
-            return new ArgValue.DictVal(entries);
+        switch (v) {
+            case null -> {
+                return new ArgValue.NullVal();
+            }
+            case Long l -> {
+                return new ArgValue.IntVal(l);
+            }
+            case Double d -> {
+                return new ArgValue.FloatVal(d);
+            }
+            case String s -> {
+                return new ArgValue.StrVal(s);
+            }
+            case Boolean b -> {
+                return new ArgValue.BoolVal(b);
+            }
+            case List<?> l -> {
+                return new ArgValue.ArrayVal(l.stream().map(PacketDecoder::pickleToArgValue).toList());
+            }
+            case Map<?, ?> m -> {
+                var entries = new LinkedHashMap<String, ArgValue>();
+                for (var e : m.entrySet()) {
+                    entries.put(String.valueOf(e.getKey()), pickleToArgValue(e.getValue()));
+                }
+                return new ArgValue.DictVal(entries);
+            }
+            default -> {
+            }
         }
         return new ArgValue.StrVal(String.valueOf(v));
     }
@@ -355,7 +402,9 @@ public class PacketDecoder {
                 }
             }
             return result;
-        } catch (Exception e) { return List.of(); }
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     // ── Combat ─────────────────────────────────────────────────────────
@@ -372,7 +421,7 @@ public class PacketDecoder {
             Object parsed = tryParseRest(rest);
             if (parsed instanceof List<?> list) {
                 for (var item : list) {
-                    if (item instanceof Map<?,?> m) {
+                    if (item instanceof Map<?, ?> m) {
                         int agg = (int) longFromPickle(m.get("vehicleID"));
                         float dmg = (float) doubleFromPickle(m.get("damage"));
                         entries.add(new DecodedPayload.DamageReceivedEntry(new EntityId(agg), dmg));
@@ -385,9 +434,9 @@ public class PacketDecoder {
 
     private void parseDamageEntries(ArgValue.ArrayVal arr, List<DecodedPayload.DamageReceivedEntry> entries) {
         for (var elem : arr.elements()) {
-            if (elem instanceof ArgValue.DictVal dict) {
-                int aggressorId = intFromArg(dict.entries().get("vehicleID"));
-                float damage = floatFromArg(dict.entries().get("damage"));
+            if (elem instanceof ArgValue.DictVal(Map<String, ArgValue> entries1)) {
+                int aggressorId = intFromArg(entries1.get("vehicleID"));
+                float damage = floatFromArg(entries1.get("damage"));
                 entries.add(new DecodedPayload.DamageReceivedEntry(new EntityId(aggressorId), damage));
             }
         }
@@ -396,13 +445,17 @@ public class PacketDecoder {
     /** Try to parse __rest blob as pickle or RPC value. */
     private Object tryParseRest(byte[] rest) {
         if (rest == null || rest.length == 0) return null;
-        try { return PickleReader.decode(rest); } catch (Exception e) { return null; }
+        try {
+            return PickleReader.decode(rest);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private DecodedPayload decodeShipDestroyed(NamedArgs args) {
         int victim = args.size() >= 2 ? intFromArg(args.get(0)) : 0;
         int killer = args.size() >= 2 ? intFromArg(args.get(1)) : 0;
-        int cause  = args.size() >= 3 ? intFromArg(args.get(2)) : 0;
+        int cause = args.size() >= 3 ? intFromArg(args.get(2)) : 0;
         return new DecodedPayload.ShipDestroyedPayload(new EntityId(killer), new EntityId(victim), cause);
     }
 
@@ -410,9 +463,11 @@ public class PacketDecoder {
         int consumableId = 0;
         float duration = 0f;
         Integer usageType = null;
-        if (!args.isEmpty() && args.getFirst() instanceof ArgValue.BlobVal blob) {
-            byte[] b = blob.value();
-            if (b.length >= 2) { usageType = b[0] & 0xFF; consumableId = b[1] & 0xFF; }
+        if (!args.isEmpty() && args.getFirst() instanceof ArgValue.BlobVal(byte[] b)) {
+            if (b.length >= 2) {
+                usageType = b[0] & 0xFF;
+                consumableId = b[1] & 0xFF;
+            }
             if (args.size() >= 2) duration = floatFromArg(args.get(1));
         } else if (!args.isEmpty()) {
             consumableId = intFromArg(args.getFirst());
@@ -424,21 +479,23 @@ public class PacketDecoder {
     private DecodedPayload decodeDamageStat(NamedArgs args) {
         var entries = new ArrayList<DecodedPayload.DamageStatEntry>();
         try {
-            if (!args.isEmpty() && args.getFirst() instanceof ArgValue.BlobVal blob) {
-                Object obj = PickleReader.decode(blob.value());
+            if (!args.isEmpty() && args.getFirst() instanceof ArgValue.BlobVal(byte[] value)) {
+                Object obj = PickleReader.decode(value);
                 if (obj instanceof List<?> items) {
                     for (var item : items) {
                         if (item instanceof List<?> kv && kv.size() >= 2
                             && kv.get(0) instanceof List<?> kt && kt.size() >= 2
                             && kv.get(1) instanceof List<?> vt && vt.size() >= 2) {
                             entries.add(new DecodedPayload.DamageStatEntry(
-                                longFromPickle(kt.get(0)), longFromPickle(kt.get(1)),
-                                longFromPickle(vt.get(0)), doubleFromPickle(vt.get(1))));
+                                    longFromPickle(kt.get(0)), longFromPickle(kt.get(1)),
+                                    longFromPickle(vt.get(0)), doubleFromPickle(vt.get(1))));
                         }
                     }
                 }
             }
-        } catch (Exception e) { log.debug("receiveDamageStat: {}", e.getMessage()); }
+        } catch (Exception e) {
+            log.debug("receiveDamageStat: {}", e.getMessage());
+        }
         return new DecodedPayload.DamageStatPayload(entries);
     }
 
@@ -475,10 +532,9 @@ public class PacketDecoder {
         var entries = new ArrayList<DecodedPayload.MinimapUpdateEntry>();
         if (args.isEmpty()) return new DecodedPayload.MinimapUpdatePayload(entries);
         try {
-            if (args.getFirst() instanceof ArgValue.ArrayVal arr) {
-                for (var elem : arr.elements()) {
-                    if (elem instanceof ArgValue.DictVal dict) {
-                        var d = dict.entries();
+            if (args.getFirst() instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
+                for (var elem : elements) {
+                    if (elem instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
                         int vehicleId = intFromArg(d.get("vehicleID"));
                         int packed = intFromArg(d.get("packedData"));
                         // Bits 0-10: heading (0-2047)
@@ -493,7 +549,7 @@ public class PacketDecoder {
                         // Bit 35: isVisible
                         boolean visible = ((packed >> 35) & 1) != 0;
                         entries.add(new DecodedPayload.MinimapUpdateEntry(
-                            new EntityId(vehicleId), false, false, heading, x, y, visible));
+                                new EntityId(vehicleId), false, false, heading, x, y, visible));
                     }
                 }
             }
@@ -508,19 +564,18 @@ public class PacketDecoder {
     private DecodedPayload decodeArtilleryShots(NamedArgs args) {
         AvatarId avatarId = new AvatarId(args.isEmpty() ? 0 : intFromArg(args.getFirst()));
         var salvos = new ArrayList<DecodedPayload.ArtillerySalvo>();
-        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal arr) {
-            for (var sv : arr.elements()) {
-                if (sv instanceof ArgValue.DictVal sd) {
-                    var d = sd.entries();
+        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
+            for (var sv : elements) {
+                if (sv instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
                     var shots = new ArrayList<DecodedPayload.ArtilleryShotData>();
-                    if (d.get("shots") instanceof ArgValue.ArrayVal sa) {
-                        for (var sh : sa.elements())
-                            if (sh instanceof ArgValue.DictVal sde) shots.add(parseShotData(sde.entries()));
+                    if (d.get("shots") instanceof ArgValue.ArrayVal(List<ArgValue> elements1)) {
+                        for (var sh : elements1)
+                            if (sh instanceof ArgValue.DictVal(Map<String, ArgValue> entries)) shots.add(parseShotData(entries));
                     }
                     salvos.add(new DecodedPayload.ArtillerySalvo(
-                        new EntityId(intFromArg(d.get("owner_id"))),
-                        new GameParamId(longFromArg(d.get("params_id"))),
-                        intFromArg(d.get("salvo_id")), shots));
+                            new EntityId(intFromArg(d.get("owner_id"))),
+                            new GameParamId(longFromArg(d.get("params_id"))),
+                            intFromArg(d.get("salvo_id")), shots));
                 }
             }
         }
@@ -529,25 +584,24 @@ public class PacketDecoder {
 
     private DecodedPayload.ArtilleryShotData parseShotData(Map<String, ArgValue> d) {
         return new DecodedPayload.ArtilleryShotData(
-            extractVec3(d.get("origin")), floatFromArg(d.get("pitch")), floatFromArg(d.get("speed")),
-            extractVec3(d.get("target")), intFromArg(d.get("shot_id")), intFromArg(d.get("gun_barrel_id")),
-            floatFromArg(d.get("server_time_left")), floatFromArg(d.get("shooter_height")),
-            floatFromArg(d.get("hit_distance")));
+                extractVec3(d.get("origin")), floatFromArg(d.get("pitch")), floatFromArg(d.get("speed")),
+                extractVec3(d.get("target")), intFromArg(d.get("shot_id")), intFromArg(d.get("gun_barrel_id")),
+                floatFromArg(d.get("server_time_left")), floatFromArg(d.get("shooter_height")),
+                floatFromArg(d.get("hit_distance")));
     }
 
     private DecodedPayload decodeTorpedoes(NamedArgs args) {
         AvatarId avatarId = new AvatarId(args.isEmpty() ? 0 : intFromArg(args.getFirst()));
         var torpedoes = new ArrayList<DecodedPayload.TorpedoData>();
-        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal arr) {
-            for (var tv : arr.elements()) {
-                if (tv instanceof ArgValue.DictVal td) {
-                    var d = td.entries();
+        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
+            for (var tv : elements) {
+                if (tv instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
                     torpedoes.add(new DecodedPayload.TorpedoData(
-                        new EntityId(intFromArg(d.get("owner_id"))),
-                        new GameParamId(longFromArg(d.get("params_id"))),
-                        intFromArg(d.get("salvo_id")), intFromArg(d.get("skin_id")),
-                        intFromArg(d.get("shot_id")), extractVec3(d.get("origin")),
-                        extractVec3(d.get("direction")), intFromArg(d.get("armed")) != 0));
+                            new EntityId(intFromArg(d.get("owner_id"))),
+                            new GameParamId(longFromArg(d.get("params_id"))),
+                            intFromArg(d.get("salvo_id")), intFromArg(d.get("skin_id")),
+                            intFromArg(d.get("shot_id")), extractVec3(d.get("origin")),
+                            extractVec3(d.get("direction")), intFromArg(d.get("armed")) != 0));
                 }
             }
         }
@@ -556,27 +610,26 @@ public class PacketDecoder {
 
     private DecodedPayload decodeTorpedoDirection(NamedArgs args) {
         return new DecodedPayload.TorpedoDirectionPayload(
-            new EntityId(intFromArg(args.get(0))), intFromArg(args.get(1)),
-            extractVec3(args.size() >= 3 ? args.get(2) : null),
-            args.size() >= 4 ? floatFromArg(args.get(3)) : 0f,
-            args.size() >= 5 ? floatFromArg(args.get(4)) : 0f);
+                new EntityId(intFromArg(args.get(0))), intFromArg(args.get(1)),
+                extractVec3(args.size() >= 3 ? args.get(2) : null),
+                args.size() >= 4 ? floatFromArg(args.get(3)) : 0f,
+                args.size() >= 5 ? floatFromArg(args.get(4)) : 0f);
     }
 
     private DecodedPayload decodeShotKills(NamedArgs args) {
         AvatarId avatarId = new AvatarId(args.isEmpty() ? 0 : intFromArg(args.getFirst()));
         var hits = new ArrayList<DecodedPayload.ShotHitEntry>();
-        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal arr) {
-            for (var hv : arr.elements()) {
-                if (hv instanceof ArgValue.DictVal hd) {
-                    var d = hd.entries();
+        if (args.size() >= 2 && args.get(1) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
+            for (var hv : elements) {
+                if (hv instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
                     int raw = intFromArg(d.get("hit_type"));
                     var hitType = new DecodedPayload.HitType((raw >> 5) & 0x07, raw & 0x1F, raw);
                     DecodedPayload.TerminalBallistics tb = null;
                     if (d.containsKey("terminal_ballistics"))
                         tb = parseTerminalBallistics(d.get("terminal_ballistics"));
                     hits.add(new DecodedPayload.ShotHitEntry(
-                        new EntityId(intFromArg(d.get("owner_id"))), hitType,
-                        intFromArg(d.get("shot_id")), extractVec3(d.get("position")), tb));
+                            new EntityId(intFromArg(d.get("owner_id"))), hitType,
+                            intFromArg(d.get("shot_id")), extractVec3(d.get("position")), tb));
                 }
             }
         }
@@ -584,11 +637,10 @@ public class PacketDecoder {
     }
 
     private DecodedPayload.TerminalBallistics parseTerminalBallistics(ArgValue val) {
-        if (val instanceof ArgValue.DictVal td) {
-            var d = td.entries();
+        if (val instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
             return new DecodedPayload.TerminalBallistics(
-                extractVec3(d.get("position")), extractVec3(d.get("velocity")),
-                intFromArg(d.get("detonator_activated")) != 0, floatFromArg(d.get("material_angle")));
+                    extractVec3(d.get("position")), extractVec3(d.get("velocity")),
+                    intFromArg(d.get("detonator_activated")) != 0, floatFromArg(d.get("material_angle")));
         }
         return null;
     }
@@ -597,22 +649,22 @@ public class PacketDecoder {
 
     private DecodedPayload decodeWardAdded(EntityId eid, NamedArgs args) {
         return new DecodedPayload.WardAddedPayload(eid,
-            longFromArg(args.size() >= 2 ? args.get(1) : args.getFirst()),
-            extractVec3(args.size() >= 3 ? args.get(2) : null),
-            args.size() >= 4 ? floatFromArg(args.get(3)) : 0f,
-            new EntityId(args.size() >= 5 ? intFromArg(args.get(4)) : 0));
+                longFromArg(args.size() >= 2 ? args.get(1) : args.getFirst()),
+                extractVec3(args.size() >= 3 ? args.get(2) : null),
+                args.size() >= 4 ? floatFromArg(args.get(3)) : 0f,
+                new EntityId(args.size() >= 5 ? intFromArg(args.get(4)) : 0));
     }
 
     private DecodedPayload decodeWardRemoved(EntityId eid, NamedArgs args) {
         return new DecodedPayload.WardRemovedPayload(eid,
-            longFromArg(args.size() >= 2 ? args.get(1) : args.getFirst()));
+                longFromArg(args.size() >= 2 ? args.get(1) : args.getFirst()));
     }
 
     private DecodedPayload decodePlaneAdded(EntityId eid, NamedArgs args) {
         Vec3 pos = args.size() >= 4 ? extractVec3(args.get(3)) : new Vec3(0, 0, 0);
         return new DecodedPayload.PlaneAddedPayload(eid,
-            longFromArg(args.get(0)), intFromArg(args.get(1)),
-            new GameParamId(longFromArg(args.get(2))), pos.x(), pos.z());
+                longFromArg(args.get(0)), intFromArg(args.get(1)),
+                new GameParamId(longFromArg(args.get(2))), pos.x(), pos.z());
     }
 
     private DecodedPayload decodePlaneRemoved(EntityId eid, NamedArgs args) {
@@ -628,27 +680,26 @@ public class PacketDecoder {
 
     private DecodedPayload decodeGunSync(EntityId eid, NamedArgs args) {
         return new DecodedPayload.GunSyncPayload(eid,
-            intFromArg(args.get(0)), intFromArg(args.get(1)),
-            floatFromArg(args.get(2)), args.size() >= 4 ? floatFromArg(args.get(3)) : 0f);
+                intFromArg(args.get(0)), intFromArg(args.get(1)),
+                floatFromArg(args.get(2)), args.size() >= 4 ? floatFromArg(args.get(3)) : 0f);
     }
 
     private DecodedPayload decodeSetAmmo(EntityId eid, NamedArgs args) {
         return new DecodedPayload.SetAmmoForWeaponPayload(eid,
-            intFromArg(args.get(0)), new GameParamId(longFromArg(args.get(1))),
-            args.size() >= 3 && intFromArg(args.get(2)) != 0);
+                intFromArg(args.get(0)), new GameParamId(longFromArg(args.get(1))),
+                args.size() >= 3 && intFromArg(args.get(2)) != 0);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────
 
     static Vec3 extractVec3(ArgValue val) {
-        if (val == null) return new Vec3(0, 0, 0);
-        if (val instanceof ArgValue.Vec3Val v3) return new Vec3(v3.x(), v3.y(), v3.z());
-        if (val instanceof ArgValue.Vec2Val v2) return new Vec3(v2.x(), 0, v2.y());
-        if (val instanceof ArgValue.ArrayVal arr && arr.elements().size() >= 3)
-            return new Vec3(floatFromArg(arr.elements().get(0)), floatFromArg(arr.elements().get(1)), floatFromArg(arr.elements().get(2)));
-        if (val instanceof ArgValue.ArrayVal arr && arr.elements().size() >= 2)
-            return new Vec3(floatFromArg(arr.elements().get(0)), 0, floatFromArg(arr.elements().get(1)));
-        return new Vec3(0, 0, 0);
+        return switch (val) {
+            case ArgValue.Vec3Val(float x, float y, float z) -> new Vec3(x, y, z);
+            case ArgValue.Vec2Val(float x, float y) -> new Vec3(x, 0, y);
+            case ArgValue.ArrayVal(List<ArgValue> elements) when elements.size() >= 3 -> new Vec3(floatFromArg(elements.get(0)), floatFromArg(elements.get(1)), floatFromArg(elements.get(2)));
+            case ArgValue.ArrayVal(List<ArgValue> elements) when elements.size() >= 2 -> new Vec3(floatFromArg(elements.get(0)), 0, floatFromArg(elements.get(1)));
+            case null, default -> new Vec3(0, 0, 0);
+        };
     }
 
     static int intFromArg(ArgValue v) {
@@ -694,7 +745,13 @@ public class PacketDecoder {
     static long longFromPickle(Object v) {
         if (v instanceof Long l) return l;
         if (v instanceof Double d) return d.longValue();
-        if (v instanceof String s) { try { return Long.parseLong(s); } catch (NumberFormatException e) { return 0; } }
+        if (v instanceof String s) {
+            try {
+                return Long.parseLong(s);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
         return 0;
     }
 

@@ -591,6 +591,8 @@ public class Parser {
             case ArgType.Tuple(var elems) -> readTuple(buf, elems);
             case ArgType.FixedDict fixed -> readFixedDict(buf, fixed);
             case ArgType.NamedType(var _, var inner) -> parseValue(buf, inner);
+            case ArgType.UserType(var inner) -> parseValue(buf, inner); // 透明：裸内部类型
+            case ArgType.AllowNone(var inner) -> readAllowNone(buf, inner);
         };
     }
 
@@ -631,6 +633,13 @@ public class Parser {
             elements.add(parseValue(buf, elementType));
         }
         return new ArgValue.ArrayVal(elements);
+    }
+
+    /** AllowNone 类型：先读 1 字节存在标志（0=null，1=存在）。 */
+    private ArgValue readAllowNone(ByteBuffer buf, ArgType inner) {
+        int flag = buf.get() & 0xFF;
+        if (flag == 0) return new com.wows.replay.types.ArgValue.NullVal();
+        return parseValue(buf, inner);
     }
 
     private ArgValue readFixedDict(ByteBuffer buf, ArgType.FixedDict fixed) {

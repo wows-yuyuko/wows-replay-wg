@@ -61,6 +61,19 @@ public sealed interface ArgType {
         public NamedType(String name) { this(name, Primitive.BLOB); }
     }
 
+    /**
+     * USER_TYPE（converter-backed 自定义类型）。线路上按内部 {@code inner} 类型
+     * 原样传输（透明，<em>无长度前缀</em>）；但排序时视为变长（INFINITY），
+     * 因为 converter 的流长度不可预知。对标 Rust {@code UserType(Box<ArgType>)}。
+     */
+    record UserType(ArgType inner) implements ArgType {}
+
+    /**
+     * 可空类型（def 中带 {@code <AllowNone>}）。线路上先读 1 字节存在标志
+     * （0=null，1=存在），再按内部类型解析。对标 Rust 中 AllowNone 的通用处理。
+     */
+    record AllowNone(ArgType inner) implements ArgType {}
+
     // ── Descriptor parsing ───────────────────────────────────────────────────
 
     /** 匹配 "ARRAY <of> element" / "ARRAY element". */
@@ -212,10 +225,22 @@ public sealed interface ArgType {
                 if (allowNone) {
                     yield SORT_INFINITY; // 可空类型无法估算固定尺寸
                 }
-                int total = props.stream().mapToInt(p -> p.propType().sortSize()).sum();
+                // 对标 Rust fold：任一字段为 INFINITY 则整体饱和为 INFINITY，
+                // 否则求和。不能简单 sum（会超过 INFINITY 导致排序错位）。
+                int total = 0;
+                for (var p : props) {
+                    int s = p.propType().sortSize();
+                    if (s == SORT_INFINITY) {
+                        total = SORT_INFINITY;
+                        break;
+                    }
+                    total += s;
+                }
                 yield total == 0 ? SORT_INFINITY : total;
             }
             case NamedType(var _, var inner) -> inner.sortSize();
+            case UserType(var _) -> SORT_INFINITY; // converter 流长度不可预知
+            case AllowNone(var _) -> SORT_INFINITY; // 可空类型无法估算固定尺寸
         };
     }
 
@@ -236,6 +261,8 @@ public sealed interface ArgType {
                 props.stream().map(p -> p.name() + ":" + p.propType().typeName())
                     .collect(java.util.stream.Collectors.joining(",")) + "}";
             case NamedType(var n, var _) -> "FIXED_DICT<" + n + ">";
+            case UserType(var inner) -> "USER_TYPE<" + inner.typeName() + ">";
+            case AllowNone(var inner) -> "ALLOW_NONE<" + inner.typeName() + ">";
         };
     }
 }

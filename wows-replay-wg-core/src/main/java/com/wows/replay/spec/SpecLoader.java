@@ -174,6 +174,11 @@ public final class SpecLoader {
         allClientMethods.addAll(inherited.clientMethods);
         allClientMethods.addAll(def.clientMethods);
 
+        // 与引擎一致：重复的方法名只保留首次出现的（引擎 loadDataSection 会拒绝
+        // 重复定义），否则列表会比客户端多一项，导致后续所有 exposed-method 索引偏移。
+        var seen = new HashSet<String>();
+        allClientMethods.removeIf(m -> !seen.add(m.name()));
+
         // Sort client methods by wire size
         allClientMethods.sort(Comparator.comparingInt(m -> methodSortSize(m, aliases)));
 
@@ -211,10 +216,9 @@ public final class SpecLoader {
             }
         }
 
-        // Sort by wire size
+        // 仅 client 属性按线尺寸排序（与引擎一致）。internal/base 属性保持
+        // 合并声明顺序（现代 wowsunpack 同样不再对它们排序）。
         Comparator<Property> bySize = Comparator.comparingInt(p -> p.propType().sortSize());
-        internalProps.sort(bySize);
-        baseProps.sort(bySize);
         clientProps.sort(bySize);
 
         return new EntitySpec(name, baseProps, clientProps, internalProps,
@@ -226,8 +230,19 @@ public final class SpecLoader {
     /**
      * Parse an {@code <Arg>} or {@code <Type>} node into an {@link ArgType}.
      * Recursively resolves nested types (ARRAY, TUPLE, FIXED_DICT) and aliases.
+     *
+     * <p>如果节点带 {@code <AllowNone>}（且非 FIXED_DICT，FIXED_DICT 自带 allowNone 标志），
+     * 包装为 {@link ArgType.AllowNone}：线路上先读 1 字节存在标志再解析值。</p>
      */
     ArgType parseType(Node node, Map<String, ArgType> aliases) {
+        var t = parseTypeInner(node, aliases);
+        if (childByName(node, "AllowNone") != null && !(t instanceof ArgType.FixedDict)) {
+            return new ArgType.AllowNone(t);
+        }
+        return t;
+    }
+
+    private ArgType parseTypeInner(Node node, Map<String, ArgType> aliases) {
         var text = node.getTextContent().trim();
         if (text.isBlank()) {
             // Try child element (e.g. <Type><Arg>...</Arg></Type>)
@@ -258,7 +273,15 @@ public final class SpecLoader {
             case "VECTOR3"   -> ArgType.Primitive.VECTOR3;
             case "VECTOR4"   -> ArgType.Primitive.VECTOR4;
             case "UNICODE_STRING" -> ArgType.Primitive.STRING;
-            case "USER_TYPE", "MAILBOX" -> ArgType.Primitive.BLOB;
+            case "USER_TYPE" -> {
+                // USER_TYPE 带内部 <Type> 时按裸内部类型传输（无长度前缀），
+                // 排序时视为变长；无内部 <Type> 时按长度前缀 BLOB 处理。
+                var inner = childByName(node, "Type");
+                yield inner != null
+                    ? new ArgType.UserType(parseType(inner, aliases))
+                    : ArgType.Primitive.BLOB;
+            }
+            case "MAILBOX" -> ArgType.Primitive.BLOB;
             default -> {
                 // ARRAY, TUPLE, FIXED_DICT, or named alias
                 if (text.startsWith("ARRAY")) {
@@ -419,14 +442,24 @@ public final class SpecLoader {
         for (var method : children(listNode)) {
             var name = method.getNodeName();
             var args = parseArgs(method, aliases);
-            result.add(new Method(name, args, index++));
+            var vlenNode = childByName(method, "VariableLengthHeaderSize");
+            int vlen = 1;
+            if (vlenNode != null) {
+                try { vlen = Integer.parseInt(vlenNode.getTextContent().trim()); }
+                catch (NumberFormatException ignored) {}
+            }
+            result.add(new Method(name, args, index++, vlen));
         }
         return result;
     }
 
     private int methodSortSize(Method method, Map<String, ArgType> aliases) {
+        // 对标 Rust Method::sort_size：参数尺寸总和 + VariableLengthHeaderSize，
+        // 达到 0xFFFF（INFINITY）时仍叠加 vlen。
         int size = method.args().stream().mapToInt(a -> a.argType().sortSize()).sum();
-        return Math.min(size, 0xFFFF);
+        return size >= 0xFFFF
+            ? 0xFFFF + method.variableLengthHeaderSize()
+            : size + method.variableLengthHeaderSize();
     }
 
     private List<Property> filterProperties(List<Property> props,
