@@ -199,10 +199,11 @@ public class BattleWorld {
             // ── Combat ─────────────────────────────────────────────────
             case DecodedPayload.DamageReceivedPayload dr -> {
                 for (var a : dr.aggressors()) {
-                    int aggAv = vehicleToOwner.getOrDefault(a.aggressor().value(), a.aggressor().value());
-                    var ev = new DamageEvent(elapsed, aggAv, dr.victim().value(), a.damage());
+                    // 直接用原始 aggressor 实体 id（对标 Rust damage_ledger）
+                    int agg = a.aggressor().value();
+                    var ev = new DamageEvent(elapsed, agg, dr.victim().value(), a.damage());
                     damageEvents.add(ev);
-                    damageByAggressor.computeIfAbsent(aggAv, k -> new ArrayList<>()).add(ev);
+                    damageByAggressor.computeIfAbsent(agg, k -> new ArrayList<>()).add(ev);
                 }
             }
             case DecodedPayload.ShipDestroyedPayload sd -> {
@@ -360,10 +361,13 @@ public class BattleWorld {
                     var es = getOrCreateEntity(entry.entityId().value(), null);
                     es.isInvisible = !entry.visible();
                     es.visible = entry.visible();
-                    es.minimapX = entry.x();
-                    es.minimapZ = entry.z();
-                    es.minimapHeading = entry.heading();
                     es.lastUpdated = elapsed;
+                    // 不可见/哨兵时保留上次位置与朝向（对标 Rust MinimapPlacement 保留逻辑）
+                    if (entry.visible() && !entry.isSentinel()) {
+                        es.minimapX = entry.x();
+                        es.minimapZ = entry.z();
+                        es.minimapHeading = entry.heading();
+                    }
                 }
             }
 

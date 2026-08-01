@@ -111,12 +111,13 @@ public final class Dumper {
         root.set("buff_zones", JsonMapper.getMapper().createObjectNode());
 
         // players / game_events / playersPrivateInfo
-        root.set("players", players(world, replay, battleResultsJson, constants));
-        root.set("game_events", gameEvents(world, constants));
+        ObjectNode privateInfo = null;
         if (battleResultsJson != null) {
-            var priv = resolvePrivateInfo(battleResultsJson, constants, selfDbId(world, meta.playerName()));
-            if (priv != null && !priv.isEmpty()) root.set("playersPrivateInfo", priv);
+            privateInfo = resolvePrivateInfo(battleResultsJson, constants, selfDbId(world, meta.playerName()));
+            if (privateInfo != null && !privateInfo.isEmpty()) root.set("playersPrivateInfo", privateInfo);
         }
+        root.set("players", players(world, replay, battleResultsJson, privateInfo, constants));
+        root.set("game_events", gameEvents(world, constants));
 
         if (minimap != null) minimap.attach(root, world);
 
@@ -435,14 +436,7 @@ public final class Dumper {
     // 鈹€鈹€ players 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
     static ArrayNode players(BattleWorld world, ReplayFile replay, String battleResultsJson,
-                             JsonConstantsProvider constants) {
-        var shipIdByDbId = new LinkedHashMap<Long, Long>();
-        if (replay.meta().vehicles() != null) {
-            for (var v : replay.meta().vehicles()) {
-                shipIdByDbId.put(Integer.toUnsignedLong(v.id().value()), v.shipId().value());
-            }
-        }
-
+                             ObjectNode privateInfo, JsonConstantsProvider constants) {
         JsonNode publicInfo = null;
         if (battleResultsJson != null) {
             try {
@@ -481,14 +475,18 @@ public final class Dumper {
             player.set("initial_state", initialState);
 
             var vehicle = JsonMapper.getMapper().createObjectNode();
-            long shipId = shipIdByDbId.getOrDefault(psd.dbId(), 0L);
-            vehicle.put("ship_id", shipId);
+            // Rust vehicle.ship_id == GameParams 参数 id == arena shipParamsId（key 34）
+            vehicle.put("ship_id", psd.shipParamsId());
             vehicle.set("modernizations", JsonMapper.getMapper().createArrayNode());
             vehicle.set("consumables", JsonMapper.getMapper().createArrayNode());
             vehicle.set("exteriors", JsonMapper.getMapper().createArrayNode());
             vehicle.set("commander_skills", JsonMapper.getMapper().createArrayNode());
-            if (publicInfo != null && publicInfo.has(String.valueOf(psd.dbId()))) {
-                vehicle.set("results_info", publicInfo.get(String.valueOf(psd.dbId())));
+            String dbIdStr = String.valueOf(psd.accountDbId());
+            if (publicInfo != null && publicInfo.has(dbIdStr)) {
+                vehicle.set("results_info", publicInfo.get(dbIdStr));
+            }
+            if (privateInfo != null && privateInfo.has(dbIdStr)) {
+                vehicle.set("private_results_info", privateInfo.get(dbIdStr));
             }
             player.set("vehicle", vehicle);
 
