@@ -122,11 +122,11 @@ public class PacketDecoder {
             case "receive_wardAdded" -> decodeWardAdded(em.entityId(), args);
             case "receive_wardRemoved" -> decodeWardRemoved(em.entityId(), args);
             case "onPlaneAdded",
-                 "receive_addSquadron" -> decodePlaneAdded(em.entityId(), args);
+                 "receive_addMinimapSquadron" -> decodePlaneAdded(em.entityId(), args);
             case "onPlaneRemoved",
-                 "receive_removeSquadron" -> decodePlaneRemoved(em.entityId(), args);
+                 "receive_removeMinimapSquadron" -> decodePlaneRemoved(em.entityId(), args);
             case "onPlanePosition",
-                 "receive_updateSquadron" -> decodePlanePosition(em.entityId(), args);
+                 "receive_updateMinimapSquadron" -> decodePlanePosition(em.entityId(), args);
             case "onGunSync", "syncGun" -> decodeGunSync(em.entityId(), args);
             case "onSetAmmoForWeapon",
                  "setAmmoForWeapon" -> decodeSetAmmo(em.entityId(), args);
@@ -529,15 +529,16 @@ public class PacketDecoder {
     // ── Minimap vision ─────────────────────────────────────────────────
 
     /**
-     * Decode {@code updateMinimapVisionInfo} per doc §8.5.
+     * Decode {@code updateMinimapVisionInfo}，位布局对标 Rust RawMinimapUpdate：
      * <pre>
      * arg0: Array&lt;FixedDict&lt;{vehicleID: i32, packedData: u32}&gt;&gt;
-     *
-     * packedData bits:
-     *   0-10:   heading   (0-2047, convert: v/256*360 - 180)
-     *   11-22:  x         (0-4095, normalized grid position)
-     *   23-34:  y         (0-4095, normalized grid position)
-     *   35:     isVisible  (0/1)
+     * packedData (u32 LE):
+     *   bits 0-10:  x   (B11, 0-2047)
+     *   bits 11-21: y   (B11)
+     *   bits 22-29: heading (B8, convert: v/256*360 - 180)
+     *   bit 30:     unknown
+     *   bit 31:     is_disappearing
+     * x_norm = x/512 - 1.5, y_norm = y/512 - 1.5
      * </pre>
      */
     private DecodedPayload decodeMinimapVision(NamedArgs args) {
@@ -549,19 +550,19 @@ public class PacketDecoder {
                     if (elem instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
                         int vehicleId = intFromArg(d.get("vehicleID"));
                         int packed = intFromArg(d.get("packedData"));
-                        // Bits 0-10: heading (0-2047)
-                        int headingRaw = packed & 0x7FF;
+                        int xRaw = packed & 0x7FF;
+                        int yRaw = (packed >> 11) & 0x7FF;
+                        int headingRaw = (packed >> 22) & 0xFF;
+                        boolean unknown = ((packed >> 30) & 1) != 0;
+                        boolean disappearing = ((packed >> 31) & 1) != 0;
                         float heading = (headingRaw / 256.0f) * 360.0f - 180.0f;
-                        // Bits 11-22: x (0-4095)
-                        int xRaw = (packed >> 11) & 0xFFF;
-                        float x = xRaw;
-                        // Bits 23-34: y (0-4095)
-                        int yRaw = (packed >> 23) & 0xFFF;
-                        float y = yRaw;
-                        // Bit 35: isVisible
-                        boolean visible = ((packed >> 35) & 1) != 0;
+                        float x = xRaw / 512.0f - 1.5f;
+                        float y = yRaw / 512.0f - 1.5f;
+                        boolean isSentinel = xRaw == 0 && yRaw == 0;
+                        boolean visible = !isSentinel && !disappearing;
+                        int flags = (unknown ? 1 : 0) | (disappearing ? 2 : 0);
                         entries.add(new DecodedPayload.MinimapUpdateEntry(
-                                new EntityId(vehicleId), false, false, heading, x, y, visible));
+                                new EntityId(vehicleId), isSentinel, disappearing, heading, x, y, visible, flags));
                     }
                 }
             }

@@ -58,6 +58,7 @@ public final class PropertyDecoder {
         BATTLE_RESULT,  // BattleLogic: { winnerTeamId, finishReason } — 15.x win/finish source
         BATTLE_STAGE,   // BattleLogic: numeric battle stage (0=Waiting, 1=Battle, ...)
         TIME_LEFT,      // BattleLogic: seconds remaining
+        VISIBILITY_FLAGS, // Vehicle: visibility flags (minimap entity 用)
         STATE,        // complex state dict (battle logic, control points, etc.)
         SHIP_CONFIG,  // ship configuration blob
         VEHICLE_ID,   // vehicle game param ID
@@ -83,6 +84,7 @@ public final class PropertyDecoder {
                 case "battleResult"                                -> BATTLE_RESULT;
                 case "battleStage", "battleStage_"                 -> BATTLE_STAGE;
                 case "timeLeft"                                    -> TIME_LEFT;
+                case "visibilityFlags"                             -> VISIBILITY_FLAGS;
                 case "state", "state_"                             -> STATE;
                 case "shipConfig", "shipConfigDump"                -> SHIP_CONFIG;
                 case "vehicleID", "vehicleId"                      -> VEHICLE_ID;

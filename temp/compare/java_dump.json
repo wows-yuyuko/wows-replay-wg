@@ -1,0 +1,4168 @@
+{
+  "arena_id" : 2490116449384685,
+  "date_time" : "30.07.2026 01:31:38",
+  "version" : "15.6.0.12830008",
+  "map_id" : 36,
+  "map_name" : "spaces/56_AngelWings",
+  "space_size" : 1600,
+  "game_mode" : "domination_3point",
+  "game_type" : "RandomBattle",
+  "match_group" : "pvp",
+  "match_result" : {
+    "type" : "Loss",
+    "team_id" : 1
+  },
+  "finish_type" : {
+    "Known" : "Extermination"
+  },
+  "max_duration" : 1200,
+  "played_duration" : 1153.5740966796875,
+  "extra_duration" : 9.17333984375,
+  "team_scores" : [ {
+    "score" : 150,
+    "team_index" : 0
+  }, {
+    "score" : 150,
+    "team_index" : 1
+  } ],
+  "capture_points" : [ {
+    "both_inside" : false,
+    "control_point_type" : {
+      "Known" : "Control"
+    },
+    "has_invaders" : false,
+    "index" : 0,
+    "invader_team" : -1,
+    "is_enabled" : true,
+    "position" : {
+      "x" : -526.7684326171875,
+      "y" : 0,
+      "z" : 0.0
+    },
+    "progress" : [ 0.0, 0 ],
+    "radius" : 110.0,
+    "team_id" : -1
+  }, {
+    "both_inside" : false,
+    "control_point_type" : {
+      "Known" : "Control"
+    },
+    "has_invaders" : false,
+    "index" : 1,
+    "invader_team" : -1,
+    "is_enabled" : true,
+    "position" : {
+      "x" : 33.27090072631836,
+      "y" : 0,
+      "z" : 0.0
+    },
+    "progress" : [ 0.0, 0 ],
+    "radius" : 90.0,
+    "team_id" : -1
+  }, {
+    "both_inside" : false,
+    "control_point_type" : {
+      "Known" : "Control"
+    },
+    "has_invaders" : false,
+    "index" : 2,
+    "invader_team" : -1,
+    "is_enabled" : true,
+    "position" : {
+      "x" : 446.7384948730469,
+      "y" : 0,
+      "z" : 0.0
+    },
+    "progress" : [ 0.0, 0 ],
+    "radius" : 95.0,
+    "team_id" : -1
+  } ],
+  "buildings" : [ ],
+  "captured_buffs" : [ ],
+  "local_weather_zones" : [ ],
+  "buff_zones" : { },
+  "players" : [ {
+    "initial_state" : {
+      "clan" : "D4DJ-",
+      "clan_color" : 11776947,
+      "clan_id" : 2000040478,
+      "db_id" : 2015367998,
+      "entity_id" : 579820,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 21400,
+      "meta_ship_id" : 536894837,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "123123_2017",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2015367998,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579819,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000040478,
+        "clanTag" : "D4DJ-",
+        "crewParams" : [ "3973228240", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4262841264", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 536894837,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : true,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 21400,
+        "name" : "123123_2017",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 671538986,
+        "preBattleSign" : 0,
+        "prebattleId" : 671538986,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=B_AirDefense, abilities=AbilitiesDefault, artillery=AB_127_50, diveBomber=DiveBomberTypeDefault, atba=ATBADefault, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=AirArmamentDefault, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=airSupportDefault, radars=RadarsDefault, impulseLasers=ImpulseLasersDefault, engine=EngineDefault, hull=B_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A2_610, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=AB1_FireControl, directors=DirectorsDefault, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=A_DepthChargeGuns}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�6>�-\u0000\u0000\u0000\u000E\u0000\u0000\u0000�.��Ю���.v�Ю��Ю-�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000\u0000\u0000\u0000\u0000�Ϣ��ϒ���r���B���\u0012�\u0002\u0000\u0000\u0000�o���o��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���\u0012���\u0002�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000��O�\u0000\u0000\u0000\u0000������_�\u001A\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001B\u0000\u0000\u0000",
+        "shipId" : 579820,
+        "shipParamsId" : 4282267344,
+        "skinId" : 4282267344,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4282267344,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "ATRIO",
+      "clan_color" : 13427940,
+      "clan_id" : 2000039482,
+      "db_id" : 2026694704,
+      "entity_id" : 579784,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 43300,
+      "meta_ship_id" : 536906764,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "2477890841",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2026694704,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579783,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 13427940,
+        "clanID" : 2000039482,
+        "clanTag" : "ATRIO",
+        "crewParams" : [ "3874662352", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4194683824", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 536906764,
+        "invitationsEnabled" : 1,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 43300,
+        "name" : "2477890841",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A1_Artillery, diveBomber=DiveBomberTypeDefault, atba=ATBADefault, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=AirArmamentDefault, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=airSupportDefault, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A1_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A1_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=A_DepthChargeGuns}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000з\u001E�.\u0000\u0000\u0000\u000E\u0000\u0000\u0000�/��Я���/��Я��Я��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��Ϣ��Ϣ���b���B���\u0002�\u0003\u0000\u0000\u0000��i�o-��o=�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R�������\u0012�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00008\u0000\u0000\u0000",
+        "shipId" : 579784,
+        "shipParamsId" : 4179539920,
+        "skinId" : 4067028912,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4179539920,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "DDNB",
+      "clan_color" : 11776947,
+      "clan_id" : 2000039770,
+      "db_id" : 2003592369,
+      "entity_id" : 579786,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 51800,
+      "meta_ship_id" : 537019406,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "powermer",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2003592369,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579785,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000039770,
+        "clanTag" : "DDNB",
+        "crewParams" : [ "3865224944", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4015999920", "4292856752", "4288334768", "4293348272", "4290137008" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 537019406,
+        "invitationsEnabled" : 0,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 51800,
+        "name" : "powermer",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A1_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A1_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A1_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�\u001E�+\u0000\u0000\u0000\u000E\u0000\u0000\u0000�.�����.������\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��Ϣ�������r���B���\u0002�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���\u0012���\"���R�����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001A\u0000\u0000\u0000",
+        "shipId" : 579786,
+        "shipParamsId" : 4179539696,
+        "skinId" : 4179539696,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4179539696,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "QAQ",
+      "clan_color" : 11776947,
+      "clan_id" : 2000007520,
+      "db_id" : 2039160200,
+      "entity_id" : 579808,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 94400,
+      "meta_ship_id" : 537085642,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "Katze_Poi",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2039160200,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579807,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000007520,
+        "clanTag" : "QAQ",
+        "crewParams" : [ "4188186352", {
+          "value" : "[0, 0, 0, true]"
+        } ],
+        "dogTag" : [ "4248161200", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 537085642,
+        "invitationsEnabled" : 0,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 94400,
+        "name" : "Katze_Poi",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�6\u001F�4\u0000\u0000\u0000\u000E\u0000\u0000\u0000�.����\u0000\u0000\u0000\u0000����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��ϲ�������b���B���\"�\t\u0000\u0000\u0000�o}��om��o=��o���o\u001D��o���o\u001D��o=����\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R���\u0012���2�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000��?����������_�\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001A\u0000\u0000\u0000",
+        "shipId" : 579808,
+        "shipParamsId" : 4179572464,
+        "skinId" : 4206489520,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4179572464,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "BEAST",
+      "clan_color" : 11776947,
+      "clan_id" : 2000024346,
+      "db_id" : 2031292108,
+      "entity_id" : 579780,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 47150,
+      "meta_ship_id" : 537099657,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "jiaoye3860068",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2031292108,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579779,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000024346,
+        "clanTag" : "BEAST",
+        "crewParams" : [ "4273120976", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "3963571120", "4240427952", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 537099657,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 47150,
+        "name" : "jiaoye3860068",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A1_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A1_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A2_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A1_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000ж��6\u0000\u0000\u0000\u000E\u0000\u0000\u0000�.l�Юo��.&�Юf�Ю\r�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��Ϣ�������b���B���\"�\t\u0000\u0000\u0000�o���o���o-��o\u001D��o����9��o=��o���o\u001D�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b�������2�������R�\u0000\u0000\u0000\u0000\u0002\u0000\u0000\u0000��M����\u0004\u0000\u0000\u0000��?����������_�\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001B\u0000\u0000\u0000",
+        "shipId" : 579780,
+        "shipParamsId" : 4259231440,
+        "skinId" : 4130992048,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4259231440,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "YYRSM",
+      "clan_color" : 11776947,
+      "clan_id" : 2000023096,
+      "db_id" : 2028899894,
+      "entity_id" : 579790,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 67100,
+      "meta_ship_id" : 537103251,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "Super_158",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2028899894,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579789,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000023096,
+        "clanTag" : "YYRSM",
+        "crewParams" : [ "4293044016", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4030679984", "4293905328", "4293577648", "4283911088", "4292234160" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 537103251,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : true,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 67100,
+        "name" : "Super_158",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 537248003,
+        "preBattleSign" : 0,
+        "prebattleId" : 537248003,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u00000�^�3\u0000\u0000\u0000\u000E\u0000\u0000\u00000/|�0��0/v�0�v�0�}�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0002��ϲ���2���r���B���R�\u0007\u0000\u0000\u0000�o=��o\u001D��o���o-��o���o^���)�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R�����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000���\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0000",
+        "shipId" : 579790,
+        "shipParamsId" : 4284397360,
+        "skinId" : 4062834608,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4284397360,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "PHNAV",
+      "clan_color" : 11776947,
+      "clan_id" : 2000011350,
+      "db_id" : 2008114570,
+      "entity_id" : 579816,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 19200,
+      "meta_ship_id" : 537118050,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "AtapangAtaoNdeAtakbo",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2008114570,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579815,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000011350,
+        "clanTag" : "PHNAV",
+        "crewParams" : [ "4189235152", {
+          "value" : "[true, true, 0, true]"
+        } ],
+        "dogTag" : [ "4235578288", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 537118050,
+        "invitationsEnabled" : 1,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 19200,
+        "name" : "AtapangAtaoNdeAtakbo",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=AirDefenseDefault, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=ATBADefault, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=AirArmamentDefault, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=airSupportDefault, radars=RadarsDefault, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=A_PingerGun, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=FireControlDefault, directors=DirectorsDefault, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000з��0\u0000\u0000\u0000\u000E\u0000\u0000\u0000�/<�Я?��/6�\u0000\u0000\u0000\u0000Я=�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000Я7�\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��Ϣ��ϒ���R��ϒ���\u0012�\u0004\u0000\u0000\u0000�����o���o���o��\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���\"�������\u0002�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000��\u001D�\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00008\u0000\u0000\u0000",
+        "shipId" : 579816,
+        "shipParamsId" : 3549870032,
+        "skinId" : 4276744112,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 3549870032,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "W-C-E",
+      "clan_color" : 11776947,
+      "clan_id" : 2000036781,
+      "db_id" : 2047616985,
+      "entity_id" : 579824,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 82800,
+      "meta_ship_id" : 537118954,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "Zhangqikqng",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2047616985,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579823,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000036781,
+        "clanTag" : "W-C-E",
+        "crewParams" : [ "4280461008", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4237839280", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 537118954,
+        "invitationsEnabled" : 0,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 82800,
+        "name" : "Zhangqikqng",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�6��.\u0000\u0000\u0000\u000E\u0000\u0000\u0000�.\u001C�Ю/�\u0000\u0000\u0000\u0000Ю��Ю-�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000�ϒ��ϲ�������r���B���\"�\u0002\u0000\u0000\u0000�o^����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R���\"�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000���\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\n\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001B\u0000\u0000\u0000",
+        "shipId" : 579824,
+        "shipParamsId" : 4074714832,
+        "skinId" : 4103729072,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4074714832,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "-VKS-",
+      "clan_color" : 11776947,
+      "clan_id" : 2000034207,
+      "db_id" : 2047475075,
+      "entity_id" : 579812,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 46900,
+      "meta_ship_id" : 537177813,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "emmmmmm_2023",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2047475075,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579811,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000034207,
+        "clanTag" : "-VKS-",
+        "crewParams" : [ "4289897840", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4085205936", "4293905328", "4293577648", "4293348272", "4293282736" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 537177813,
+        "invitationsEnabled" : 0,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 46900,
+        "name" : "emmmmmm_2023",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000p���2\u0000\u0000\u0000\u000E\u0000\u0000\u0000p-��p���p-��p���p���\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��Ϣ�������b���B�\u0000\u0000\u0000\u0000\u0007\u0000\u0000\u0000�ox��o���o���o���o-��o\u001D��o=�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R���\u0012���������\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u000F�\u0000\u0000\u0000\u0000\u001A\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\f\u0000\u0000\u0000",
+        "shipId" : 579812,
+        "shipParamsId" : 3550393712,
+        "skinId" : 3550393712,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 3550393712,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "",
+      "clan_color" : 0,
+      "clan_id" : 0,
+      "db_id" : 3017425995,
+      "entity_id" : 579800,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 82900,
+      "meta_ship_id" : 537202482,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "ZhYao",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 3017425995,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579799,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 0,
+        "clanID" : 0,
+        "clanTag" : "",
+        "crewParams" : [ "4293044176", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4215229360", "4290759600", "4282043312", "4290202544", "4292234160" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 537202482,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 82900,
+        "name" : "ZhYao",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 537248003,
+        "preBattleSign" : 0,
+        "prebattleId" : 537248003,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A1_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�7\u001F�,\u0000\u0000\u0000\u000E\u0000\u0000\u0000�/��Я��\u0000\u0000\u0000\u0000Я��Я��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��ϲ��ϒ���r�\u0000\u0000\u0000\u0000��\"�\u0001\u0000\u0000\u0000���\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000��O�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��o�\u0012\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00008\u0000\u0000\u0000",
+        "shipId" : 579800,
+        "shipParamsId" : 4179572688,
+        "skinId" : 4256821168,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4179572688,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "YU_RI",
+      "clan_color" : 11776947,
+      "clan_id" : 2000022706,
+      "db_id" : 2022515210,
+      "entity_id" : 579794,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 77850,
+      "meta_ship_id" : 671169944,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "Nahida_official",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2022515210,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579793,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000022706,
+        "clanTag" : "YU_RI",
+        "crewParams" : [ "4187138032", {
+          "value" : "[true, true, true, 0]"
+        } ],
+        "dogTag" : [ "4118301616", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671169944,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : true,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 77850,
+        "name" : "Nahida_official",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 671523201,
+        "preBattleSign" : 0,
+        "prebattleId" : 671523201,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�7��7\u0000\u0000\u0000\u000E\u0000\u0000\u0000�/����\u0000\u0000\u0000\u0000����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000�ς��ϲ���2���r���B���\"�\n\u0000\u0000\u0000�ox��o\u000E��o���o\u001D��o���o\u001D��o}��om��o���o��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R���\u0002�����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002\u0000\u0000\u0000���Ѱ���\u0004\u0000\u0000\u0000��/����������O�\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000:\u0000\u0000\u0000",
+        "shipId" : 579794,
+        "shipParamsId" : 3539941360,
+        "skinId" : 3539941360,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 3539941360,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 0,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "JBT",
+      "clan_color" : 11776947,
+      "clan_id" : 2000029433,
+      "db_id" : 2023168790,
+      "entity_id" : 579782,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 89800,
+      "meta_ship_id" : 671210634,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "sky_1_1_c",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2023168790,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579781,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000029433,
+        "clanTag" : "JBT",
+        "crewParams" : [ "4189234512", {
+          "value" : "[true, true, 0, true]"
+        } ],
+        "dogTag" : [ "4187343792", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671210634,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 89800,
+        "name" : "sky_1_1_c",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=A_Specials, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000P5_�5\u0000\u0000\u0000\u000E\u0000\u0000\u0000P-��P���\u0000\u0000\u0000\u0000P���P���\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000�ς��ϲ���2���b���B���R�\n\u0000\u0000\u0000�o=��o}���\u0019�o\u001D��o���o���o���o���om��on�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000��?����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000'\u0000\u0000\u0000",
+        "shipId" : 579782,
+        "shipParamsId" : 4284429648,
+        "skinId" : 4061786032,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4284429648,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "BABA",
+      "clan_color" : 11776947,
+      "clan_id" : 2000020532,
+      "db_id" : 3007225200,
+      "entity_id" : 579822,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 97050,
+      "meta_ship_id" : 671267958,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "RinRinne_",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 3007225200,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579821,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000020532,
+        "clanTag" : "BABA",
+        "crewParams" : [ "4187137872", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4256549808", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671267958,
+        "invitationsEnabled" : 1,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 97050,
+        "name" : "RinRinne_",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A1_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A1_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000P7\u001F�/\u0000\u0000\u0000\u000E\u0000\u0000\u0000P/\f�P�\u001F�\u0000\u0000\u0000\u0000P�\u0006�P�\u001D�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��ϲ�������r���B���\"�\u0004\u0000\u0000\u0000�o}��o���o���o\u001D�\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R���\u0002�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000F\u0000\u0000\u0000",
+        "shipId" : 579822,
+        "shipParamsId" : 4179572560,
+        "skinId" : 4179572560,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4179572560,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "MHSJO",
+      "clan_color" : 11776947,
+      "clan_id" : 2000022262,
+      "db_id" : 2025011737,
+      "entity_id" : 579798,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 68600,
+      "meta_ship_id" : 671294257,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "Komeiji_SatoriSama",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2025011737,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579797,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000022262,
+        "clanTag" : "MHSJO",
+        "crewParams" : [ "4186089264", {
+          "value" : "[true, true, 0, true]"
+        } ],
+        "dogTag" : [ "4262415280", "4292856752", "4282043312", "4280765360", "4291185584" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671294257,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : true,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : true,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 68600,
+        "name" : "Komeiji_SatoriSama",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 671523201,
+        "preBattleSign" : 0,
+        "prebattleId" : 671523201,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A1_AirDefense, abilities=AbilitiesDefault, artillery=ArtilleryDefault, diveBomber=A2_DiveBomber, atba=A1_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=A1_FlightControl, skipBomber=SkipBomberTypeDefault, torpedoBomber=A2_TorpedoBomber, airArmament=A1_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A1_Radars, impulseLasers=ImpulseLasersDefault, engine=A1_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A1_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=A2_Fighter, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=FireControlDefault, directors=A1_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u00000�\u001F�0\u0000\u0000\u0000\u000E\u0000\u0000\u00000/��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00000���0/��0���0/��0/��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000�����ϲ�����������b�����\u0005\u0000\u0000\u0000�o���o����9��o���o\u001D�\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��������\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0000",
+        "shipId" : 579798,
+        "shipParamsId" : 4179605296,
+        "skinId" : 4097437616,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4179605296,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "ZMY",
+      "clan_color" : 11776947,
+      "clan_id" : 2000012472,
+      "db_id" : 3002658868,
+      "entity_id" : 579814,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 102100,
+      "meta_ship_id" : 671294561,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "Rushikesh_1718",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 3002658868,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579813,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000012472,
+        "clanTag" : "ZMY",
+        "crewParams" : [ "4293043920", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4254452656", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671294561,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 102100,
+        "name" : "Rushikesh_1718",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=AB1_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�6��1\u0000\u0000\u0000\u000E\u0000\u0000\u0000�.\f�Ю\u000F�\u0000\u0000\u0000\u0000Ю\u0006�Ю��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��ϲ�������b���B���\"�\u0005\u0000\u0000\u0000�o���o\u001D��o}��o^���)�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R���\"�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000��}�\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001B\u0000\u0000\u0000",
+        "shipId" : 579814,
+        "shipParamsId" : 4276041424,
+        "skinId" : 4062834608,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4276041424,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "HKJDN",
+      "clan_color" : 11776947,
+      "clan_id" : 2000036020,
+      "db_id" : 3006002444,
+      "entity_id" : 579810,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 96300,
+      "meta_ship_id" : 671322706,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "zyy2141687033",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 3006002444,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579809,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000036020,
+        "clanTag" : "HKJDN",
+        "crewParams" : [ "4293044208", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4293872560", "4293905328", "4293577648", "4293348272", "4293282736" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671322706,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 96300,
+        "name" : "zyy2141687033",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A1_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�7��0\u0000\u0000\u0000\u000E\u0000\u0000\u0000�/�����\u0000\u0000\u0000\u0000�����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��ϲ��ϒ���b���B���\"�\u0004\u0000\u0000\u0000�o���o���o����)�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R���\"�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000���\u0004\u0000\u0000\u0000��?����\u0000\u0000\u0000\u0000��_�\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000:\u0000\u0000\u0000",
+        "shipId" : 579810,
+        "shipParamsId" : 4277090288,
+        "skinId" : 4062834608,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4277090288,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "YYRSM",
+      "clan_color" : 11776947,
+      "clan_id" : 2000023096,
+      "db_id" : 2025971018,
+      "entity_id" : 579792,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 29850,
+      "meta_ship_id" : 671327124,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "JuIiet_Persia",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2025971018,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579791,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000023096,
+        "clanTag" : "YYRSM",
+        "crewParams" : [ "4187138032", {
+          "value" : "[true, true, true, 0]"
+        } ],
+        "dogTag" : [ "4248161200", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671327124,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 29850,
+        "name" : "JuIiet_Persia",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 537248003,
+        "preBattleSign" : 0,
+        "prebattleId" : 537248003,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=ATBADefault, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=AirArmamentDefault, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=airSupportDefault, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=A_DepthChargeGuns}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�7��3\u0000\u0000\u0000\u000E\u0000\u0000\u0000�/���\u000F��/&������\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��Ϣ�������r���B���\"�\b\u0000\u0000\u0000�ox��o���o=��o\u001D��o\u001D��o���o���o-�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���\u0012�������B�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000��O����\u0000\u0000\u0000\u0000��O�\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000:\u0000\u0000\u0000",
+        "shipId" : 579792,
+        "shipParamsId" : 3655219184,
+        "skinId" : 3655219184,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 3655219184,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "MHSJO",
+      "clan_color" : 11776947,
+      "clan_id" : 2000022262,
+      "db_id" : 2023703189,
+      "entity_id" : 579806,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 14850,
+      "meta_ship_id" : 671336386,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "Give_Me_Publix_Sub",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2023703189,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579805,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000022262,
+        "clanTag" : "MHSJO",
+        "crewParams" : [ "4186089264", {
+          "value" : "[true, true, 0, true]"
+        } ],
+        "dogTag" : [ "4113058736", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671336386,
+        "invitationsEnabled" : 0,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 14850,
+        "name" : "Give_Me_Publix_Sub",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=AirDefenseDefault, abilities=AbilitiesDefault, artillery=ArtilleryDefault, diveBomber=DiveBomberTypeDefault, atba=ATBADefault, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=AirArmamentDefault, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=airSupportDefault, radars=RadarsDefault, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=A_PingerGun, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=FireControlDefault, directors=DirectorsDefault, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u00000�\u0016�0\u0000\u0000\u0000\u000E\u0000\u0000\u00000/\\�\u0000\u0000\u0000\u00000/V�\u0000\u0000\u0000\u00000�]�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00000���\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000�ς��ς�������R��Ϣ��ϒ�\u0005\u0000\u0000\u0000�ox��o���o-��o\u001D��o��\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���\"�������\u0002���R�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000������_�\u001A\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0000",
+        "shipId" : 579806,
+        "shipParamsId" : 3759585072,
+        "skinId" : 3759585072,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 3759585072,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "-Y467",
+      "clan_color" : 13408614,
+      "clan_id" : 2000027532,
+      "db_id" : 2035102900,
+      "entity_id" : 579788,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 91800,
+      "meta_ship_id" : 671339026,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "Aqae_qwq",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2035102900,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579787,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 13408614,
+        "clanID" : 2000027532,
+        "clanTag" : "-Y467",
+        "crewParams" : [ "3868370384", {
+          "value" : "[true, true, 0, true]"
+        } ],
+        "dogTag" : [ "4285909936", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671339026,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 91800,
+        "name" : "Aqae_qwq",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 537247940,
+        "preBattleSign" : 0,
+        "prebattleId" : 537247940,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A1_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000�5\u001F�-\u0000\u0000\u0000\u000E\u0000\u0000\u0000�-l�Э�\u0000\u0000\u0000\u0000Э��Эm�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��ϲ�������r���B���\"�\u0002\u0000\u0000\u0000�ox��o^�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000��O�\u0000\u0000\u0000\u0000������o�\u001A\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000>\u0000\u0000\u0000",
+        "shipId" : 579788,
+        "shipParamsId" : 3760141776,
+        "skinId" : 3760141776,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 3760141776,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "ANMSK",
+      "clan_color" : 11776947,
+      "clan_id" : 2000016215,
+      "db_id" : 2023314987,
+      "entity_id" : 579802,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 65400,
+      "meta_ship_id" : 671361852,
+      "realm" : "ASIA",
+      "team_id" : 0,
+      "username" : "IronThePrefect",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2023314987,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579801,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000016215,
+        "clanTag" : "ANMSK",
+        "crewParams" : [ "3868370384", {
+          "value" : "[false, false, 0, true]"
+        } ],
+        "dogTag" : [ "4269132720", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671361852,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : true,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 65400,
+        "name" : "IronThePrefect",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 671523201,
+        "preBattleSign" : 0,
+        "prebattleId" : 671523201,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A1_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A1_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000е\u001E�0\u0000\u0000\u0000\u000E\u0000\u0000\u0000�-\f�Э��\u0000\u0000\u0000\u0000Э\u0006�Э\r�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012���R�������r���B���\"�\u0001\u0000\u0000\u0000�ox�\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000�ox�\u0001\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���B�������R�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002\u0000\u0000\u0000��]��}�\u0004\u0000\u0000\u0000��/�\u0000\u0000\u0000\u0000������_�\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000>\u0000\u0000\u0000",
+        "shipId" : 579802,
+        "shipParamsId" : 4179539408,
+        "skinId" : 4179539408,
+        "teamId" : 0,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4179539408,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 1,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "DAB-I",
+      "clan_color" : 11776947,
+      "clan_id" : 2000035658,
+      "db_id" : 2028808453,
+      "entity_id" : 579796,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 76100,
+      "meta_ship_id" : 671377182,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "Creampie_aunty",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2028808453,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579795,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000035658,
+        "clanTag" : "DAB-I",
+        "crewParams" : [ "4186089264", {
+          "value" : "[true, true, 0, true]"
+        } ],
+        "dogTag" : [ "4270803888", "4293905328", "4293577648", "4293348272", "4293282736" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671377182,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 76100,
+        "name" : "Creampie_aunty",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u000007��0\u0000\u0000\u0000\u000E\u0000\u0000\u00000/\\�0�o�0/f�0�f�0�]�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000�ς���b���2���r���B���R�\u0004\u0000\u0000\u0000�o=��o���o�����\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R�����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000���\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0000",
+        "shipId" : 579796,
+        "shipParamsId" : 4074714928,
+        "skinId" : 4290375600,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4074714928,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "-AL--",
+      "clan_color" : 11776947,
+      "clan_id" : 2000042062,
+      "db_id" : 3008944888,
+      "entity_id" : 579804,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 59800,
+      "meta_ship_id" : 671383487,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "LiNoTaNo",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 3008944888,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579803,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 11776947,
+        "clanID" : 2000042062,
+        "clanTag" : "-AL--",
+        "crewParams" : [ "4293043920", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4269755312", "4293905328", "4293577648", "4293348272", "4293282736" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671383487,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 59800,
+        "name" : "LiNoTaNo",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 671538986,
+        "preBattleSign" : 0,
+        "prebattleId" : 671538986,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=A_Torpedoes, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=A_Finders, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000ж��4\u0000\u0000\u0000\u000E\u0000\u0000\u0000�.,�Ю?��.��Ю\u0016�Ю=�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��ϲ�������r���B���\"�\b\u0000\u0000\u0000�o���o���o\u001D��o���o=��om��o}��o��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���B���2���R�����\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000��\r�\u0004\u0000\u0000\u0000��?�\u0000\u0000\u0000\u0000������o�\u001A\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001B\u0000\u0000\u0000",
+        "shipId" : 579804,
+        "shipParamsId" : 4074682064,
+        "skinId" : 4074682064,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4074682064,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "-Y467",
+      "clan_color" : 13408614,
+      "clan_id" : 2000027532,
+      "db_id" : 3004901470,
+      "entity_id" : 579818,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 79400,
+      "meta_ship_id" : 671391850,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "Fading_Wind",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 3004901470,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579817,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 13408614,
+        "clanID" : 2000027532,
+        "clanTag" : "-Y467",
+        "crewParams" : [ "4187138032", {
+          "value" : "[true, true, true, 0]"
+        } ],
+        "dogTag" : [ "4256549808", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671391850,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : true,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 79400,
+        "name" : "Fading_Wind",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 537247940,
+        "preBattleSign" : 0,
+        "prebattleId" : 537247940,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=A_Artillery, diveBomber=DiveBomberTypeDefault, atba=ATBADefault, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=FlightControlDefault, skipBomber=SkipBomberTypeDefault, torpedoBomber=TorpedoBomberTypeDefault, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=FighterTypeDefault, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=A_FireControl, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000���1\u0000\u0000\u0000\u000E\u0000\u0000\u0000�/����\u0000\u0000\u0000\u0000����\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��\u0012��ϲ�������r���B���\"�\u0005\u0000\u0000\u0000����o\u001D��o���o���o��\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��b���R���������\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000���\u0004\u0000\u0000\u0000��\u001F�\u0000\u0000\u0000\u0000����\u0000\u0000\u0000\u0000\u001E\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000:\u0000\u0000\u0000",
+        "shipId" : 579818,
+        "shipParamsId" : 3539908592,
+        "skinId" : 4256821168,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 3539908592,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  }, {
+    "initial_state" : {
+      "clan" : "O-R-E",
+      "clan_color" : 13408614,
+      "clan_id" : 2000039103,
+      "db_id" : 2028304190,
+      "entity_id" : 579778,
+      "is_abuser" : false,
+      "is_bot" : false,
+      "is_hidden" : false,
+      "max_health" : 62500,
+      "meta_ship_id" : 671404547,
+      "realm" : "ASIA",
+      "team_id" : 1,
+      "username" : "hewuCdada",
+      "human_properties" : { },
+      "raw_with_names" : {
+        "accountDBID" : 2028304190,
+        "antiAbuseEnabled" : true,
+        "avatarId" : 579777,
+        "camouflageInfo" : "<newobj>",
+        "clanColor" : 13408614,
+        "clanID" : 2000039103,
+        "clanTag" : "O-R-E",
+        "crewParams" : [ "4186089456", {
+          "value" : "[0, 0, 0, 0]"
+        } ],
+        "dogTag" : [ "4105718704", "0", "0", "0", "0" ],
+        "fragsCount" : 0,
+        "friendlyFireEnabled" : false,
+        "id" : 671404547,
+        "invitationsEnabled" : true,
+        "isAbuser" : false,
+        "isAlive" : true,
+        "isBot" : false,
+        "isClientLoaded" : false,
+        "isConnected" : false,
+        "isHidden" : false,
+        "isLeaver" : false,
+        "isPreBattleOwner" : false,
+        "isTShooter" : false,
+        "keyTargetMarkers" : 0,
+        "killedBuildingsCount" : 0,
+        "maxHealth" : 62500,
+        "name" : "hewuCdada",
+        "playerMode" : "<newobj>",
+        "preBattleIdOnStart" : 0,
+        "preBattleSign" : 0,
+        "prebattleId" : 0,
+        "realm" : "ASIA",
+        "shipComponents" : "{airDefense=A_AirDefense, abilities=AbilitiesDefault, artillery=ArtilleryDefault, diveBomber=A2_DiveBomber, atba=A_ATBA, airshipPlane=AirshipPlaneTypeDefault, wcs=WeaponControlSystemDefault, missiles=MissilesDefault, flightControl=A1_FlightControl, skipBomber=SkipBomberTypeDefault, torpedoBomber=A2_TorpedoBomber, airArmament=A_AirArmament, cameras=Cameras, underwaterCamera=UnderwaterCamera, airSupport=A_AirSupport, radars=A_Radars, impulseLasers=ImpulseLasersDefault, engine=A_Engine, hull=A_Hull, visualCustomizations=VisualCustomizationsDefaults, torpedoes=TorpedoesDefault, antiMissile=AntiMissileDefault, aiParams=AIParams, waves=WaveArtilleryDefault, finders=FindersDefault, innateSkills=InnateSkillsDefault, pinger=PingerGunDefault, fighter=A2_Fighter, phaserLasers=PhaserLasersDefault, chargeLasers=ChargeLasersDefault, specials=SpecialsDefault, fireControl=FireControlDefault, directors=A_Directors, scout=ScoutTypeDefault, axisLaser=AxisLaserDefault, auxiliaryPlane=AuxiliaryPlaneTypeDefault, depthCharges=DepthChargeGunsDefault}",
+        "shipConfigDump" : "\u0001\u0000\u0000\u0000��4\u0000\u0000\u0000\u000E\u0000\u0000\u0000�/��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���/���{��/\u000F��/n�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000�����ϲ�����������b�����\t\u0000\u0000\u0000���o\u001D��o���o���o���o=��o���o���o\u001D�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0006\u0000\u0000\u0000��������\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0004\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0018\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000:\u0000\u0000\u0000",
+        "shipId" : 579778,
+        "shipParamsId" : 4273977328,
+        "skinId" : 4054249456,
+        "teamId" : 1,
+        "ttkStatus" : false
+      }
+    },
+    "vehicle" : {
+      "ship_id" : 4273977328,
+      "modernizations" : [ ],
+      "consumables" : [ ],
+      "exteriors" : [ ],
+      "commander_skills" : [ ]
+    },
+    "relation" : 2,
+    "connection_change_info" : [ ]
+  } ],
+  "game_events" : [ {
+    "clock" : 0.0,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "又是你们",
+      "username" : "hewuCdada"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 0.0,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "鸡巴",
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 0.0,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "不许赢",
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 0.0,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "????",
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 3.6026859283447266,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "?",
+      "username" : "Nahida_official"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 5.476640701293945,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "不要啊",
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 5.866720199584961,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "我直接过来偷你",
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 6.755449295043945,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "?",
+      "username" : "2477890841"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 8.014829635620117,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "哈!",
+      "username" : "IronThePrefect"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 8.297487258911133,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "我没招了",
+      "username" : "hewuCdada"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 13.71586799621582,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "坏",
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 30.779996871948242,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "下局过来组队",
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 36.01129913330078,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "cv我排到你好多次了",
+      "username" : "2477890841"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 38.1961669921875,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "有人要撤",
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 39.02586364746094,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "我下把跑路了",
+      "username" : "Nahida_official"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 43.46192169189453,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "带我飞",
+      "username" : "2477890841"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 46.475791931152344,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "连赢8把 看来该睡觉了",
+      "username" : "RinRinne_"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 48.016990661621094,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "行",
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 90.01803588867188,
+    "data" : {
+      "activated_at" : 90.01803588867188,
+      "consumable" : {
+        "Known" : "CatapultFighter"
+      },
+      "db_id" : 2025011737,
+      "duration" : 600.0,
+      "entity_id" : 579798,
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 94.18777465820312,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "我们SS什么情况",
+      "username" : "jiaoye3860068"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 118.18246459960938,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "what....?",
+      "username" : "AtapangAtaoNdeAtakbo"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 125.45370483398438,
+    "data" : {
+      "activated_at" : 125.45370483398438,
+      "consumable" : {
+        "Known" : "SpeedBoost"
+      },
+      "db_id" : 2022515210,
+      "duration" : 234.0,
+      "entity_id" : 579794,
+      "username" : "Nahida_official"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 135.73870849609375,
+    "data" : {
+      "activated_at" : 135.73870849609375,
+      "consumable" : {
+        "Known" : "Smoke"
+      },
+      "db_id" : 2025971018,
+      "duration" : 33.0,
+      "entity_id" : 579792,
+      "username" : "JuIiet_Persia"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 140.0152130126953,
+    "data" : {
+      "activated_at" : 140.0152130126953,
+      "consumable" : {
+        "Known" : "DefensiveAntiAircraft"
+      },
+      "db_id" : 2025971018,
+      "duration" : 40.0,
+      "entity_id" : 579792,
+      "username" : "JuIiet_Persia"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 171.92396545410156,
+    "data" : {
+      "activated_at" : 171.92396545410156,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2028808453,
+      "duration" : 132.0,
+      "entity_id" : 579796,
+      "username" : "Creampie_aunty"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 179.4783172607422,
+    "data" : {
+      "activated_at" : 179.4783172607422,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2028808453,
+      "duration" : 14.0,
+      "entity_id" : 579796,
+      "username" : "Creampie_aunty"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 182.7754669189453,
+    "data" : {
+      "activated_at" : 182.7754669189453,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2025971018,
+      "duration" : 110.0,
+      "entity_id" : 579792,
+      "username" : "JuIiet_Persia"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 187.91737365722656,
+    "data" : {
+      "activated_at" : 187.91737365722656,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2028899894,
+      "duration" : 10.0,
+      "entity_id" : 579790,
+      "username" : "Super_158"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 188.7477264404297,
+    "data" : {
+      "activated_at" : 188.7477264404297,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2028899894,
+      "duration" : 28.0,
+      "entity_id" : 579790,
+      "username" : "Super_158"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 189.8743438720703,
+    "data" : {
+      "activated_at" : 189.8743438720703,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2028899894,
+      "duration" : 132.0,
+      "entity_id" : 579790,
+      "username" : "Super_158"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 203.4739532470703,
+    "data" : {
+      "activated_at" : 203.4739532470703,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3017425995,
+      "duration" : 22.0,
+      "entity_id" : 579800,
+      "username" : "ZhYao"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 206.5870819091797,
+    "data" : {
+      "activated_at" : 206.5870819091797,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2023168790,
+      "duration" : 28.0,
+      "entity_id" : 579782,
+      "username" : "sky_1_1_c"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 208.88136291503906,
+    "data" : {
+      "activated_at" : 208.88136291503906,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2031292108,
+      "duration" : 110.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 210.7773895263672,
+    "data" : {
+      "activated_at" : 210.7773895263672,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2028808453,
+      "duration" : 28.0,
+      "entity_id" : 579796,
+      "username" : "Creampie_aunty"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 211.1623077392578,
+    "data" : {
+      "activated_at" : 211.1623077392578,
+      "consumable" : {
+        "Known" : "SubmarineSurveillance"
+      },
+      "db_id" : 2031292108,
+      "duration" : 20.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 220.51014709472656,
+    "data" : {
+      "activated_at" : 220.51014709472656,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2023168790,
+      "duration" : 28.0,
+      "entity_id" : 579782,
+      "username" : "sky_1_1_c"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 227.0355224609375,
+    "data" : {
+      "activated_at" : 227.0355224609375,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2026694704,
+      "duration" : 121.0,
+      "entity_id" : 579784,
+      "username" : "2477890841"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 227.176025390625,
+    "data" : {
+      "activated_at" : 227.176025390625,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2025971018,
+      "duration" : 5.0,
+      "entity_id" : 579792,
+      "username" : "JuIiet_Persia"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 244.52081298828125,
+    "data" : {
+      "activated_at" : 244.52081298828125,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2028808453,
+      "duration" : 14.0,
+      "entity_id" : 579796,
+      "username" : "Creampie_aunty"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 248.61187744140625,
+    "data" : {
+      "activated_at" : 248.61187744140625,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2031292108,
+      "duration" : 28.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 257.31524658203125,
+    "data" : {
+      "activated_at" : 257.31524658203125,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2015367998,
+      "duration" : 5.0,
+      "entity_id" : 579820,
+      "username" : "123123_2017"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 258.79718017578125,
+    "data" : {
+      "cause" : {
+        "Known" : "HeShell"
+      },
+      "killer" : {
+        "db_id" : 3017425995,
+        "entity_id" : 579800,
+        "username" : "ZhYao"
+      },
+      "victim" : {
+        "db_id" : 2015367998,
+        "entity_id" : 579820,
+        "username" : "123123_2017"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 261.8960876464844,
+    "data" : {
+      "cause" : {
+        "Known" : "Torpedo"
+      },
+      "killer" : {
+        "db_id" : 2008114570,
+        "entity_id" : 579816,
+        "username" : "AtapangAtaoNdeAtakbo"
+      },
+      "victim" : {
+        "db_id" : 2028808453,
+        "entity_id" : 579796,
+        "username" : "Creampie_aunty"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 265.4766540527344,
+    "data" : {
+      "cause" : {
+        "Known" : "AerialTorpedo"
+      },
+      "killer" : {
+        "db_id" : 2028304190,
+        "entity_id" : 579778,
+        "username" : "hewuCdada"
+      },
+      "victim" : {
+        "db_id" : 2025971018,
+        "entity_id" : 579792,
+        "username" : "JuIiet_Persia"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 268.16717529296875,
+    "data" : {
+      "activated_at" : 268.16717529296875,
+      "consumable" : {
+        "Known" : "Smoke"
+      },
+      "db_id" : 2047475075,
+      "duration" : 112.19999694824219,
+      "entity_id" : 579812,
+      "username" : "emmmmmm_2023"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 272.0250549316406,
+    "data" : {
+      "activated_at" : 272.0250549316406,
+      "consumable" : {
+        "Known" : "CatapultFighter"
+      },
+      "db_id" : 2031292108,
+      "duration" : 60.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 274.8872985839844,
+    "data" : {
+      "activated_at" : 274.8872985839844,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2008114570,
+      "duration" : 15.0,
+      "entity_id" : 579816,
+      "username" : "AtapangAtaoNdeAtakbo"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 281.61639404296875,
+    "data" : {
+      "activated_at" : 281.61639404296875,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2047475075,
+      "duration" : 28.0,
+      "entity_id" : 579812,
+      "username" : "emmmmmm_2023"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 293.47674560546875,
+    "data" : {
+      "activated_at" : 293.47674560546875,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3006002444,
+      "duration" : 28.0,
+      "entity_id" : 579810,
+      "username" : "zyy2141687033"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 301.8797912597656,
+    "data" : {
+      "activated_at" : 301.8797912597656,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2035102900,
+      "duration" : 16.5,
+      "entity_id" : 579788,
+      "username" : "Aqae_qwq"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 306.3124084472656,
+    "data" : {
+      "activated_at" : 306.3124084472656,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3017425995,
+      "duration" : 22.0,
+      "entity_id" : 579800,
+      "username" : "ZhYao"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 307.7228698730469,
+    "data" : {
+      "activated_at" : 307.7228698730469,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2023168790,
+      "duration" : 28.0,
+      "entity_id" : 579782,
+      "username" : "sky_1_1_c"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 307.7228698730469,
+    "data" : {
+      "activated_at" : 307.7228698730469,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2028899894,
+      "duration" : 10.0,
+      "entity_id" : 579790,
+      "username" : "Super_158"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 309.3006896972656,
+    "data" : {
+      "activated_at" : 309.3006896972656,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2028899894,
+      "duration" : 28.0,
+      "entity_id" : 579790,
+      "username" : "Super_158"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 310.4713439941406,
+    "data" : {
+      "activated_at" : 310.4713439941406,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2047616985,
+      "duration" : 28.0,
+      "entity_id" : 579824,
+      "username" : "Zhangqikqng"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 312.8843688964844,
+    "data" : {
+      "activated_at" : 312.8843688964844,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2023168790,
+      "duration" : 28.0,
+      "entity_id" : 579782,
+      "username" : "sky_1_1_c"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 320.4952087402344,
+    "data" : {
+      "activated_at" : 320.4952087402344,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3006002444,
+      "duration" : 20.0,
+      "entity_id" : 579810,
+      "username" : "zyy2141687033"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 329.3062744140625,
+    "data" : {
+      "activated_at" : 329.3062744140625,
+      "consumable" : {
+        "Known" : "Radar"
+      },
+      "db_id" : 2023314987,
+      "duration" : 39.599998474121094,
+      "entity_id" : 579802,
+      "username" : "IronThePrefect"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 345.4691467285156,
+    "data" : {
+      "activated_at" : 345.4691467285156,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2047475075,
+      "duration" : 5.0,
+      "entity_id" : 579812,
+      "username" : "emmmmmm_2023"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 346.5862121582031,
+    "data" : {
+      "activated_at" : 346.5862121582031,
+      "consumable" : {
+        "Known" : "Radar"
+      },
+      "db_id" : 2047475075,
+      "duration" : 20.0,
+      "entity_id" : 579812,
+      "username" : "emmmmmm_2023"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 348.5122985839844,
+    "data" : {
+      "activated_at" : 348.5122985839844,
+      "consumable" : {
+        "Known" : "SpeedBoost"
+      },
+      "db_id" : 3007225200,
+      "duration" : 180.0,
+      "entity_id" : 579822,
+      "username" : "RinRinne_"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 349.8700866699219,
+    "data" : {
+      "activated_at" : 349.8700866699219,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2023314987,
+      "duration" : 5.0,
+      "entity_id" : 579802,
+      "username" : "IronThePrefect"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 353.6214294433594,
+    "data" : {
+      "activated_at" : 353.6214294433594,
+      "consumable" : {
+        "Known" : "SubmarineSurveillance"
+      },
+      "db_id" : 2047475075,
+      "duration" : 20.0,
+      "entity_id" : 579812,
+      "username" : "emmmmmm_2023"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 355.0561218261719,
+    "data" : {
+      "cause" : {
+        "Known" : "AerialRocket"
+      },
+      "killer" : {
+        "db_id" : 2025011737,
+        "entity_id" : 579798,
+        "username" : "Komeiji_SatoriSama"
+      },
+      "victim" : {
+        "db_id" : 2047475075,
+        "entity_id" : 579812,
+        "username" : "emmmmmm_2023"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 366.4706726074219,
+    "data" : {
+      "activated_at" : 366.4706726074219,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2039160200,
+      "duration" : 30.799999237060547,
+      "entity_id" : 579808,
+      "username" : "Katze_Poi"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 366.8814392089844,
+    "data" : {
+      "activated_at" : 366.8814392089844,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2022515210,
+      "duration" : 28.0,
+      "entity_id" : 579794,
+      "username" : "Nahida_official"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 369.47369384765625,
+    "data" : {
+      "activated_at" : 369.47369384765625,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3007225200,
+      "duration" : 28.0,
+      "entity_id" : 579822,
+      "username" : "RinRinne_"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 381.6201171875,
+    "data" : {
+      "activated_at" : 381.6201171875,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3017425995,
+      "duration" : 16.5,
+      "entity_id" : 579800,
+      "username" : "ZhYao"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 381.87744140625,
+    "data" : {
+      "activated_at" : 381.87744140625,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2003592369,
+      "duration" : 28.0,
+      "entity_id" : 579786,
+      "username" : "powermer"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 394.4631042480469,
+    "data" : {
+      "activated_at" : 394.4631042480469,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2023168790,
+      "duration" : 28.0,
+      "entity_id" : 579782,
+      "username" : "sky_1_1_c"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 404.14788818359375,
+    "data" : {
+      "activated_at" : 404.14788818359375,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3017425995,
+      "duration" : 22.0,
+      "entity_id" : 579800,
+      "username" : "ZhYao"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 411.905029296875,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "我过去",
+      "username" : "jiaoye3860068"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 416.15240478515625,
+    "data" : {
+      "activated_at" : 416.15240478515625,
+      "consumable" : {
+        "Known" : "SpottingAircraft"
+      },
+      "db_id" : 3006002444,
+      "duration" : 100.0,
+      "entity_id" : 579810,
+      "username" : "zyy2141687033"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 417.9024963378906,
+    "data" : {
+      "activated_at" : 417.9024963378906,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2028899894,
+      "duration" : 28.0,
+      "entity_id" : 579790,
+      "username" : "Super_158"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 419.035888671875,
+    "data" : {
+      "activated_at" : 419.035888671875,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2023168790,
+      "duration" : 28.0,
+      "entity_id" : 579782,
+      "username" : "sky_1_1_c"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 420.3107604980469,
+    "data" : {
+      "activated_at" : 420.3107604980469,
+      "consumable" : {
+        "Known" : "CatapultFighter"
+      },
+      "db_id" : 2028304190,
+      "duration" : 600.0,
+      "entity_id" : 579778,
+      "username" : "hewuCdada"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 421.6243591308594,
+    "data" : {
+      "activated_at" : 421.6243591308594,
+      "consumable" : {
+        "Known" : "SpottingAircraft"
+      },
+      "db_id" : 2047616985,
+      "duration" : 84.5,
+      "entity_id" : 579824,
+      "username" : "Zhangqikqng"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 425.478515625,
+    "data" : {
+      "activated_at" : 425.478515625,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3006002444,
+      "duration" : 20.0,
+      "entity_id" : 579810,
+      "username" : "zyy2141687033"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 434.20611572265625,
+    "data" : {
+      "activated_at" : 434.20611572265625,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2031292108,
+      "duration" : 110.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 435.7213134765625,
+    "data" : {
+      "activated_at" : 435.7213134765625,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2039160200,
+      "duration" : 16.5,
+      "entity_id" : 579808,
+      "username" : "Katze_Poi"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 440.73675537109375,
+    "data" : {
+      "activated_at" : 440.73675537109375,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2047616985,
+      "duration" : 28.0,
+      "entity_id" : 579824,
+      "username" : "Zhangqikqng"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 442.46148681640625,
+    "data" : {
+      "activated_at" : 442.46148681640625,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2028899894,
+      "duration" : 132.0,
+      "entity_id" : 579790,
+      "username" : "Super_158"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 447.5873718261719,
+    "data" : {
+      "activated_at" : 447.5873718261719,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2026694704,
+      "duration" : 20.0,
+      "entity_id" : 579784,
+      "username" : "2477890841"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 447.5873718261719,
+    "data" : {
+      "activated_at" : 447.5873718261719,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2026694704,
+      "duration" : 5.0,
+      "entity_id" : 579784,
+      "username" : "2477890841"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 460.3299865722656,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 2023314987,
+        "entity_id" : 579802,
+        "username" : "IronThePrefect"
+      },
+      "victim" : {
+        "db_id" : 2003592369,
+        "entity_id" : 579786,
+        "username" : "powermer"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 469.31329345703125,
+    "data" : {
+      "activated_at" : 469.31329345703125,
+      "consumable" : {
+        "Known" : "SpeedBoost"
+      },
+      "db_id" : 2022515210,
+      "duration" : 234.0,
+      "entity_id" : 579794,
+      "username" : "Nahida_official"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 470.3330078125,
+    "data" : {
+      "cause" : {
+        "Known" : "AerialTorpedo"
+      },
+      "killer" : {
+        "db_id" : 2028304190,
+        "entity_id" : 579778,
+        "username" : "hewuCdada"
+      },
+      "victim" : {
+        "db_id" : 2028899894,
+        "entity_id" : 579790,
+        "username" : "Super_158"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 478.6072692871094,
+    "data" : {
+      "activated_at" : 478.6072692871094,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2023703189,
+      "duration" : 22.049999237060547,
+      "entity_id" : 579806,
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 479.039306640625,
+    "data" : {
+      "activated_at" : 479.039306640625,
+      "consumable" : {
+        "Known" : "Smoke"
+      },
+      "db_id" : 2039160200,
+      "duration" : 49.5,
+      "entity_id" : 579808,
+      "username" : "Katze_Poi"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 480.7316589355469,
+    "data" : {
+      "activated_at" : 480.7316589355469,
+      "consumable" : {
+        "Known" : "SubmarineSurveillance"
+      },
+      "db_id" : 2008114570,
+      "duration" : 60.0,
+      "entity_id" : 579816,
+      "username" : "AtapangAtaoNdeAtakbo"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 482.0272521972656,
+    "data" : {
+      "activated_at" : 482.0272521972656,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2023168790,
+      "duration" : 28.0,
+      "entity_id" : 579782,
+      "username" : "sky_1_1_c"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 483.1572570800781,
+    "data" : {
+      "activated_at" : 483.1572570800781,
+      "consumable" : {
+        "Known" : "SubmarineSurveillance"
+      },
+      "db_id" : 2023703189,
+      "duration" : 63.0,
+      "entity_id" : 579806,
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 485.6073303222656,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 3002658868,
+        "entity_id" : 579814,
+        "username" : "Rushikesh_1718"
+      },
+      "victim" : {
+        "db_id" : 3006002444,
+        "entity_id" : 579810,
+        "username" : "zyy2141687033"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 487.3381652832031,
+    "data" : {
+      "activated_at" : 487.3381652832031,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3007225200,
+      "duration" : 28.0,
+      "entity_id" : 579822,
+      "username" : "RinRinne_"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 491.1622009277344,
+    "data" : {
+      "activated_at" : 491.1622009277344,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2039160200,
+      "duration" : 30.799999237060547,
+      "entity_id" : 579808,
+      "username" : "Katze_Poi"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 507.4543762207031,
+    "data" : {
+      "activated_at" : 507.4543762207031,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2022515210,
+      "duration" : 28.0,
+      "entity_id" : 579794,
+      "username" : "Nahida_official"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 513.4553833007812,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "飞机哥!!",
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 525.3008422851562,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "亚美咯",
+      "username" : "Nahida_official"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 525.4667358398438,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "可惜",
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 527.7371215820312,
+    "data" : {
+      "activated_at" : 527.7371215820312,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2039160200,
+      "duration" : 16.5,
+      "entity_id" : 579808,
+      "username" : "Katze_Poi"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 535.5864868164062,
+    "data" : {
+      "activated_at" : 535.5864868164062,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2022515210,
+      "duration" : 28.0,
+      "entity_id" : 579794,
+      "username" : "Nahida_official"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 536.2898559570312,
+    "data" : {
+      "cause" : {
+        "Known" : "AerialDepthCharge"
+      },
+      "killer" : {
+        "db_id" : 2031292108,
+        "entity_id" : 579780,
+        "username" : "jiaoye3860068"
+      },
+      "victim" : {
+        "db_id" : 2023703189,
+        "entity_id" : 579806,
+        "username" : "Give_Me_Publix_Sub"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 548.5899047851562,
+    "data" : {
+      "activated_at" : 548.5899047851562,
+      "consumable" : {
+        "Known" : "Smoke"
+      },
+      "db_id" : 2026694704,
+      "duration" : 21.780000686645508,
+      "entity_id" : 579784,
+      "username" : "2477890841"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 555.1482543945312,
+    "data" : {
+      "activated_at" : 555.1482543945312,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 3004901470,
+      "duration" : 110.0,
+      "entity_id" : 579818,
+      "username" : "Fading_Wind"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 560.0115356445312,
+    "data" : {
+      "activated_at" : 560.0115356445312,
+      "consumable" : {
+        "Known" : "CatapultFighter"
+      },
+      "db_id" : 2039160200,
+      "duration" : 60.0,
+      "entity_id" : 579808,
+      "username" : "Katze_Poi"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 560.7194213867188,
+    "data" : {
+      "activated_at" : 560.7194213867188,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2026694704,
+      "duration" : 20.0,
+      "entity_id" : 579784,
+      "username" : "2477890841"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 563.0078735351562,
+    "data" : {
+      "activated_at" : 563.0078735351562,
+      "consumable" : {
+        "Known" : "Radar"
+      },
+      "db_id" : 2023314987,
+      "duration" : 39.599998474121094,
+      "entity_id" : 579802,
+      "username" : "IronThePrefect"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 567.7393798828125,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 3007225200,
+        "entity_id" : 579822,
+        "username" : "RinRinne_"
+      },
+      "victim" : {
+        "db_id" : 2039160200,
+        "entity_id" : 579808,
+        "username" : "Katze_Poi"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 573.29833984375,
+    "data" : {
+      "activated_at" : 573.29833984375,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2022515210,
+      "duration" : 28.0,
+      "entity_id" : 579794,
+      "username" : "Nahida_official"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 573.430908203125,
+    "data" : {
+      "activated_at" : 573.430908203125,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2026694704,
+      "duration" : 121.0,
+      "entity_id" : 579784,
+      "username" : "2477890841"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 576.0167236328125,
+    "data" : {
+      "activated_at" : 576.0167236328125,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3004901470,
+      "duration" : 28.0,
+      "entity_id" : 579818,
+      "username" : "Fading_Wind"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 577.2864990234375,
+    "data" : {
+      "activated_at" : 577.2864990234375,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2026694704,
+      "duration" : 5.0,
+      "entity_id" : 579784,
+      "username" : "2477890841"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 591.3350830078125,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 3004901470,
+        "entity_id" : 579818,
+        "username" : "Fading_Wind"
+      },
+      "victim" : {
+        "db_id" : 2026694704,
+        "entity_id" : 579784,
+        "username" : "2477890841"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 600.8651733398438,
+    "data" : {
+      "activated_at" : 600.8651733398438,
+      "consumable" : {
+        "Known" : "Radar"
+      },
+      "db_id" : 3004901470,
+      "duration" : 44.0,
+      "entity_id" : 579818,
+      "username" : "Fading_Wind"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 608.4613037109375,
+    "data" : {
+      "activated_at" : 608.4613037109375,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3004901470,
+      "duration" : 5.0,
+      "entity_id" : 579818,
+      "username" : "Fading_Wind"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 622.1758422851562,
+    "data" : {
+      "activated_at" : 622.1758422851562,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2023314987,
+      "duration" : 5.0,
+      "entity_id" : 579802,
+      "username" : "IronThePrefect"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 624.583251953125,
+    "data" : {
+      "activated_at" : 624.583251953125,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2023314987,
+      "duration" : 28.0,
+      "entity_id" : 579802,
+      "username" : "IronThePrefect"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 632.45458984375,
+    "data" : {
+      "activated_at" : 632.45458984375,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3002658868,
+      "duration" : 11.0,
+      "entity_id" : 579814,
+      "username" : "Rushikesh_1718"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 636.4698486328125,
+    "data" : {
+      "activated_at" : 636.4698486328125,
+      "consumable" : {
+        "Known" : "DefensiveAntiAircraft"
+      },
+      "db_id" : 2023314987,
+      "duration" : 40.0,
+      "entity_id" : 579802,
+      "username" : "IronThePrefect"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 638.5800170898438,
+    "data" : {
+      "activated_at" : 638.5800170898438,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3007225200,
+      "duration" : 15.0,
+      "entity_id" : 579822,
+      "username" : "RinRinne_"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 647.1537475585938,
+    "data" : {
+      "activated_at" : 647.1537475585938,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2022515210,
+      "duration" : 28.0,
+      "entity_id" : 579794,
+      "username" : "Nahida_official"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 647.5857543945312,
+    "data" : {
+      "activated_at" : 647.5857543945312,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2022515210,
+      "duration" : 28.0,
+      "entity_id" : 579794,
+      "username" : "Nahida_official"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 648.2872924804688,
+    "data" : {
+      "activated_at" : 648.2872924804688,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2047616985,
+      "duration" : 10.0,
+      "entity_id" : 579824,
+      "username" : "Zhangqikqng"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 654.5798950195312,
+    "data" : {
+      "activated_at" : 654.5798950195312,
+      "consumable" : {
+        "Known" : "SpeedBoost"
+      },
+      "db_id" : 3007225200,
+      "duration" : 180.0,
+      "entity_id" : 579822,
+      "username" : "RinRinne_"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 656.3043823242188,
+    "data" : {
+      "activated_at" : 656.3043823242188,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2047616985,
+      "duration" : 28.0,
+      "entity_id" : 579824,
+      "username" : "Zhangqikqng"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 659.1534423828125,
+    "data" : {
+      "activated_at" : 659.1534423828125,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2031292108,
+      "duration" : 28.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 673.7278442382812,
+    "data" : {
+      "activated_at" : 673.7278442382812,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3004901470,
+      "duration" : 5.0,
+      "entity_id" : 579818,
+      "username" : "Fading_Wind"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 674.2883911132812,
+    "data" : {
+      "activated_at" : 674.2883911132812,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3007225200,
+      "duration" : 28.0,
+      "entity_id" : 579822,
+      "username" : "RinRinne_"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 683.459228515625,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 2047616985,
+        "entity_id" : 579824,
+        "username" : "Zhangqikqng"
+      },
+      "victim" : {
+        "db_id" : 2023314987,
+        "entity_id" : 579802,
+        "username" : "IronThePrefect"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 684.2938232421875,
+    "data" : {
+      "activated_at" : 684.2938232421875,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3004901470,
+      "duration" : 28.0,
+      "entity_id" : 579818,
+      "username" : "Fading_Wind"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 697.140869140625,
+    "data" : {
+      "activated_at" : 697.140869140625,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3002658868,
+      "duration" : 30.799999237060547,
+      "entity_id" : 579814,
+      "username" : "Rushikesh_1718"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 711.1605834960938,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 2023168790,
+        "entity_id" : 579782,
+        "username" : "sky_1_1_c"
+      },
+      "victim" : {
+        "db_id" : 3004901470,
+        "entity_id" : 579818,
+        "username" : "Fading_Wind"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 720.853759765625,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 3007225200,
+        "entity_id" : 579822,
+        "username" : "RinRinne_"
+      },
+      "victim" : {
+        "db_id" : 2022515210,
+        "entity_id" : 579794,
+        "username" : "Nahida_official"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 729.9937744140625,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "机关枪挠痒痒?",
+      "username" : "jiaoye3860068"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 730.7450561523438,
+    "data" : {
+      "activated_at" : 730.7450561523438,
+      "consumable" : {
+        "Known" : "CatapultFighter"
+      },
+      "db_id" : 2025011737,
+      "duration" : 600.0,
+      "entity_id" : 579798,
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 745.1480102539062,
+    "data" : {
+      "activated_at" : 745.1480102539062,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2035102900,
+      "duration" : 30.799999237060547,
+      "entity_id" : 579788,
+      "username" : "Aqae_qwq"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 745.722412109375,
+    "data" : {
+      "activated_at" : 745.722412109375,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2025011737,
+      "duration" : 30.0,
+      "entity_id" : 579798,
+      "username" : "Komeiji_SatoriSama"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 757.298583984375,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 2023168790,
+        "entity_id" : 579782,
+        "username" : "sky_1_1_c"
+      },
+      "victim" : {
+        "db_id" : 2047616985,
+        "entity_id" : 579824,
+        "username" : "Zhangqikqng"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 764.2842407226562,
+    "data" : {
+      "activated_at" : 764.2842407226562,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3017425995,
+      "duration" : 22.0,
+      "entity_id" : 579800,
+      "username" : "ZhYao"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 782.5821533203125,
+    "data" : {
+      "activated_at" : 782.5821533203125,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3007225200,
+      "duration" : 28.0,
+      "entity_id" : 579822,
+      "username" : "RinRinne_"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 801.4407348632812,
+    "data" : {
+      "cause" : {
+        "Known" : "Fire"
+      },
+      "killer" : {
+        "db_id" : 3008944888,
+        "entity_id" : 579804,
+        "username" : "LiNoTaNo"
+      },
+      "victim" : {
+        "db_id" : 2025011737,
+        "entity_id" : 579798,
+        "username" : "Komeiji_SatoriSama"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 808.6987915039062,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "别急",
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 810.8529663085938,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "有转机",
+      "username" : "Give_Me_Publix_Sub"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 822.1553955078125,
+    "data" : {
+      "activated_at" : 822.1553955078125,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3017425995,
+      "duration" : 16.5,
+      "entity_id" : 579800,
+      "username" : "ZhYao"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 829.8599853515625,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "你们俩能互相拉个防空不",
+      "username" : "jiaoye3860068"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 831.1392822265625,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 3008944888,
+        "entity_id" : 579804,
+        "username" : "LiNoTaNo"
+      },
+      "victim" : {
+        "db_id" : 3017425995,
+        "entity_id" : 579800,
+        "username" : "ZhYao"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 870.849853515625,
+    "data" : {
+      "activated_at" : 870.849853515625,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3002658868,
+      "duration" : 30.799999237060547,
+      "entity_id" : 579814,
+      "username" : "Rushikesh_1718"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 883.8560791015625,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "我走前面",
+      "username" : "jiaoye3860068"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 888.5664672851562,
+    "data" : {
+      "activated_at" : 888.5664672851562,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3002658868,
+      "duration" : 11.0,
+      "entity_id" : 579814,
+      "username" : "Rushikesh_1718"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 898.9215698242188,
+    "data" : {
+      "activated_at" : 898.9215698242188,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2023168790,
+      "duration" : 28.0,
+      "entity_id" : 579782,
+      "username" : "sky_1_1_c"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 903.281494140625,
+    "data" : {
+      "activated_at" : 903.281494140625,
+      "consumable" : {
+        "Known" : "CatapultFighter"
+      },
+      "db_id" : 2031292108,
+      "duration" : 60.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 913.8504638671875,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 2023168790,
+        "entity_id" : 579782,
+        "username" : "sky_1_1_c"
+      },
+      "victim" : {
+        "db_id" : 3007225200,
+        "entity_id" : 579822,
+        "username" : "RinRinne_"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 914.1535034179688,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 2035102900,
+        "entity_id" : 579788,
+        "username" : "Aqae_qwq"
+      },
+      "victim" : {
+        "db_id" : 2023168790,
+        "entity_id" : 579782,
+        "username" : "sky_1_1_c"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 936.4400634765625,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "光荣",
+      "username" : "jiaoye3860068"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 938.5658569335938,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "还是要输吗?",
+      "username" : "hewuCdada"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 949.003173828125,
+    "data" : {
+      "activated_at" : 949.003173828125,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2031292108,
+      "duration" : 5.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 951.4374389648438,
+    "data" : {
+      "activated_at" : 951.4374389648438,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 2031292108,
+      "duration" : 28.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 957.434814453125,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "抗了40w潜在30w",
+      "username" : "RinRinne_"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 972.4447021484375,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "190w",
+      "username" : "ZhYao"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 973.150634765625,
+    "data" : {
+      "activated_at" : 973.150634765625,
+      "consumable" : {
+        "Known" : "HydroacousticSearch"
+      },
+      "db_id" : 2031292108,
+      "duration" : 110.0,
+      "entity_id" : 579780,
+      "username" : "jiaoye3860068"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 974.4451293945312,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "大和纯菜",
+      "username" : "Nahida_official"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 977.1405029296875,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "全特么我在出力",
+      "username" : "RinRinne_"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 977.8677368164062,
+    "data" : {
+      "cause" : {
+        "Known" : "AerialRocket"
+      },
+      "killer" : {
+        "db_id" : 2028304190,
+        "entity_id" : 579778,
+        "username" : "hewuCdada"
+      },
+      "victim" : {
+        "db_id" : 2031292108,
+        "entity_id" : 579780,
+        "username" : "jiaoye3860068"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 1000.560791015625,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "没时间的",
+      "username" : "RinRinne_"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1004.2769775390625,
+    "data" : {
+      "activated_at" : 1004.2769775390625,
+      "consumable" : {
+        "Known" : "SpottingAircraft"
+      },
+      "db_id" : 3002658868,
+      "duration" : 100.0,
+      "entity_id" : 579814,
+      "username" : "Rushikesh_1718"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 1007.865478515625,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "ss处理不了",
+      "username" : "RinRinne_"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1034.559326171875,
+    "data" : {
+      "activated_at" : 1034.559326171875,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 2008114570,
+      "duration" : 15.0,
+      "entity_id" : 579816,
+      "username" : "AtapangAtaoNdeAtakbo"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 1052.5589599609375,
+    "data" : {
+      "activated_at" : 1052.5589599609375,
+      "consumable" : {
+        "Known" : "RepairParty"
+      },
+      "db_id" : 3002658868,
+      "duration" : 30.799999237060547,
+      "entity_id" : 579814,
+      "username" : "Rushikesh_1718"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 1053.42724609375,
+    "data" : {
+      "cause" : {
+        "Known" : "HeShell"
+      },
+      "killer" : {
+        "db_id" : 3008944888,
+        "entity_id" : 579804,
+        "username" : "LiNoTaNo"
+      },
+      "victim" : {
+        "db_id" : 2008114570,
+        "entity_id" : 579816,
+        "username" : "AtapangAtaoNdeAtakbo"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 1064.9998779296875,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "加油兄弟们",
+      "username" : "Zhangqikqng"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1068.1400146484375,
+    "data" : {
+      "activated_at" : 1068.1400146484375,
+      "consumable" : {
+        "Known" : "DefensiveAntiAircraft"
+      },
+      "db_id" : 3008944888,
+      "duration" : 40.0,
+      "entity_id" : 579804,
+      "username" : "LiNoTaNo"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 1068.1400146484375,
+    "data" : {
+      "activated_at" : 1068.1400146484375,
+      "consumable" : {
+        "Known" : "CatapultFighter"
+      },
+      "db_id" : 3008944888,
+      "duration" : 60.0,
+      "entity_id" : 579804,
+      "username" : "LiNoTaNo"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 1070.7158203125,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "加油",
+      "username" : "Fading_Wind"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1079.85302734375,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "run",
+      "username" : "Nahida_official"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1081.27685546875,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "?",
+      "username" : "Nahida_official"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1088.7010498046875,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "why?",
+      "username" : "Nahida_official"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1089.7156982421875,
+    "data" : {
+      "activated_at" : 1089.7156982421875,
+      "consumable" : {
+        "Known" : "DamageControl"
+      },
+      "db_id" : 3002658868,
+      "duration" : 11.0,
+      "entity_id" : 579814,
+      "username" : "Rushikesh_1718"
+    },
+    "type" : "consumable"
+  }, {
+    "clock" : 1102.1334228515625,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "时间不够咯",
+      "username" : "jiaoye3860068"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1142.56591796875,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "战犯大和",
+      "username" : "IronThePrefect"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1145.58154296875,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "gg",
+      "username" : "Fading_Wind"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1153.2701416015625,
+    "data" : {
+      "cause" : {
+        "Known" : "ApShell"
+      },
+      "killer" : {
+        "db_id" : 3008944888,
+        "entity_id" : 579804,
+        "username" : "LiNoTaNo"
+      },
+      "victim" : {
+        "db_id" : 3002658868,
+        "entity_id" : 579814,
+        "username" : "Rushikesh_1718"
+      }
+    },
+    "type" : "kill"
+  }, {
+    "clock" : 1153.8536376953125,
+    "data" : {
+      "channel" : "Team",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "noob",
+      "username" : "Nahida_official"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1158.552001953125,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "NBNB",
+      "username" : "Zhangqikqng"
+    },
+    "type" : "chat"
+  }, {
+    "clock" : 1161.56982421875,
+    "data" : {
+      "channel" : "Global",
+      "db_id" : 0,
+      "entity_id" : 579793,
+      "message" : "历史重演了",
+      "username" : "Super_158"
+    },
+    "type" : "chat"
+  } ],
+  "playersPrivateInfo" : {
+    "2022515210" : {
+      "abuser_cleaned" : 0,
+      "abuser_status" : 0,
+      "account_points_prev" : 15963,
+      "account_prev_tier" : 17,
+      "arc_details" : { },
+      "battles_to_clean_abuse" : 0,
+      "bonus_currency" : { },
+      "bonus_tags" : [ ],
+      "campaign_tasks" : { },
+      "chains" : { },
+      "common_economics" : [ [ [ "IDS_SSE_REPAIR_DISCOUNT", 0.0, true, 0 ], [ "IDS_CLAN_SUPPLY_REPAIR_DISCOUNT", -0.15, true, 0 ] ], 76500, 0.85, [ [ 292, 73000 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ] ], 73000, 0, 0, [ ], [ ], 0, [ ], 0, 0, [ ], true, true, true, true, true, true, true, 0.1, 1.5, 1.5, 1.5, 1.65, true, true, true, true, 1.0, 1.785347492502174E9 ],
+      "crew_dump" : [ 53, 4187138032, "\u000117\u000316", 0, 22, [ [ 10, 16, 29, 45, 54, 56, 59 ], [ 3, 12, 14, 21, 23, 44, 81 ], [ 3, 8, 12, 17, 23, 63, 66 ], [ ], [ ], [ ] ], 4179572720, 8, 0, 0, 0, [ true, true, true, 0 ] ],
+      "epics" : { },
+      "event_hub_next_points" : 0,
+      "event_hub_next_rewards" : [ ],
+      "event_hub_rewards" : [ ],
+      "fast_rank_qualification_rewards" : [ ],
+      "first_rank_rewards" : [ ],
+      "globalboosts_mods" : {
+        "crewExpFactor" : 1.1,
+        "expFactor" : 1.05,
+        "creditsFactor" : 1.05
+      },
+      "init_economics" : [ 173704, 0, 0, 1114, 0 ],
+      "isMercenary" : false,
+      "is_afk" : false,
+      "is_complained" : false,
+      "is_griefer" : false,
+      "is_ineffective" : false,
+      "is_leaver" : false,
+      "is_tshooter" : false,
+      "killer_building_id" : 0,
+      "killer_building_params" : 0,
+      "killer_db_id" : 3007225200,
+      "mastery_sign" : null,
+      "premium_type" : 2,
+      "pve_details" : { },
+      "rank_battles_season_id" : 0,
+      "rank_league" : 0,
+      "rank_new" : 0,
+      "rank_old" : 0,
+      "rank_qualification_rewards" : [ ],
+      "rank_stars_gained" : 0,
+      "rank_stars_new" : 0,
+      "rank_stars_old" : 0,
+      "rank_victories_new" : 0,
+      "rank_victories_old" : 0,
+      "rank_victory_rewards" : [ ],
+      "rank_victory_rewards_progress" : 0,
+      "ship_aces" : { },
+      "sse_bonuses" : { },
+      "statist_achievements" : [ {
+        "achievementType" : "excellence_mark_divisions",
+        "createObjFromDict" : null,
+        "grade" : 0,
+        "receivedDate" : 1785347492,
+        "achievementId" : "5b06b77a-a66e-4ee5-970a-2b3494c38883",
+        "meta" : {
+          "battles_left" : 13,
+          "percentile" : 0
+        },
+        "shipID" : 3539941360
+      } ],
+      "strategic_actions" : { },
+      "subtotal_economics" : [ {
+        "sse" : [ ],
+        "base" : [ ],
+        "mod" : [ ]
+      }, {
+        "sse" : [ ],
+        "base" : [ [ "CLAN_SUPPLY_BONUS", 0.5, true, 0 ] ],
+        "mod" : [ [ 4249874352, 24.0, true, 0 ], [ 4283822000, 1.0, true, 0 ] ]
+      }, {
+        "sse" : [ ],
+        "base" : [ [ "CLAN_SUPPLY_BONUS", 0.05, true, 0 ] ],
+        "mod" : [ [ 4272943024, 1.0, true, 0 ], [ 4283822000, 1.0, true, 0 ], [ 4282183600, 0.05, true, 0 ] ]
+      }, {
+        "sse" : [ ],
+        "base" : [ ],
+        "mod" : [ [ 4281331632, 1.6, true, 0 ], [ 4283822000, 0.5, true, 0 ], [ 4282183600, 0.05, true, 0 ] ]
+      }, {
+        "sse" : [ ],
+        "base" : [ [ "CLAN_SUPPLY_BONUS", 0.15, true, 0 ] ],
+        "mod" : [ [ 4260360112, 8.0, true, 0 ], [ 4283822000, 1.0, true, 0 ], [ 4282183600, 0.1, true, 0 ] ]
+      }, {
+        "sse" : [ ],
+        "base" : [ ],
+        "mod" : [ ]
+      } ],
+      "survey_info" : null,
+      "tasks" : { },
+      "teamLadder" : 2,
+      "team_id" : 0
+    }
+  }
+}

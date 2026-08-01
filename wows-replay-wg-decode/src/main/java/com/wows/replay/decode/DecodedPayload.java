@@ -103,7 +103,8 @@ public sealed interface DecodedPayload {
     // ── Minimap ────────────────────────────────────────────────────────────
 
     record MinimapUpdateEntry(EntityId entityId, boolean isSentinel, boolean disappearing,
-                              float heading, float x, float z, boolean visible) {}
+                              float heading, float x, float z, boolean visible,
+                              int visibilityFlags) {}
 
     record MinimapUpdatePayload(List<MinimapUpdateEntry> updates) implements DecodedPayload {}
 

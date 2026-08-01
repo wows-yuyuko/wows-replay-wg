@@ -38,6 +38,16 @@ public final class EntityState {
     /** Smoke screen radius (for SmokeScreen entities) */
     public float smokeRadius;
 
+    // ── Minimap 追踪（updateMinimapVisionInfo）──────────────────────
+    /** 归一化小地图坐标 x ∈ [-1.5, 2.49] */
+    public float minimapX = Float.NaN;
+    public float minimapZ = Float.NaN;
+    /** 小地图 heading（度）；Position 包的 heading 是弧度，单独存放避免覆盖 */
+    public float minimapHeading = Float.NaN;
+    public boolean visible = true;
+    public int visibilityFlags;
+    public float lastUpdated;
+
     // ── Extended state (Phase 4 ingest fills these) ──────────────────
 
     /** Gun turret states: gunId → {yaw, pitch} */

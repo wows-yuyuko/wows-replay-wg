@@ -23,10 +23,12 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     /** 从字节数组加载。 */
     public JsonConstantsProvider(byte[] jsonBytes) {
         this.root = JsonMapper.readTree(jsonBytes);
-        this.deathReasons = buildReverseLookup("DEATH_REASON_NAME");
+        // 15.x：CONSUMABLE_IDS = name→id；旧版为 CONSUMABLE_STATES。统一反向查找。
+        this.consumableStates = firstNonEmpty(buildReverseLookup("CONSUMABLE_IDS"), buildReverseLookup("CONSUMABLE_STATES"));
+        // 15.x：DEATH_REASONS 是 [{icon,id,name,sound}, ...] 数组；旧版为 DEATH_REASON_NAME 对象。
+        this.deathReasons = buildDeathReasonMap();
         this.cameraModes = buildReverseLookup("CAMERA_MODE");
         this.battleStages = buildReverseLookup("BATTLE_STAGES");
-        this.consumableStates = buildReverseLookup("CONSUMABLE_STATES");
     }
 
     /** 从文件路径加载。 */
@@ -77,5 +79,37 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
             }
         }
         return result;
+    }
+
+    /** 15.x DEATH_REASONS：对象 { "0": {icon,id,name,sound}, ... } 或数组 → id→name。 */
+    private Map<Integer, String> buildDeathReasonMap() {
+        var node = root.get("DEATH_REASONS");
+        if (node != null) {
+            var result = new LinkedHashMap<Integer, String>();
+            if (node.isObject()) {
+                for (var entry : node.properties()) {
+                    var v = entry.getValue();
+                    var id = v.get("id");
+                    var name = v.get("name");
+                    if (id != null && id.isIntegralNumber() && name != null && name.isTextual()) {
+                        result.put(id.intValue(), name.textValue());
+                    }
+                }
+            } else if (node.isArray()) {
+                for (var entry : node) {
+                    var id = entry.get("id");
+                    var name = entry.get("name");
+                    if (id != null && id.isIntegralNumber() && name != null && name.isTextual()) {
+                        result.put(id.intValue(), name.textValue());
+                    }
+                }
+            }
+            if (!result.isEmpty()) return result;
+        }
+        return buildReverseLookup("DEATH_REASON_NAME");
+    }
+
+    private static Map<Integer, String> firstNonEmpty(Map<Integer, String> a, Map<Integer, String> b) {
+        return a.isEmpty() ? b : a;
     }
 }

@@ -242,7 +242,21 @@ public class Parser {
     }
 
     private Packet parseBattleResults(RawPacket raw) {
-        String json = new String(raw.payload(), StandardCharsets.UTF_8);
+        // 载荷 = [json_len: u32][json: UTF-8]，对标 Rust scan_alt_private_info
+        byte[] payload = raw.payload();
+        String json;
+        if (payload.length >= 4) {
+            var buf = buffer(payload);
+            int len = buf.getInt();
+            int avail = Math.min(len, buf.remaining());
+            if (avail > 0) {
+                json = new String(payload, 4, avail, StandardCharsets.UTF_8);
+            } else {
+                json = "";
+            }
+        } else {
+            json = new String(payload, StandardCharsets.UTF_8);
+        }
         return Packet.fromRaw(raw, new BattleResultsPacket(json), new byte[0]);
     }
 

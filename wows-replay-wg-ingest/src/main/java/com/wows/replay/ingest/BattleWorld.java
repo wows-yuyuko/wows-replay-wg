@@ -57,6 +57,8 @@ public class BattleWorld {
     // ── Extended resources (Phase 4 ingest) ────────────────────────────
     final List<ArtillerySalvo> firedSalvos         = new ArrayList<>();
     final List<TorpedoRecord>  torpedoes            = new ArrayList<>();
+    /** 在飞鱼雷（命中时移除），对标 Rust ActiveTorpedoOrder */
+    final Map<Long, TorpedoRecord> activeTorpedoes  = new LinkedHashMap<>();
     final List<ShotHitRecord>  shotHits             = new ArrayList<>();
     final List<PlaneRecord>    planeEvents          = new ArrayList<>();
     final Map<Long, PlaneState> activePlanes        = new LinkedHashMap<>();
@@ -78,12 +80,25 @@ public class BattleWorld {
     Float  battleStartClock;
     Float  battleResultClock;
     Float  battleEndClock;
+    /** BattleLogic timeLeft 属性（秒），minimap frame 用 */
+    Float  timeLeft;
+    /** BattleLogic battleStage 属性 id（BATTLE_STAGES：0=Waiting,1=Battle,2=Results,3=Finishing,4=Ended） */
+    Integer battleStageId;
+    /** 存活烟幕（EntityLeave 时移除），minimap frame 用 */
+    final Map<Integer, EntityState> smokeScreens = new LinkedHashMap<>();
+    // ── 计分规则（BattleLogic state.missions.hold，minimap scoring_rules 用）────
+    long teamWinScore;
+    long holdReward;
+    float holdPeriod;
+    final List<Integer> holdCpIndices = new ArrayList<>();
 
     // ── Player mapping ─────────────────────────────────────────────────
     /** entity_id → (db_id, username) */
     final Map<Integer, PlayerLink> entityToPlayer = new LinkedHashMap<>();
     /** db_id → PlayerInfo */
     final Map<Long, PlayerInfo>    players         = new LinkedHashMap<>();
+    /** db_id → 竞技场名册原始状态（dumper 输出 initial_state 用） */
+    final Map<Long, com.wows.replay.decode.PlayerStateData> arenaPlayers = new LinkedHashMap<>();
     /** Vehicle entity_id → Avatar entity_id (owner) */
     final Map<Integer, Integer>    vehicleToOwner  = new LinkedHashMap<>();
     /** db_id → entity_id (from arena state) */
@@ -151,7 +166,8 @@ public class BattleWorld {
                 if (es != null) es.isAlive = false;
                 // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
                 // buff zones are removed from the active set on EntityLeave)
-                if ("SmokeScreen".equals(es != null ? es.type : null) || buffZones.remove(eid) != null) {
+                if (smokeScreens.remove(eid) != null || buffZones.remove(eid) != null
+                        || "SmokeScreen".equals(es != null ? es.type : null)) {
                     entities.remove(eid);
                 }
             }
@@ -190,11 +206,12 @@ public class BattleWorld {
                 }
             }
             case DecodedPayload.ShipDestroyedPayload sd -> {
-                int victimAv = vehicleToOwner.getOrDefault(sd.victim().value(), sd.victim().value());
-                int killerAv = vehicleToOwner.getOrDefault(sd.killer().value(), sd.killer().value());
-                var kl = entityToPlayer.get(killerAv);
-                var vl = entityToPlayer.get(victimAv);
-                killLog.add(new KillRecord(elapsed, killerAv, victimAv,
+                // 直接用原始实体 id（对标 Rust KillRecord，不再经 vehicleToOwner 翻译）
+                int victimEid = sd.victim().value();
+                int killerEid = sd.killer().value();
+                var kl = entityToPlayer.get(killerEid);
+                var vl = entityToPlayer.get(victimEid);
+                killLog.add(new KillRecord(elapsed, killerEid, victimEid,
                     kl != null ? kl.dbId : 0, kl != null ? kl.username : "",
                     vl != null ? vl.dbId : 0, vl != null ? vl.username : "",
                     sd.cause()));
@@ -266,7 +283,7 @@ public class BattleWorld {
             // ── Artillery / Torpedo events (record for later analysis) ──
             case DecodedPayload.ArtilleryShotsPayload asp -> {
                 for (var salvo : asp.salvos()) {
-                    firedSalvos.add(new ArtillerySalvo(elapsed, salvo));
+                    firedSalvos.add(new ArtillerySalvo(elapsed, salvo, asp.avatarId().value()));
                 }
                 var ownerEid = asp.avatarId().value();
                 var es = entities.get(ownerEid);
@@ -274,12 +291,16 @@ public class BattleWorld {
             }
             case DecodedPayload.TorpedoesReceivedPayload trp -> {
                 for (var td : trp.torpedoes()) {
-                    torpedoes.add(new TorpedoRecord(elapsed, td));
+                    var rec = new TorpedoRecord(elapsed, td);
+                    torpedoes.add(rec);
+                    activeTorpedoes.put(torpedoKey(td.ownerId().value(), td.shotId()), rec);
                 }
             }
             case DecodedPayload.ShotKillsPayload skp -> {
                 for (var hit : skp.hits()) {
                     shotHits.add(new ShotHitRecord(elapsed, skp.avatarId(), hit));
+                    // 命中即移除对应在飞鱼雷（对标 Rust remove_matching_torpedo）
+                    activeTorpedoes.remove(torpedoKey(hit.ownerId().value(), hit.shotId()));
                 }
             }
             case DecodedPayload.TorpedoDirectionPayload tdp -> {
@@ -336,8 +357,13 @@ public class BattleWorld {
             // ── Minimap ─────────────────────────────────────────────────
             case DecodedPayload.MinimapUpdatePayload mup -> {
                 for (var entry : mup.updates()) {
-                    var es = entities.get(entry.entityId().value());
-                    if (es != null) es.isInvisible = !entry.visible();
+                    var es = getOrCreateEntity(entry.entityId().value(), null);
+                    es.isInvisible = !entry.visible();
+                    es.visible = entry.visible();
+                    es.minimapX = entry.x();
+                    es.minimapZ = entry.z();
+                    es.minimapHeading = entry.heading();
+                    es.lastUpdated = elapsed;
                 }
             }
 
@@ -390,6 +416,7 @@ public class BattleWorld {
             players.put(dbId, pi);
         }
         dbToEntity.put(dbId, entityId);
+        arenaPlayers.put(dbId, psd);
 
         // Create entity components from arena state
         var es = getOrCreateEntity(entityId, "Avatar");
@@ -480,6 +507,7 @@ public class BattleWorld {
             case "SmokeScreen" -> {
                 float r = getFloatProp(props, "radius");
                 es.smokeRadius = r;
+                smokeScreens.put(eid, es);
             }
             case "WeatherZone", "LocalWeatherZone" -> {
                 float wx = ec.position() != null ? ec.position().x() : 0;
@@ -524,7 +552,25 @@ public class BattleWorld {
 
             // Scoring rules
             long winScore = md.entries().get("teamWinScore") instanceof ArgValue.IntVal iv ? iv.value() : 1000;
-            // Store scoring rules for later use
+            teamWinScore = winScore;
+
+            // hold: [{ reward, period, cpIndices }] → scoring_rules
+            ArgValue hold = md.entries().get("hold");
+            if (hold instanceof ArgValue.ArrayVal ha && !ha.elements().isEmpty()) {
+                ArgValue first = ha.elements().get(0);
+                if (first instanceof ArgValue.DictVal hd) {
+                    if (hd.entries().get("reward") instanceof ArgValue.IntVal riv) holdReward = riv.value();
+                    if (hd.entries().get("period") instanceof ArgValue.FloatVal pfv) holdPeriod = (float) pfv.value();
+                    else if (hd.entries().get("period") instanceof ArgValue.IntVal piv) holdPeriod = piv.value();
+                    ArgValue cpIdx = hd.entries().get("cpIndices");
+                    if (cpIdx instanceof ArgValue.ArrayVal ca) {
+                        holdCpIndices.clear();
+                        for (var e : ca.elements()) {
+                            if (e instanceof ArgValue.IntVal civ) holdCpIndices.add((int) civ.value());
+                        }
+                    }
+                }
+            }
         }
 
         // Weather zones seeded from BattleLogic state
@@ -700,11 +746,21 @@ public class BattleWorld {
             }
             case BATTLE_STAGE -> {
                 // BATTLE_STAGES: 0=Waiting, 1=Battle, 2=Results, 3=Finishing, 4=Ended.
-                if (val instanceof ArgValue.IntVal iv && iv.value() == 0 && battleStartClock == null) {
-                    battleStartClock = elapsed;
+                if (val instanceof ArgValue.IntVal iv) {
+                    battleStageId = (int) iv.value();
+                    if (iv.value() == 0 && battleStartClock == null) {
+                        battleStartClock = elapsed;
+                    }
                 }
             }
-            case TIME_LEFT -> { /* seconds remaining; not surfaced in summary */ }
+            case TIME_LEFT -> {
+                if (val instanceof ArgValue.IntVal iv) timeLeft = (float) iv.value();
+                else if (val instanceof ArgValue.FloatVal fv) timeLeft = (float) fv.value();
+            }
+            case VISIBILITY_FLAGS -> {
+                var es = getOrCreateEntity(eid, null);
+                es.visibilityFlags = intFromArg(val);
+            }
             case STATE -> traverseStateDict(eid, val, elapsed);
             case SHIP_CONFIG, VEHICLE_ID, OWNER_ID, OTHER -> { /* recorded but not yet handled */ }
         }
@@ -1097,6 +1153,63 @@ public class BattleWorld {
         );
     }
 
+    // ── Dumper 公开访问器（对标 Rust BattleWorld read API）─────────────
+
+    public String arenaId() { return arenaId; }
+    public String mapName() { return mapName; }
+    public long mapArenaId() { return mapArenaId; }
+    public int gameMode() { return gameMode; }
+    public String matchGroup() { return matchGroup; }
+    public Integer winningTeam() { return winningTeam; }
+    public String finishType() { return finishType; }
+    public String matchResult() { return matchResult; }
+    public Float maxDuration() { return maxDuration; }
+    public Float playedDuration() { return playedDuration; }
+    public Float extraDuration() { return extraDuration; }
+    public Float battleStartClock() { return battleStartClock; }
+    public Float timeLeft() { return timeLeft; }
+
+    public Map<Integer, EntityState> entities() { return entities; }
+    public Map<Long, PlayerInfo> players() { return players; }
+    public Map<Integer, PlayerLink> entityToPlayer() { return entityToPlayer; }
+    public Map<Integer, Integer> vehicleToOwner() { return vehicleToOwner; }
+    public Map<Long, com.wows.replay.decode.PlayerStateData> arenaPlayers() { return arenaPlayers; }
+
+    public List<TeamScore> teamScores() { return teamScores; }
+    public List<KillRecord> killLog() { return killLog; }
+    public List<DamageEvent> damageEvents() { return damageEvents; }
+    public Map<Integer, List<DamageEvent>> damageByAggressor() { return damageByAggressor; }
+    public List<ChatEvent> chatLog() { return chatLog; }
+    public List<ConsumableEvent> consumableLog() { return consumableLog; }
+    public List<CapturePointState> capturePoints() { return capturePoints; }
+    public Map<Integer, BuffZoneState> buffZones() { return buffZones; }
+    public List<WeatherZoneState> weatherZones() { return weatherZones; }
+    public List<BuildingState> buildings() { return buildings; }
+    public List<DeadShipRecord> deadShips() { return deadShips; }
+    public List<CapturedBuff> capturedBuffs() { return capturedBuffs; }
+
+    public List<ArtillerySalvo> firedSalvos() { return firedSalvos; }
+    public List<TorpedoRecord> torpedoes() { return torpedoes; }
+    public Map<Long, TorpedoRecord> activeTorpedoes() { return activeTorpedoes; }
+
+    private static long torpedoKey(int ownerId, int shotId) {
+        return ((long) ownerId << 32) | (shotId & 0xFFFFFFFFL);
+    }
+    public List<ShotHitRecord> shotHits() { return shotHits; }
+    public List<PlaneRecord> planeEvents() { return planeEvents; }
+    public Map<Long, PlaneState> activePlanes() { return activePlanes; }
+    public Map<Long, WardState> activeWards() { return activeWards; }
+    public List<VoiceLineEvent> voiceLineLog() { return voiceLineLog; }
+    public List<RibbonEvent> ribbonLog() { return ribbonLog; }
+
+    public Set<String> entityTypes() { return entityTypes; }
+    public Map<Integer, EntityState> smokeScreens() { return smokeScreens; }
+    public Integer battleStageId() { return battleStageId; }
+    public long teamWinScore() { return teamWinScore; }
+    public long holdReward() { return holdReward; }
+    public float holdPeriod() { return holdPeriod; }
+    public List<Integer> holdCpIndices() { return holdCpIndices; }
+
     /**
      * 存活实体按 kind 统计，镜像 Rust {@code entity_kinds()}：只数携带
      * Vehicle/Building/SmokeScreen 类型组件且仍存活的实体。玩家船复用 Avatar id，
@@ -1312,7 +1425,7 @@ public class BattleWorld {
     // ── Extended resource types (Phase 4) ──────────────────────────────
 
     /** Artillery salvo wrapped with clock for minimap output. */
-    public record ArtillerySalvo(float clock, com.wows.replay.decode.DecodedPayload.ArtillerySalvo salvo) {}
+    public record ArtillerySalvo(float clock, com.wows.replay.decode.DecodedPayload.ArtillerySalvo salvo, int avatarId) {}
 
     /** Torpedo record with optional maneuver data. */
     public record TorpedoRecord(float clock, com.wows.replay.decode.DecodedPayload.TorpedoData data,

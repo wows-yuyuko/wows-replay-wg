@@ -92,6 +92,7 @@ public final class PlayerStateData {
 
     /** All raw key→value entries (for diagnostics). */
     private final Map<Long, Object> raw = new LinkedHashMap<>();
+    private Version version;
 
     // ── Constructors ───────────────────────────────────────────────────
 
@@ -119,6 +120,7 @@ public final class PlayerStateData {
 
     static PlayerStateData fromRawValues(Map<Long, Object> rawValues, Version version, boolean isBot) {
         var psd = new PlayerStateData();
+        psd.version = version;
         var keyMap = isBot ? botKeyMap(version) : playerKeyMap(version);
 
         // Copy raw values
@@ -473,7 +475,21 @@ public final class PlayerStateData {
     public boolean isClientLoaded(){ return isClientLoaded; }
     public byte[] shipConfigDump() { return shipConfigDump; }
     public long shipParamsId()     { return shipParamsId; }
-    public Map<Long, Object> raw() { return Collections.unmodifiableMap(raw); }
+    public Map<Long, Object> raw() 
+{ return Collections.unmodifiableMap(raw); }
+
+    /** 原始 pickle 字段名→值映射（dumper 输出 initial_state.raw_with_names 用）。 */
+    public Map<String, Object> rawWithNames() {
+        var keyMap = isBot() ? botKeyMap(version) : playerKeyMap(version);
+        var nameByIndex = new LinkedHashMap<Integer, String>();
+        for (var e : keyMap.entrySet()) nameByIndex.put(e.getValue(), e.getKey());
+        var out = new LinkedHashMap<String, Object>();
+        for (var e : raw.entrySet()) {
+            var name = nameByIndex.get(e.getKey().intValue());
+            if (name != null) out.put(name, e.getValue());
+        }
+        return out;
+    }
 
     public AccountId accountId()   { return new AccountId((int) dbId); }
     public EntityId shipEntityId() { return new EntityId(entityId); }
