@@ -207,6 +207,31 @@ class ReplayAnalyzerIT {
         writeCompare("java_summary-world.json", world.intoReport());
     }
 
+    // ── Minimap 数据提取（Single 模式，docs/replay-dumper-minimap.md §4）──
+
+    @Test
+    @DisplayName("MinimapExtractor: 帧/事件流/终局状态提取正确且可序列化")
+    void minimapExtract() throws Exception {
+        var out = new com.wows.replay.ingest.minimap.MinimapExtractor(specProvider, replay, 7).extract();
+
+        assertNotNull(out.arenaId(), "arena_id 不应为 null");
+        assertFalse(out.frames().isEmpty(), "应有位置帧");
+        assertTrue(out.frames().stream().anyMatch(f -> !f.entities().isEmpty()),
+            "应存在含船位实体的帧");
+        assertFalse(out.damageEvents().isEmpty(), "应有伤害事件");
+        assertFalse(out.firingEvents().isEmpty(), "应有齐射事件");
+        assertFalse(out.shotHits().isEmpty(), "应有命中事件");
+        assertFalse(out.deadShips().isEmpty(), "应有沉船");
+        assertNotNull(out.scoringRules(), "应有 scoring_rules");
+        assertNotNull(out.winningTeam(), "应有 winning_team");
+        assertTrue(out.frames().stream().anyMatch(f -> f.teamScores().size() >= 2), "应有队伍比分");
+
+        writeCompare("java_minimap.json", out);
+        log.info("Minimap ✓: {} frames, {} firing, {} damage, {} hits, {} dead",
+            out.frames().size(), out.firingEvents().size(),
+            out.damageEvents().size(), out.shotHits().size(), out.deadShips().size());
+    }
+
     private static void writeCompare(String fileName, Object value) throws Exception {
         var out = resolve("temp/compare").resolve(fileName);
         java.nio.file.Files.createDirectories(out.getParent());
