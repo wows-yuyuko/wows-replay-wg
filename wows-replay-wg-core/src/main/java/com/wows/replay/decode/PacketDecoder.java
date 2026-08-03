@@ -24,27 +24,9 @@ import java.util.Map;
 public class PacketDecoder {
 
     private final Version version;
-    private final Map<String, Integer> methodStats = new LinkedHashMap<>();
 
     public PacketDecoder(Version version) {
         this.version = version;
-    }
-
-    /** Dump method name statistics to log (call after processing all packets). */
-    public void dumpMethodStats() {
-        if (methodStats.isEmpty()) return;
-        log.info("EntityMethod stats ({} unique, {} total):",
-                methodStats.size(), methodStats.values().stream().mapToInt(Integer::intValue).sum());
-        var sorted = new ArrayList<>(methodStats.entrySet());
-        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
-        int shown = 0;
-        for (var e : sorted) {
-            if (shown++ >= 15) {
-                log.info("  ... and {} more method types", sorted.size() - 15);
-                break;
-            }
-            log.info("  {}: {}", e.getKey(), e.getValue());
-        }
     }
 
     /**
@@ -100,7 +82,6 @@ public class PacketDecoder {
     private DecodedPayload decodeEntityMethod(EntityMethodPacket em) {
         String method = em.method();
         NamedArgs args = em.args();
-        methodStats.merge(method, 1, Integer::sum);
 
         return switch (method) {
             case "onChatMessage" -> decodeChat(em.entityId(), args);

@@ -7,7 +7,7 @@ import com.wows.replay.model.WeaponLockType;
 import com.wows.replay.model.WeaponType;
 
 /**
- * 0x30: 姝﹀櫒閿佸畾鐘舵€佸彉鏇淬€? */
+ * 0x30: 武器锁定状态变更。 */
 public record SetWeaponLockPacket(
     @JsonProperty("weapon_type") Recognized<WeaponType> weaponType,
     @JsonProperty("lock_type") Recognized<WeaponLockType> lockType,
