@@ -14,7 +14,6 @@
 
     <modules>
         <module>wows-replay-wg-core</module>
-        <module>wows-replay-wg-decode</module>
         <module>wows-replay-wg-ingest</module>
     </modules>
 
@@ -50,11 +49,6 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>com.wows</groupId>
-                <artifactId>wows-replay-wg-decode</artifactId>
-                <version>${project.version}</version>
-            </dependency>
             <dependency>
                 <groupId>com.wows</groupId>
                 <artifactId>wows-replay-wg-ingest</artifactId>

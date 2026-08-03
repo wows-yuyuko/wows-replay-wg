@@ -165,7 +165,7 @@ class ReplayAnalyzerIT {
     void battleReport() throws Exception {
         var report = ReplayAnalyzer.builder()
             .specProvider(specProvider)
-            .config(ReplayAnalyzerConfig.builder().decodePackets(true).build())
+            .config(ReplayAnalyzerConfig.DEFAULT)
             .build()
             .buildBattleReport(replay);
 
@@ -199,7 +199,7 @@ class ReplayAnalyzerIT {
     void dumpToCompare() throws Exception {
         var report = ReplayAnalyzer.builder()
             .specProvider(specProvider)
-            .config(ReplayAnalyzerConfig.builder().decodePackets(true).build())
+            .config(ReplayAnalyzerConfig.DEFAULT)
             .build()
             .buildBattleReport(replay);
 

@@ -62,7 +62,7 @@ class ReplayAnalyzerTest {
     private static ReplayAnalyzer analyzerWithSpec() {
         return ReplayAnalyzer.builder()
             .specProvider(specProvider)
-            .config(ReplayAnalyzerConfig.builder().decodePackets(true).build())
+            .config(ReplayAnalyzerConfig.DEFAULT)
             .build();
     }
 

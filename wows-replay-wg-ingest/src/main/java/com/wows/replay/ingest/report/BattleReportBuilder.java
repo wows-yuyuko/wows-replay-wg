@@ -41,16 +41,10 @@ public final class BattleReportBuilder {
 
     private final BattleWorld world;
     private final ReplayMeta meta;
-    private final ReportResources resources;
 
     public BattleReportBuilder(BattleWorld world, ReplayMeta meta) {
-        this(world, meta, ReportResources.empty());
-    }
-
-    public BattleReportBuilder(BattleWorld world, ReplayMeta meta, ReportResources resources) {
         this.world = world;
         this.meta = meta;
-        this.resources = resources != null ? resources : ReportResources.empty();
     }
 
     /** 核心入口：装配完整战报。应在 {@code world.finish()} 之后调用。 */
@@ -137,10 +131,9 @@ public final class BattleReportBuilder {
 
         // 9. 元数据（§5.7）
         Version version = Version.fromClientExe(meta.clientVersionFromExe());
-        String mapName = localizedNameOrFallback("IDS_" + meta.mapName().toUpperCase(), meta.mapName());
-        // 本地化缺失时回退到常量里的模式名（§12.4.3），再无则原始 scenario。
-        String gameMode = localizedNameOrFallback("IDS_SCENARIO_" + meta.scenario().toUpperCase(),
-            world.constants().gameModeName(meta.gameMode()).orElse(meta.scenario()));
+        String mapName = meta.mapName();
+        // 无本地化资源时回退到常量里的模式名（§12.4.3），再无则原始 scenario。
+        String gameMode = world.constants().gameModeName(meta.gameMode()).orElse(meta.scenario());
         Recognized<BattleType> gameType = BattleType.fromValue(meta.gameType(), version);
         String matchGroup = meta.matchGroup() != null ? meta.matchGroup() : "";
         long maxDuration = world.maxDuration() != null
@@ -256,10 +249,6 @@ public final class BattleReportBuilder {
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
-
-    private String localizedNameOrFallback(String id, String fallback) {
-        return resources.localizedName(id).orElse(fallback);
-    }
 
     private static long parseArenaId(String arenaId) {
         if (arenaId == null) return 0L;

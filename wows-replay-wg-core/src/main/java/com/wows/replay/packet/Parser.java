@@ -54,13 +54,6 @@ public class Parser {
         this(specProvider != null ? specProvider.loadSpecs(version) : List.of(), version);
     }
 
-    /**
-     * Create a parser without entity specs (spec-independent packets only).
-     */
-    public Parser() {
-        this(List.of(), null);
-    }
-
     /** Drain and return accumulated non-fatal diagnostics. */
     public List<PayloadDiagnostic> drainDiagnostics() {
         var drained = List.copyOf(diagnostics);

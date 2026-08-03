@@ -1,0 +1,812 @@
+{
+  "version" : "15.6.0.12830008",
+  "map_name" : "spaces/56_AngelWings",
+  "arena_id" : 2490116449384685,
+  "game_mode" : 7,
+  "game_type" : "RandomBattle",
+  "match_group" : "pvp",
+  "winning_team" : 1,
+  "finish_type" : "Extermination",
+  "match_result" : "Loss",
+  "max_duration" : 1200.0,
+  "played_duration" : 1153.5741,
+  "extra_duration" : 9.17334,
+  "battle_start_clock" : 30.659517,
+  "players" : [ {
+    "db_id" : 536894837,
+    "username" : "123123_2017",
+    "entity_id" : 579820,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 7735.650100708008
+  }, {
+    "db_id" : 536906764,
+    "username" : "2477890841",
+    "entity_id" : 579784,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 99255.94921875
+  }, {
+    "db_id" : 537019406,
+    "username" : "powermer",
+    "entity_id" : 579786,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 34085.98681640625
+  }, {
+    "db_id" : 537085642,
+    "username" : "Katze_Poi",
+    "entity_id" : 579808,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 51708.9443359375
+  }, {
+    "db_id" : 537099657,
+    "username" : "jiaoye3860068",
+    "entity_id" : 579780,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 78876.73989868164
+  }, {
+    "db_id" : 537103251,
+    "username" : "Super_158",
+    "entity_id" : 579790,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 8091.0
+  }, {
+    "db_id" : 537118050,
+    "username" : "AtapangAtaoNdeAtakbo",
+    "entity_id" : 579816,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 8736.0419921875
+  }, {
+    "db_id" : 537118954,
+    "username" : "Zhangqikqng",
+    "entity_id" : 579824,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 57783.0625
+  }, {
+    "db_id" : 537177813,
+    "username" : "emmmmmm_2023",
+    "entity_id" : 579812,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 5331.3599853515625
+  }, {
+    "db_id" : 537202482,
+    "username" : "ZhYao",
+    "entity_id" : 579800,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 42705.20169067383
+  }, {
+    "db_id" : 671169944,
+    "username" : "Nahida_official",
+    "entity_id" : 579793,
+    "team_id" : 0,
+    "relation" : 0,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 0.0
+  }, {
+    "db_id" : 671210634,
+    "username" : "sky_1_1_c",
+    "entity_id" : 579782,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 47039.68495941162
+  }, {
+    "db_id" : 671267958,
+    "username" : "RinRinne_",
+    "entity_id" : 579822,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 180927.75282287598
+  }, {
+    "db_id" : 671294257,
+    "username" : "Komeiji_SatoriSama",
+    "entity_id" : 579798,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 145278.8212890625
+  }, {
+    "db_id" : 671294561,
+    "username" : "Rushikesh_1718",
+    "entity_id" : 579814,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 60859.035888671875
+  }, {
+    "db_id" : 671322706,
+    "username" : "zyy2141687033",
+    "entity_id" : 579810,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 67252.0
+  }, {
+    "db_id" : 671327124,
+    "username" : "JuIiet_Persia",
+    "entity_id" : 579792,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 2804.5
+  }, {
+    "db_id" : 671336386,
+    "username" : "Give_Me_Publix_Sub",
+    "entity_id" : 579806,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 49501.8369140625
+  }, {
+    "db_id" : 671339026,
+    "username" : "Aqae_qwq",
+    "entity_id" : 579788,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 185925.63064575195
+  }, {
+    "db_id" : 671361852,
+    "username" : "IronThePrefect",
+    "entity_id" : 579802,
+    "team_id" : 0,
+    "relation" : 1,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 62937.6231842041
+  }, {
+    "db_id" : 671377182,
+    "username" : "Creampie_aunty",
+    "entity_id" : 579796,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 6292.420059204102
+  }, {
+    "db_id" : 671383487,
+    "username" : "LiNoTaNo",
+    "entity_id" : 579804,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 58791.715072631836
+  }, {
+    "db_id" : 671391850,
+    "username" : "Fading_Wind",
+    "entity_id" : 579818,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 166562.06494140625
+  }, {
+    "db_id" : 671404547,
+    "username" : "hewuCdada",
+    "entity_id" : 579778,
+    "team_id" : 1,
+    "relation" : 2,
+    "is_bot" : false,
+    "dead" : true,
+    "total_damage" : 270349.2053833008
+  } ],
+  "kills" : [ {
+    "clock" : 289.4567,
+    "killer_entity_id" : 579800,
+    "killer_name" : "ZhYao",
+    "victim_entity_id" : 579820,
+    "victim_name" : "123123_2017",
+    "cause" : 18
+  }, {
+    "clock" : 292.5556,
+    "killer_entity_id" : 579816,
+    "killer_name" : "AtapangAtaoNdeAtakbo",
+    "victim_entity_id" : 579796,
+    "victim_name" : "Creampie_aunty",
+    "cause" : 3
+  }, {
+    "clock" : 296.13617,
+    "killer_entity_id" : 579778,
+    "killer_name" : "hewuCdada",
+    "victim_entity_id" : 579792,
+    "victim_name" : "JuIiet_Persia",
+    "cause" : 5
+  }, {
+    "clock" : 385.71564,
+    "killer_entity_id" : 579798,
+    "killer_name" : "Komeiji_SatoriSama",
+    "victim_entity_id" : 579812,
+    "victim_name" : "emmmmmm_2023",
+    "cause" : 14
+  }, {
+    "clock" : 490.9895,
+    "killer_entity_id" : 579802,
+    "killer_name" : "IronThePrefect",
+    "victim_entity_id" : 579786,
+    "victim_name" : "powermer",
+    "cause" : 17
+  }, {
+    "clock" : 500.99252,
+    "killer_entity_id" : 579778,
+    "killer_name" : "hewuCdada",
+    "victim_entity_id" : 579790,
+    "victim_name" : "Super_158",
+    "cause" : 5
+  }, {
+    "clock" : 516.26685,
+    "killer_entity_id" : 579814,
+    "killer_name" : "Rushikesh_1718",
+    "victim_entity_id" : 579810,
+    "victim_name" : "zyy2141687033",
+    "cause" : 17
+  }, {
+    "clock" : 566.9494,
+    "killer_entity_id" : 579780,
+    "killer_name" : "jiaoye3860068",
+    "victim_entity_id" : 579806,
+    "victim_name" : "Give_Me_Publix_Sub",
+    "cause" : 28
+  }, {
+    "clock" : 598.3989,
+    "killer_entity_id" : 579822,
+    "killer_name" : "RinRinne_",
+    "victim_entity_id" : 579808,
+    "victim_name" : "Katze_Poi",
+    "cause" : 17
+  }, {
+    "clock" : 621.9946,
+    "killer_entity_id" : 579818,
+    "killer_name" : "Fading_Wind",
+    "victim_entity_id" : 579784,
+    "victim_name" : "2477890841",
+    "cause" : 17
+  }, {
+    "clock" : 714.1188,
+    "killer_entity_id" : 579824,
+    "killer_name" : "Zhangqikqng",
+    "victim_entity_id" : 579802,
+    "victim_name" : "IronThePrefect",
+    "cause" : 17
+  }, {
+    "clock" : 741.8201,
+    "killer_entity_id" : 579782,
+    "killer_name" : "sky_1_1_c",
+    "victim_entity_id" : 579818,
+    "victim_name" : "Fading_Wind",
+    "cause" : 17
+  }, {
+    "clock" : 751.5133,
+    "killer_entity_id" : 579822,
+    "killer_name" : "RinRinne_",
+    "victim_entity_id" : 579794,
+    "victim_name" : "Nahida_official",
+    "cause" : 17
+  }, {
+    "clock" : 787.9581,
+    "killer_entity_id" : 579782,
+    "killer_name" : "sky_1_1_c",
+    "victim_entity_id" : 579824,
+    "victim_name" : "Zhangqikqng",
+    "cause" : 17
+  }, {
+    "clock" : 832.1003,
+    "killer_entity_id" : 579804,
+    "killer_name" : "LiNoTaNo",
+    "victim_entity_id" : 579798,
+    "victim_name" : "Komeiji_SatoriSama",
+    "cause" : 6
+  }, {
+    "clock" : 861.7988,
+    "killer_entity_id" : 579804,
+    "killer_name" : "LiNoTaNo",
+    "victim_entity_id" : 579800,
+    "victim_name" : "ZhYao",
+    "cause" : 17
+  }, {
+    "clock" : 944.51,
+    "killer_entity_id" : 579782,
+    "killer_name" : "sky_1_1_c",
+    "victim_entity_id" : 579822,
+    "victim_name" : "RinRinne_",
+    "cause" : 17
+  }, {
+    "clock" : 944.81305,
+    "killer_entity_id" : 579788,
+    "killer_name" : "Aqae_qwq",
+    "victim_entity_id" : 579782,
+    "victim_name" : "sky_1_1_c",
+    "cause" : 17
+  }, {
+    "clock" : 1008.5273,
+    "killer_entity_id" : 579778,
+    "killer_name" : "hewuCdada",
+    "victim_entity_id" : 579780,
+    "victim_name" : "jiaoye3860068",
+    "cause" : 14
+  }, {
+    "clock" : 1084.0868,
+    "killer_entity_id" : 579804,
+    "killer_name" : "LiNoTaNo",
+    "victim_entity_id" : 579816,
+    "victim_name" : "AtapangAtaoNdeAtakbo",
+    "cause" : 18
+  }, {
+    "clock" : 1183.9297,
+    "killer_entity_id" : 579804,
+    "killer_name" : "LiNoTaNo",
+    "victim_entity_id" : 579814,
+    "victim_name" : "Rushikesh_1718",
+    "cause" : 17
+  } ],
+  "chat" : [ {
+    "clock" : 17.941269,
+    "sender_db_id" : 671404547,
+    "sender_name" : "hewuCdada",
+    "channel" : "battle_common",
+    "message" : "又是你们"
+  }, {
+    "clock" : 24.361961,
+    "sender_db_id" : 671336386,
+    "sender_name" : "Give_Me_Publix_Sub",
+    "channel" : "battle_common",
+    "message" : "鸡巴"
+  }, {
+    "clock" : 26.526667,
+    "sender_db_id" : 671336386,
+    "sender_name" : "Give_Me_Publix_Sub",
+    "channel" : "battle_common",
+    "message" : "不许赢"
+  }, {
+    "clock" : 29.09108,
+    "sender_db_id" : 671294257,
+    "sender_name" : "Komeiji_SatoriSama",
+    "channel" : "battle_common",
+    "message" : "????"
+  }, {
+    "clock" : 34.262203,
+    "sender_db_id" : 671169944,
+    "sender_name" : "Nahida_official",
+    "channel" : "battle_common",
+    "message" : "?"
+  }, {
+    "clock" : 36.136158,
+    "sender_db_id" : 671294257,
+    "sender_name" : "Komeiji_SatoriSama",
+    "channel" : "battle_common",
+    "message" : "不要啊"
+  }, {
+    "clock" : 36.526237,
+    "sender_db_id" : 671336386,
+    "sender_name" : "Give_Me_Publix_Sub",
+    "channel" : "battle_common",
+    "message" : "我直接过来偷你"
+  }, {
+    "clock" : 37.414967,
+    "sender_db_id" : 536906764,
+    "sender_name" : "2477890841",
+    "channel" : "battle_common",
+    "message" : "?"
+  }, {
+    "clock" : 38.674347,
+    "sender_db_id" : 671361852,
+    "sender_name" : "IronThePrefect",
+    "channel" : "battle_common",
+    "message" : "哈!"
+  }, {
+    "clock" : 38.957005,
+    "sender_db_id" : 671404547,
+    "sender_name" : "hewuCdada",
+    "channel" : "battle_common",
+    "message" : "我没招了"
+  }, {
+    "clock" : 44.375385,
+    "sender_db_id" : 671294257,
+    "sender_name" : "Komeiji_SatoriSama",
+    "channel" : "battle_common",
+    "message" : "坏"
+  }, {
+    "clock" : 61.439514,
+    "sender_db_id" : 671294257,
+    "sender_name" : "Komeiji_SatoriSama",
+    "channel" : "battle_common",
+    "message" : "下局过来组队"
+  }, {
+    "clock" : 66.670815,
+    "sender_db_id" : 536906764,
+    "sender_name" : "2477890841",
+    "channel" : "battle_common",
+    "message" : "cv我排到你好多次了"
+  }, {
+    "clock" : 68.85568,
+    "sender_db_id" : 671294257,
+    "sender_name" : "Komeiji_SatoriSama",
+    "channel" : "battle_common",
+    "message" : "有人要撤"
+  }, {
+    "clock" : 69.68538,
+    "sender_db_id" : 671169944,
+    "sender_name" : "Nahida_official",
+    "channel" : "battle_common",
+    "message" : "我下把跑路了"
+  }, {
+    "clock" : 74.12144,
+    "sender_db_id" : 536906764,
+    "sender_name" : "2477890841",
+    "channel" : "battle_common",
+    "message" : "带我飞"
+  }, {
+    "clock" : 77.13531,
+    "sender_db_id" : 671267958,
+    "sender_name" : "RinRinne_",
+    "channel" : "battle_common",
+    "message" : "连赢8把 看来该睡觉了"
+  }, {
+    "clock" : 78.676506,
+    "sender_db_id" : 671336386,
+    "sender_name" : "Give_Me_Publix_Sub",
+    "channel" : "battle_common",
+    "message" : "行"
+  }, {
+    "clock" : 124.84729,
+    "sender_db_id" : 537099657,
+    "sender_name" : "jiaoye3860068",
+    "channel" : "battle_team",
+    "message" : "我们SS什么情况"
+  }, {
+    "clock" : 148.84198,
+    "sender_db_id" : 537118050,
+    "sender_name" : "AtapangAtaoNdeAtakbo",
+    "channel" : "battle_team",
+    "message" : "what....?"
+  }, {
+    "clock" : 442.56454,
+    "sender_db_id" : 537099657,
+    "sender_name" : "jiaoye3860068",
+    "channel" : "battle_team",
+    "message" : "我过去"
+  }, {
+    "clock" : 544.1149,
+    "sender_db_id" : 671294257,
+    "sender_name" : "Komeiji_SatoriSama",
+    "channel" : "battle_common",
+    "message" : "飞机哥!!"
+  }, {
+    "clock" : 555.9604,
+    "sender_db_id" : 671169944,
+    "sender_name" : "Nahida_official",
+    "channel" : "battle_common",
+    "message" : "亚美咯"
+  }, {
+    "clock" : 556.1263,
+    "sender_db_id" : 671336386,
+    "sender_name" : "Give_Me_Publix_Sub",
+    "channel" : "battle_common",
+    "message" : "可惜"
+  }, {
+    "clock" : 760.6533,
+    "sender_db_id" : 537099657,
+    "sender_name" : "jiaoye3860068",
+    "channel" : "battle_common",
+    "message" : "机关枪挠痒痒?"
+  }, {
+    "clock" : 839.35834,
+    "sender_db_id" : 671336386,
+    "sender_name" : "Give_Me_Publix_Sub",
+    "channel" : "battle_common",
+    "message" : "别急"
+  }, {
+    "clock" : 841.5125,
+    "sender_db_id" : 671336386,
+    "sender_name" : "Give_Me_Publix_Sub",
+    "channel" : "battle_common",
+    "message" : "有转机"
+  }, {
+    "clock" : 860.51953,
+    "sender_db_id" : 537099657,
+    "sender_name" : "jiaoye3860068",
+    "channel" : "battle_team",
+    "message" : "你们俩能互相拉个防空不"
+  }, {
+    "clock" : 914.5156,
+    "sender_db_id" : 537099657,
+    "sender_name" : "jiaoye3860068",
+    "channel" : "battle_team",
+    "message" : "我走前面"
+  }, {
+    "clock" : 967.0996,
+    "sender_db_id" : 537099657,
+    "sender_name" : "jiaoye3860068",
+    "channel" : "battle_team",
+    "message" : "光荣"
+  }, {
+    "clock" : 969.2254,
+    "sender_db_id" : 671404547,
+    "sender_name" : "hewuCdada",
+    "channel" : "battle_common",
+    "message" : "还是要输吗?"
+  }, {
+    "clock" : 988.09436,
+    "sender_db_id" : 671267958,
+    "sender_name" : "RinRinne_",
+    "channel" : "battle_common",
+    "message" : "抗了40w潜在30w"
+  }, {
+    "clock" : 1003.10425,
+    "sender_db_id" : 537202482,
+    "sender_name" : "ZhYao",
+    "channel" : "battle_common",
+    "message" : "190w"
+  }, {
+    "clock" : 1005.1047,
+    "sender_db_id" : 671169944,
+    "sender_name" : "Nahida_official",
+    "channel" : "battle_team",
+    "message" : "大和纯菜"
+  }, {
+    "clock" : 1007.80005,
+    "sender_db_id" : 671267958,
+    "sender_name" : "RinRinne_",
+    "channel" : "battle_common",
+    "message" : "全特么我在出力"
+  }, {
+    "clock" : 1031.2203,
+    "sender_db_id" : 671267958,
+    "sender_name" : "RinRinne_",
+    "channel" : "battle_common",
+    "message" : "没时间的"
+  }, {
+    "clock" : 1038.525,
+    "sender_db_id" : 671267958,
+    "sender_name" : "RinRinne_",
+    "channel" : "battle_common",
+    "message" : "ss处理不了"
+  }, {
+    "clock" : 1095.6594,
+    "sender_db_id" : 537118954,
+    "sender_name" : "Zhangqikqng",
+    "channel" : "battle_common",
+    "message" : "加油兄弟们"
+  }, {
+    "clock" : 1101.3754,
+    "sender_db_id" : 671391850,
+    "sender_name" : "Fading_Wind",
+    "channel" : "battle_common",
+    "message" : "加油"
+  }, {
+    "clock" : 1110.5126,
+    "sender_db_id" : 671169944,
+    "sender_name" : "Nahida_official",
+    "channel" : "battle_team",
+    "message" : "run"
+  }, {
+    "clock" : 1111.9364,
+    "sender_db_id" : 671169944,
+    "sender_name" : "Nahida_official",
+    "channel" : "battle_team",
+    "message" : "?"
+  }, {
+    "clock" : 1119.3606,
+    "sender_db_id" : 671169944,
+    "sender_name" : "Nahida_official",
+    "channel" : "battle_team",
+    "message" : "why?"
+  }, {
+    "clock" : 1132.793,
+    "sender_db_id" : 537099657,
+    "sender_name" : "jiaoye3860068",
+    "channel" : "battle_team",
+    "message" : "时间不够咯"
+  }, {
+    "clock" : 1173.2255,
+    "sender_db_id" : 671361852,
+    "sender_name" : "IronThePrefect",
+    "channel" : "battle_common",
+    "message" : "战犯大和"
+  }, {
+    "clock" : 1176.2411,
+    "sender_db_id" : 671391850,
+    "sender_name" : "Fading_Wind",
+    "channel" : "battle_common",
+    "message" : "gg"
+  }, {
+    "clock" : 1184.5132,
+    "sender_db_id" : 671169944,
+    "sender_name" : "Nahida_official",
+    "channel" : "battle_team",
+    "message" : "noob"
+  }, {
+    "clock" : 1189.2115,
+    "sender_db_id" : 537118954,
+    "sender_name" : "Zhangqikqng",
+    "channel" : "battle_common",
+    "message" : "NBNB"
+  }, {
+    "clock" : 1192.2294,
+    "sender_db_id" : 537103251,
+    "sender_name" : "Super_158",
+    "channel" : "battle_common",
+    "message" : "历史重演了"
+  } ],
+  "damage_events" : 1032,
+  "consumables" : 115,
+  "ribbons" : 0,
+  "voice_lines" : 36,
+  "salvos" : 2549,
+  "torpedoes" : 198,
+  "shot_hits" : 2934,
+  "plane_events" : 426,
+  "active_wards" : 0,
+  "capture_points" : [ {
+    "index" : 0,
+    "team_id" : -1,
+    "invader_team" : -1,
+    "progress" : 0.0,
+    "is_enabled" : true,
+    "x" : -526.76843,
+    "z" : 0.0
+  }, {
+    "index" : 1,
+    "team_id" : -1,
+    "invader_team" : -1,
+    "progress" : 0.0,
+    "is_enabled" : true,
+    "x" : 33.2709,
+    "z" : 0.0
+  }, {
+    "index" : 2,
+    "team_id" : -1,
+    "invader_team" : -1,
+    "progress" : 0.0,
+    "is_enabled" : true,
+    "x" : 446.7385,
+    "z" : 0.0
+  } ],
+  "buff_zones" : 0,
+  "weather_zones" : 0,
+  "buildings" : 0,
+  "dead_ships" : [ {
+    "clock" : 289.4567,
+    "victim_id" : 579820,
+    "x" : 436.87762,
+    "z" : -30.36966
+  }, {
+    "clock" : 292.5556,
+    "victim_id" : 579796,
+    "x" : -601.0275,
+    "z" : 31.82898
+  }, {
+    "clock" : 296.13617,
+    "victim_id" : 579792,
+    "x" : 603.20856,
+    "z" : 95.37045
+  }, {
+    "clock" : 385.71564,
+    "victim_id" : 579812,
+    "x" : -424.17322,
+    "z" : -18.916443
+  }, {
+    "clock" : 490.9895,
+    "victim_id" : 579786,
+    "x" : -766.2957,
+    "z" : -189.90703
+  }, {
+    "clock" : 500.99252,
+    "victim_id" : 579790,
+    "x" : 698.50745,
+    "z" : 157.84703
+  }, {
+    "clock" : 516.26685,
+    "victim_id" : 579810,
+    "x" : 225.88855,
+    "z" : -245.81744
+  }, {
+    "clock" : 566.9494,
+    "victim_id" : 579806,
+    "x" : -632.2299,
+    "z" : -225.61624
+  }, {
+    "clock" : 598.3989,
+    "victim_id" : 579808,
+    "x" : 427.2738,
+    "z" : 40.88611
+  }, {
+    "clock" : 621.9946,
+    "victim_id" : 579784,
+    "x" : -125.95538,
+    "z" : -25.090393
+  }, {
+    "clock" : 714.1188,
+    "victim_id" : 579802,
+    "x" : -263.1032,
+    "z" : -287.7385
+  }, {
+    "clock" : 741.8201,
+    "victim_id" : 579818,
+    "x" : -219.76456,
+    "z" : -285.54474
+  }, {
+    "clock" : 751.5133,
+    "victim_id" : 579794,
+    "x" : 89.40728,
+    "z" : 252.87793
+  }, {
+    "clock" : 787.9581,
+    "victim_id" : 579824,
+    "x" : 232.5289,
+    "z" : -315.6851
+  }, {
+    "clock" : 832.1003,
+    "victim_id" : 579798,
+    "x" : 354.76562,
+    "z" : 378.93826
+  }, {
+    "clock" : 861.7988,
+    "victim_id" : 579800,
+    "x" : 60.046936,
+    "z" : 147.099
+  }, {
+    "clock" : 944.51,
+    "victim_id" : 579822,
+    "x" : 586.45105,
+    "z" : 14.974426
+  }, {
+    "clock" : 944.81305,
+    "victim_id" : 579782,
+    "x" : 115.07831,
+    "z" : -342.2251
+  }, {
+    "clock" : 1008.5273,
+    "victim_id" : 579780,
+    "x" : 322.61652,
+    "z" : -252.41797
+  }, {
+    "clock" : 1084.0868,
+    "victim_id" : 579816,
+    "x" : 10.508209,
+    "z" : -65.24263
+  }, {
+    "clock" : 1183.9297,
+    "victim_id" : 579814,
+    "x" : -77.54199,
+    "z" : -81.74803
+  } ]
+}

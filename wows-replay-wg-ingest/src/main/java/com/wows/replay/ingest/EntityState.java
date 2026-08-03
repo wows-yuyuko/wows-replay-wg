@@ -56,10 +56,6 @@ public final class EntityState {
     public final Map<Integer, float[]> turrets = new LinkedHashMap<>();
     /** Ammo by weapon type → GameParamId */
     public final Map<Integer, Long> ammoByWeapon = new LinkedHashMap<>();
-    /** Ribbons earned by this entity */
-    public final List<Integer> ribbons = new ArrayList<>();
-    /** Cumulative damage stats */
-    public final List<DamageStatEntry> damageStats = new ArrayList<>();
     /** Number of shots fired */
     public long shotsFired;
 
@@ -72,8 +68,4 @@ public final class EntityState {
         return "EntityState[id=" + id + ", type=" + type + ", hp=" + health + "/" + maxHealth
             + ", team=" + teamId + ", alive=" + isAlive + ", pos=(" + x + "," + y + "," + z + ")]";
     }
-
-    // ── Inner types ──────────────────────────────────────────────────
-
-    public record DamageStatEntry(long weaponId, long categoryId, long count, double total) {}
 }

@@ -43,6 +43,6 @@ public sealed interface Recognized<T extends Enum<T>> {
      * 返回已知值（如果可识别）。
      */
     default Optional<T> intoKnown() {
-        return this instanceof Known<T> k ? Optional.of(k.value) : Optional.empty();
+        return this instanceof Known<T>(T value) ? Optional.of(value) : Optional.empty();
     }
 }

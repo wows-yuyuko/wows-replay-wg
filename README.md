@@ -17,21 +17,18 @@ Layer 3: BattleWorld   → DecodedPayload → ECS world (entities, resources, ev
 
 | Module | Layer | Description |
 |--------|-------|-------------|
-| **wows-replay-wg-core** | 0-1 | Replay file I/O, Blowfish-CBC decrypt, zlib decompress, packet framing, type system (ArgType/ArgValue), entity specs, SPI interfaces |
-| **wows-replay-wg-decode** | 2 | Semantic decode: PacketDecoder, MethodDecoder, PropertyDecoder, PickleReader |
-| **wows-replay-wg-ingest** | 3 | ECS ingest: BattleWorld, EntityManager, EntityState, ReplayAnalyzer, BattleReport |
+| **wows-replay-wg-core** | 0-2 | Replay file I/O, Blowfish-CBC decrypt, zlib decompress, packet framing, type system (ArgType/ArgValue), entity specs, SPI interfaces, semantic decode (PacketDecoder/PropertyDecoder/PickleReader) |
+| **wows-replay-wg-ingest** | 3 | ECS ingest: BattleWorld, EntityState, ReplayAnalyzer, BattleReport |
 
 ## Dependencies
 
 ```
 wows-replay-wg-core        (zero internal deps)
     ↑
-wows-replay-wg-decode      (depends on core)
-    ↑
-wows-replay-wg-ingest      (depends on decode)
+wows-replay-wg-ingest      (depends on core)
 ```
 
-Layer 3 is optional — if you only need JSON output of decoded packets, depend on `core` + `decode` only.
+Layer 3 is optional — if you only need JSON output of decoded packets, depend on `core` only.
 
 ## Quick start
 
