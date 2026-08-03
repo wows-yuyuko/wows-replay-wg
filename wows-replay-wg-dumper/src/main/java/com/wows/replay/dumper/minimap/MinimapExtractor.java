@@ -1,4 +1,4 @@
-package com.wows.replay.ingest.minimap;
+package com.wows.replay.dumper.minimap;
 
 import com.wows.replay.ReplayFile;
 import com.wows.replay.decode.PacketDecoder;

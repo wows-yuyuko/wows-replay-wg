@@ -4,7 +4,6 @@ import com.wows.replay.ReplayFile;
 import com.wows.replay.decode.DecodedPayload;
 import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.ingest.report.BattleReportBuilder;
-import com.wows.replay.ingest.report.MatchResult;
 import com.wows.replay.model.GameClock;
 import com.wows.replay.model.Version;
 import com.wows.replay.packet.Parser;
@@ -22,13 +21,12 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 端到端集成测试：回放文件 → Parser → PacketDecoder → BattleWorld → BattleReport。
+ * BattleWorld 摄入集成测试：回放文件 → Parser → PacketDecoder → BattleWorld。
  *
- * <p>只覆盖核心管线的两个产出：{@link BattleWorld} 摄入与 {@link com.wows.replay.ingest.report.BattleReport}
- * 装配。ReplayAnalyzer 的 API 行为（quick/analyze/版本门禁/错误处理）见 {@code ReplayAnalyzerTest}。</p>
+ * <p>ReplayAnalyzer / BattleReport 装配 / minimap 提取测试在 dumper 模块。</p>
  */
 @Slf4j
-class ReplayAnalyzerIT {
+class BattleWorldIT {
 
     private static final String REPLAY_PATH =
             "temp/wg_15.6/20260730_013138_PASB720-Rhode-Island_56_AngelWings.wowsreplay";
@@ -82,8 +80,6 @@ class ReplayAnalyzerIT {
         }
         return null;
     }
-
-    // ── BattleWorld ──────────────────────────────────────────────────
 
     @Test
     @DisplayName("BattleWorld: 实体/玩家/地图/战斗结果摄入正确")
@@ -156,87 +152,5 @@ class ReplayAnalyzerIT {
 
         var fallback = new BattleReportBuilder(new BattleWorld(replay.meta(), version), replay.meta()).build();
         assertEquals(replay.meta().scenario(), fallback.gameMode(), "常量缺失时回退到原始 scenario");
-    }
-
-    // ── BattleReport ─────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("BattleReport: buildBattleReport 快照正确且可序列化")
-    void battleReport() throws Exception {
-        var report = ReplayAnalyzer.builder()
-            .specProvider(specProvider)
-            .config(ReplayAnalyzerConfig.DEFAULT)
-            .build()
-            .buildBattleReport(replay);
-
-        // §7.3: self_player 必须存在且 relation=0
-        assertNotNull(report.selfPlayer(), "self_player 不应为 null");
-        assertEquals(0, report.selfPlayer().relation(), "self_player.relation 应为 0");
-        assertEquals(report.selfPlayer(), report.players().stream()
-            .filter(p -> p.relation() == 0).findFirst().orElse(null),
-            "self_player 应出现在 players 中");
-
-        assertTrue(report.players().size() >= 24, "players 至少 24 名 (实际: " + report.players().size() + ")");
-        assertEquals("spaces/56_AngelWings", report.mapName(), "map_name");
-        assertEquals(MatchResult.LOSS, report.matchResult(), "match_result");
-        assertEquals(1200, report.maxDuration(), "max_duration");
-        assertTrue(report.playedDuration() > 0, "played_duration 应 > 0");
-        assertNotNull(report.battleResults(), "battle_results 不应为 null");
-        assertTrue(report.players().stream().anyMatch(p -> p.vehicleEntity() != null
-                && p.vehicleEntity().damage() > 0),
-            "应至少有一名玩家有 >0 伤害");
-
-        var json = com.wows.replay.JsonMapper.toPrettyJson(report);
-        assertTrue(json.contains("\"arena_id\"") && json.contains("\"self_player\""),
-            "JSON 应包含 arena_id / self_player");
-        log.info("BattleReport ✓: {} players, JSON {} bytes", report.players().size(), json.length());
-    }
-
-    // ── 序列化输出 ──────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("序列化输出: BattleReport / BattleSnapshot 写入 temp/compare")
-    void dumpToCompare() throws Exception {
-        var report = ReplayAnalyzer.builder()
-            .specProvider(specProvider)
-            .config(ReplayAnalyzerConfig.DEFAULT)
-            .build()
-            .buildBattleReport(replay);
-
-        writeCompare("java_report.json", report);
-        writeCompare("java_summary-world.json", world.intoReport());
-    }
-
-    // ── Minimap 数据提取（Single 模式，docs/replay-dumper-minimap.md §4）──
-
-    @Test
-    @DisplayName("MinimapExtractor: 帧/事件流/终局状态提取正确且可序列化")
-    void minimapExtract() throws Exception {
-        var out = new com.wows.replay.ingest.minimap.MinimapExtractor(specProvider, replay, 7).extract();
-
-        assertNotNull(out.arenaId(), "arena_id 不应为 null");
-        assertFalse(out.frames().isEmpty(), "应有位置帧");
-        assertTrue(out.frames().stream().anyMatch(f -> !f.entities().isEmpty()),
-            "应存在含船位实体的帧");
-        assertFalse(out.damageEvents().isEmpty(), "应有伤害事件");
-        assertFalse(out.firingEvents().isEmpty(), "应有齐射事件");
-        assertFalse(out.shotHits().isEmpty(), "应有命中事件");
-        assertFalse(out.deadShips().isEmpty(), "应有沉船");
-        assertNotNull(out.scoringRules(), "应有 scoring_rules");
-        assertNotNull(out.winningTeam(), "应有 winning_team");
-        assertTrue(out.frames().stream().anyMatch(f -> f.teamScores().size() >= 2), "应有队伍比分");
-
-        writeCompare("java_minimap.json", out);
-        log.info("Minimap ✓: {} frames, {} firing, {} damage, {} hits, {} dead",
-            out.frames().size(), out.firingEvents().size(),
-            out.damageEvents().size(), out.shotHits().size(), out.deadShips().size());
-    }
-
-    private static void writeCompare(String fileName, Object value) throws Exception {
-        var out = resolve("temp/compare").resolve(fileName);
-        java.nio.file.Files.createDirectories(out.getParent());
-        java.nio.file.Files.writeString(out,
-            com.wows.replay.JsonMapper.getMapper().writerWithDefaultPrettyPrinter().writeValueAsString(value));
-        log.info("已写入 {}", out);
     }
 }

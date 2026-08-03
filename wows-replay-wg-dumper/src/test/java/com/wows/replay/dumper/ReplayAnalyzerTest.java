@@ -1,4 +1,4 @@
-package com.wows.replay.ingest;
+package com.wows.replay.dumper;
 
 import com.wows.replay.ReplayException;
 import com.wows.replay.ReplayFile;
@@ -19,7 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * ReplayAnalyzer API 行为测试：quick / analyze / 版本门禁 / 错误处理。
  *
- * <p>管线核心（BattleWorld 摄入 / BattleReport 装配）的集成测试见 {@code ReplayAnalyzerIT}。</p>
+ * <p>管线核心（BattleWorld 摄入 / BattleReport 装配）的集成测试见
+ * {@code com.wows.replay.dumper.ReplayAnalyzerIT}。</p>
  */
 @Slf4j
 class ReplayAnalyzerTest {

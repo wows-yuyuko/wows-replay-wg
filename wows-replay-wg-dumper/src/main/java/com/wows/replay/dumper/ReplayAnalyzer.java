@@ -1,10 +1,11 @@
-package com.wows.replay.ingest;
+package com.wows.replay.dumper;
 
 import com.wows.replay.JsonMapper;
 import com.wows.replay.ReplayException;
 import com.wows.replay.ReplayFile;
 import com.wows.replay.ReplayVersionMismatchException;
 import com.wows.replay.decode.PacketDecoder;
+import com.wows.replay.ingest.BattleWorld;
 import com.wows.replay.packet.Packet;
 import com.wows.replay.packet.Parser;
 import com.wows.replay.spi.EntitySpecProvider;

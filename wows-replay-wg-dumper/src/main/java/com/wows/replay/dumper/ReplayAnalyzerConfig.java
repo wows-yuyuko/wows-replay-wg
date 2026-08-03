@@ -1,4 +1,4 @@
-package com.wows.replay.ingest;
+package com.wows.replay.dumper;
 
 /**
  * Configuration for {@link ReplayAnalyzer}.
