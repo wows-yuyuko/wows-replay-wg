@@ -1,10 +1,7 @@
 package com.wows.replay.types;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.OptionalInt;
-import java.util.regex.Pattern;
 
 /**
  * BigWorld RPC 参数类型定义。
@@ -56,10 +53,7 @@ public sealed interface ArgType {
      * 对标 Rust {@code Named { name, inner }}.
      * {@code inner} 默认 {@link Primitive#BLOB}，直到由 spec 层解析。
      */
-    record NamedType(String name, ArgType inner) implements ArgType {
-        /** 未解析引用的便捷构造器。 */
-        public NamedType(String name) { this(name, Primitive.BLOB); }
-    }
+    record NamedType(String name, ArgType inner) implements ArgType {}
 
     /**
      * USER_TYPE（converter-backed 自定义类型）。线路上按内部 {@code inner} 类型
@@ -73,113 +67,6 @@ public sealed interface ArgType {
      * （0=null，1=存在），再按内部类型解析。对标 Rust 中 AllowNone 的通用处理。
      */
     record AllowNone(ArgType inner) implements ArgType {}
-
-    // ── Descriptor parsing ───────────────────────────────────────────────────
-
-    /** 匹配 "ARRAY <of> element" / "ARRAY element". */
-    Pattern ARRAY_PATTERN = Pattern.compile(
-        "ARRAY\\s*(?:<OF>)?\\s*(.+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    /** 匹配描述符中的固定长度标记：{@code <SIZE>N</SIZE>}. */
-    Pattern ARRAY_SIZE_PATTERN = Pattern.compile(
-        "<SIZE>\\s*(\\d+)\\s*</SIZE>", Pattern.CASE_INSENSITIVE);
-
-    /** 匹配 "TUPLE <of> type1,type2,..." / "TUPLE type1,type2,...". */
-    Pattern TUPLE_PATTERN = Pattern.compile(
-        "TUPLE\\s*(?:<OF>)?\\s*(.+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    /**
-     * 基本类型描述符查找表（方法而非字段，避免 ArgType ↔ Primitive 类加载循环）。
-     * 首次调用时初始化，此时 Primitive 枚举已完全就绪。
-     */
-    static Map<String, Primitive> descriptorMap() {
-        return DescriptorMapHolder.MAP;
-    }
-    static final class DescriptorMapHolder {
-        static final Map<String, Primitive> MAP = Map.ofEntries(
-            Map.entry("INT8",    Primitive.INT8),
-            Map.entry("INT16",   Primitive.INT16),
-            Map.entry("INT32",   Primitive.INT32),
-            Map.entry("INT64",   Primitive.INT64),
-            Map.entry("UINT8",   Primitive.UINT8),
-            Map.entry("UINT16",  Primitive.UINT16),
-            Map.entry("UINT32",  Primitive.UINT32),
-            Map.entry("UINT64",  Primitive.UINT64),
-            Map.entry("FLOAT",   Primitive.FLOAT),
-            Map.entry("FLOAT32", Primitive.FLOAT),
-            Map.entry("FLOAT64", Primitive.DOUBLE),
-            Map.entry("DOUBLE",  Primitive.DOUBLE),
-            Map.entry("STRING",  Primitive.STRING),
-            Map.entry("BOOL",    Primitive.BOOL),
-            Map.entry("BLOB",    Primitive.BLOB),
-            Map.entry("PYTHON",  Primitive.PYTHON),
-            Map.entry("VECTOR2", Primitive.VECTOR2),
-            Map.entry("VECTOR3", Primitive.VECTOR3),
-            Map.entry("VECTOR4", Primitive.VECTOR4)
-        );
-    }
-
-    /**
-     * 从 .def 文件解析类型描述符字符串。
-     * Examples: "UINT8", "FLOAT32", "STRING", "ARRAY 解析",
-     * "TUPLE <of> FLOAT,FLOAT,FLOAT", "FIXED_DICT AvatarCommon".
-     */
-    static ArgType fromDescriptor(String descriptor) {
-        if (descriptor == null) return Primitive.BLOB;
-        var trimmed = descriptor.trim().toUpperCase();
-
-        // FIXED_DICT <name> → NamedType reference (resolved later via EntitySpec)
-        if (trimmed.startsWith("FIXED_DICT")) {
-            var name = trimmed.substring("FIXED_DICT".length()).trim();
-            return new NamedType(name);
-        }
-
-        // ARRAY <of> ELEMENT_TYPE
-        var arrMatch = ARRAY_PATTERN.matcher(trimmed);
-        if (arrMatch.matches()) {
-            var rest = arrMatch.group(1).trim();
-            var sizeMatch = ARRAY_SIZE_PATTERN.matcher(rest);
-            OptionalInt size = OptionalInt.empty();
-            if (sizeMatch.find()) {
-                try { size = OptionalInt.of(Integer.parseInt(sizeMatch.group(1))); } catch (NumberFormatException ignored) {}
-                rest = sizeMatch.replaceFirst("").trim();
-            }
-            return new Array(size, fromDescriptor(rest));
-        }
-
-        // TUPLE <of> TYPE1,TYPE2,...
-        var tupMatch = TUPLE_PATTERN.matcher(trimmed);
-        if (tupMatch.matches()) {
-            var elements = splitTupleTypes(tupMatch.group(1).trim());
-            return new Tuple(elements.stream().map(ArgType::fromDescriptor).toList());
-        }
-
-        // Primitives via lookup table
-        var prim = descriptorMap().get(trimmed);
-        return prim != null ? prim : Primitive.BLOB; // unrecognized → raw bytes
-    }
-
-    /**
-     * 分割逗号分隔的类型列表，保留尖括号嵌套。
-     * e.g. "ARRAY<UINT32>,FLOAT" → ["ARRAY<UINT32>", "FLOAT"]
-     */
-    private static ArrayList<String> splitTupleTypes(String s) {
-        var result = new ArrayList<String>();
-        int depth = 0;
-        var current = new StringBuilder();
-        for (char c : s.toCharArray()) {
-            if (c == ',' && depth == 0) {
-                result.add(current.toString().trim());
-                current.setLength(0);
-            } else {
-                if (c == '<') depth++;
-                else if (c == '>') depth--;
-                current.append(c);
-            }
-        }
-        if (!current.isEmpty()) result.add(current.toString().trim());
-        return result;
-    }
 
     // ── Wire size estimation ─────────────────────────────────────────────────
 
@@ -207,13 +94,15 @@ public sealed interface ArgType {
                     yield SORT_INFINITY; // 变长数组无法估算固定尺寸
                 }
                 int s = elem.sortSize();
-                yield s == SORT_INFINITY ? SORT_INFINITY : s * fixed.getAsInt();
+                if (s == SORT_INFINITY) yield SORT_INFINITY;
+                long m = (long) s * fixed.getAsInt();
+                yield m >= SORT_INFINITY ? SORT_INFINITY : (int) m;
             }
             case Tuple(var elems) -> {
                 int total = 0;
                 for (var e : elems) {
                     int s = e.sortSize();
-                    if (s == SORT_INFINITY) {
+                    if (s == SORT_INFINITY || total + s >= SORT_INFINITY) {
                         total = SORT_INFINITY;
                         break;
                     }
@@ -225,12 +114,12 @@ public sealed interface ArgType {
                 if (allowNone) {
                     yield SORT_INFINITY; // 可空类型无法估算固定尺寸
                 }
-                // 对标 Rust fold：任一字段为 INFINITY 则整体饱和为 INFINITY，
-                // 否则求和。不能简单 sum（会超过 INFINITY 导致排序错位）。
+                // 对标 Rust fold：任一字段为 INFINITY 或求和饱和到 0xFFFF 则整体为
+                // INFINITY，避免超过 INFINITY 导致排序错位。
                 int total = 0;
                 for (var p : props) {
                     int s = p.propType().sortSize();
-                    if (s == SORT_INFINITY) {
+                    if (s == SORT_INFINITY || total + s >= SORT_INFINITY) {
                         total = SORT_INFINITY;
                         break;
                     }

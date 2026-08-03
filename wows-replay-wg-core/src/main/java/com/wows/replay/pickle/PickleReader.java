@@ -80,6 +80,23 @@ public final class PickleReader {
         return d.parse();
     }
 
+    // ── 首字节支持集（与 parse() 的 opcode 表保持单一来源）─────────────
+
+    private static final boolean[] SUPPORTED_FIRST_BYTE = new boolean[256];
+    static {
+        for (int op : new int[]{0x80, 0x95, '(', ')', ']', '}', '0', 'a', 'e', 't',
+            0x85, 0x86, 0x87, 'K', 'M', 'J', 'I', 'G', 'F', 'U', 'T', 'X', 'S', 'N',
+            'q', 'h', 'j', 'r', 'u', 'c', 'b', 0x81, 0x82, 0x88, 0x89, 0x8a, 0x8b,
+            'B', 0x8c, 0x8d}) {
+            SUPPORTED_FIRST_BYTE[op & 0xFF] = true;
+        }
+    }
+
+    /** 首字节是否为 parse() 支持的 opcode（供调用方预处理判断）。 */
+    public static boolean isSupportedFirstByte(byte b) {
+        return SUPPORTED_FIRST_BYTE[b & 0xFF];
+    }
+
     private Object parse() {
         while (pos < data.length) {
             int op = data[pos++] & 0xFF;

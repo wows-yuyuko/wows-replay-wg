@@ -41,7 +41,10 @@ public final class GameDataCache {
         var key = version.subKey("constants");
         return (JsonConstantsProvider) store.computeIfAbsent(key, _ -> {
             var path = gameDataDir.resolve("constants.json");
-            if (!Files.exists(path)) return null;
+            if (!Files.exists(path)) {
+                log.warn("{} 缺少 constants.json，返回空常量实现", gameDataDir);
+                return new JsonConstantsProvider("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
             return JsonConstantsProvider.fromFile(path);
         });
     }

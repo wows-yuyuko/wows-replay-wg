@@ -516,8 +516,11 @@ public class Parser {
                 var spec = getSpec(state.entityType, "NestedPropertyUpdate");
                 if (!spec.clientProperties().isEmpty()) {
                     int numProps = spec.clientProperties().size();
-                    int bitWidth = Integer.SIZE - Integer.numberOfLeadingZeros(
-                        Integer.highestOneBit(numProps - 1) << 1);
+                    // ceil(log2(numProps)) 位即可编码 0..numProps-1；
+                    // 之前用 highestOneBit<<1 会多算一位导致 propIdx 越界（恒为 "nested"）。
+                    int bitWidth = numProps > 1
+                        ? Integer.SIZE - Integer.numberOfLeadingZeros(numProps - 1)
+                        : 0;
                     var bits = new BitReader(payload);
                     // cont flag (must be 1)
                     int cont = bits.read(1);
@@ -620,7 +623,10 @@ public class Parser {
             len = buf.getShort() & 0xFFFF;
             buf.get(); // skip 1 unknown byte
         }
-        if (len < 0 || len > buf.remaining()) len = 0;
+        if (len < 0 || len > buf.remaining()) {
+            log.warn("长度前缀越界: len={} 但剩余 {} 字节，按空值处理", len, buf.remaining());
+            len = 0;
+        }
         byte[] bytes = new byte[len];
         buf.get(bytes);
         return bytes;

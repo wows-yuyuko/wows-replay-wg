@@ -111,7 +111,9 @@ public final class SpecLoader {
         // getDocumentElement() 返回的就是 <root>，直接使用
         var root = doc.getDocumentElement();
         var entities = childByName(root, "ClientServerEntities");
-        if (entities == null) return List.of();
+        if (entities == null) {
+            throw new IOException("scripts/entities.xml 缺少 <ClientServerEntities>——游戏数据版本不匹配或损坏");
+        }
 
         var names = new ArrayList<String>();
         for (var child : children(entities)) {
@@ -141,16 +143,36 @@ public final class SpecLoader {
         return def;
     }
 
+    /** 递归收集接口定义（含其自身继承的接口），visited 防环。 */
+    private DefFile collectInterface(String interfaceName, Map<String, ArgType> aliases,
+                                     Set<String> visited) throws IOException {
+        if (!visited.add(interfaceName)) return new DefFile();
+        var def = parseDefFile("scripts/entity_defs/interfaces/" + interfaceName + ".def", aliases);
+        var merged = new DefFile();
+        for (var parentName : def.implements_) {
+            var parent = collectInterface(parentName, aliases, visited);
+            merged.properties.addAll(parent.properties);
+            merged.baseMethods.addAll(parent.baseMethods);
+            merged.cellMethods.addAll(parent.cellMethods);
+            merged.clientMethods.addAll(parent.clientMethods);
+        }
+        merged.properties.addAll(def.properties);
+        merged.baseMethods.addAll(def.baseMethods);
+        merged.cellMethods.addAll(def.cellMethods);
+        merged.clientMethods.addAll(def.clientMethods);
+        return merged;
+    }
+
     // ── Entity resolution ────────────────────────────────────────────────────
 
     private EntitySpec resolveEntity(String name, DefFile def, Map<String, ArgType> aliases)
         throws IOException {
 
-        // Resolve interface inheritance (one level of indirection)
+        // 递归解析接口继承（interface 的 interface 也并入），visited 防环。
         var inherited = new DefFile();
+        var visited = new HashSet<String>();
         for (var parentName : def.implements_) {
-            var parentDef = parseDefFile(
-                "scripts/entity_defs/interfaces/" + parentName + ".def", aliases);
+            var parentDef = collectInterface(parentName, aliases, visited);
             inherited.properties.addAll(parentDef.properties);
             inherited.baseMethods.addAll(parentDef.baseMethods);
             inherited.cellMethods.addAll(parentDef.cellMethods);
@@ -277,9 +299,12 @@ public final class SpecLoader {
                 // USER_TYPE 带内部 <Type> 时按裸内部类型传输（无长度前缀），
                 // 排序时视为变长；无内部 <Type> 时按长度前缀 BLOB 处理。
                 var inner = childByName(node, "Type");
-                yield inner != null
-                    ? new ArgType.UserType(parseType(inner, aliases))
-                    : ArgType.Primitive.BLOB;
+                if (inner == null) {
+                    log.warn("USER_TYPE 缺少内部 <Type>，回退为 BLOB: node={} text='{}'",
+                        node.getNodeName(), text);
+                    yield ArgType.Primitive.BLOB;
+                }
+                yield new ArgType.UserType(parseType(inner, aliases));
             }
             case "MAILBOX" -> ArgType.Primitive.BLOB;
             default -> {
@@ -325,6 +350,7 @@ public final class SpecLoader {
                     var resolved = aliases.get(text);
                     yield new ArgType.NamedType(text, resolved);
                 } else {
+                    log.warn("无法识别的 def 类型 '{}'，回退为 BLOB（可能错位后续字段）", text);
                     yield ArgType.Primitive.BLOB;
                 }
             }

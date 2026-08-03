@@ -497,7 +497,10 @@ public class PacketDecoder {
         int finishType = 0;
         if (args.size() >= 2) {
             long wt = longFromArg(args.get(0));
-            if (wt >= 0) winningTeam = (int) wt;
+            // 获胜队伍是服务端下发字段：非负为队伍索引，-1 表示平局。
+            // 不能过滤掉负值——否则平局时 winningTeam=null，finish()/BattleReportBuilder
+            // 的 DRAW 分支永远走不到。
+            winningTeam = (int) wt;
             finishType = intFromArg(args.get(1));
         }
         return new DecodedPayload.BattleEndPayload(winningTeam, finishType);

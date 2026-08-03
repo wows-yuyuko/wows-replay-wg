@@ -193,7 +193,15 @@ public final class BattleReportBuilder {
                                              JsonNode parsedBattleResults) {
         int vehicleEid = resolveVehicleEid(playerEntityId);
         EntityState es = world.entities().get(vehicleEid);
-        if (es == null) return null;
+        if (es == null) {
+            // §7.3：真实战斗（已摄入实体）中 self 玩家的 VehicleEntity 必须存在，
+            // 找不到说明车辆实体未摄入成功；空世界（合成/未处理）则容错返回 null。
+            if (isSelf && !world.entities().isEmpty()) {
+                throw new IllegalStateException(
+                    "self player 的车辆实体未找到: playerEntityId=" + playerEntityId + ", vehicleEid=" + vehicleEid);
+            }
+            return null;
+        }
 
         EntityId id = new EntityId(vehicleEid);
         double damage = isSelf

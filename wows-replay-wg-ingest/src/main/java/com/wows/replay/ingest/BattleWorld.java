@@ -723,6 +723,7 @@ public class BattleWorld {
                 var d = cpd.entries();
                 int idx = d.get("index") instanceof ArgValue.IntVal iv ? (int) iv.value() : capturePoints.size();
                 var cpState = new CapturePointState();
+                cpState.entityId = eid;
                 cpState.index = idx;
                 cpState.teamId = teamId;
                 cpState.position = new float[]{px, pz};
@@ -963,18 +964,10 @@ public class BattleWorld {
             return;
         }
 
-        // Only try PickleReader if the data looks like pickle
-        // (valid pickle starts with 0x80, '(', ']', 'K', 'J', 'M', 'U', 'T', 'S', 'N', 'G', 'F', 'I', '{', or '}')
+        // Only try PickleReader if the data looks like pickle（单一来源见
+        // PickleReader.isSupportedFirstByte，覆盖 parse() 支持的全部 opcode）
         if (raw.length == 0) return;
-        int first = raw[0] & 0xFF;
-        if (first != 0x80 && first != '(' && first != ']' && first != 'K'
-            && first != 'J' && first != 'M' && first != 'U' && first != 'T'
-            && first != 'S' && first != 'N' && first != 'G' && first != 'F'
-            && first != 'I' && first != '{' && first != '}' && first != '.'
-            && first != 'e' && first != 'a' && first != 't' && first != 'r'
-            && first != 'u' && first != 'q' && first != 'h' && first != '0') {
-            return;
-        }
+        if (!PickleReader.isSupportedFirstByte(raw[0])) return;
 
         Object decoded;
         try {
@@ -1005,6 +998,9 @@ public class BattleWorld {
 
         if (!(levelsObj instanceof List<?> levels) || !(actionObj instanceof Map<?, ?> action)) return;
 
+        // fail-visible：版本结构变化时打出未识别路径，而不是静默丢数据
+        boolean handled = false;
+
         // state → missions → teamsScore → [N] → SetKey{score}
         if (levels.size() >= 3
             && "missions".equals(strVal(levels.get(0)))
@@ -1012,6 +1008,7 @@ public class BattleWorld {
             && levels.get(2) instanceof Long teamIdx
             && "SetKey".equals(strVal(action.get("_action"))))
         {
+            handled = true;
             String key = strVal(action.get("key"));
             if ("score".equals(key)) {
                 int idx = teamIdx.intValue();
@@ -1028,6 +1025,7 @@ public class BattleWorld {
             && levels.get(1) instanceof Long cpIdx
             && "SetKey".equals(strVal(action.get("_action"))))
         {
+            handled = true;
             String key = strVal(action.get("key"));
             int idx = cpIdx.intValue();
             ensureCpIndex(idx);
@@ -1039,7 +1037,7 @@ public class BattleWorld {
                 case "hasInvaders"  -> cp.hasInvaders = longVal(val) != 0;
                 case "bothInside"   -> cp.bothInside = longVal(val) != 0;
                 case "isEnabled"    -> cp.isEnabled = longVal(val) != 0;
-                case "progress"     -> cp.progress = val instanceof Double d ? d.floatValue() : 0f;
+                case "progress"     -> cp.progress = progressOf(val);
             }
         }
 
@@ -1050,6 +1048,7 @@ public class BattleWorld {
             && levels.get(2) instanceof Long wzIdx
             && "SetKey".equals(strVal(action.get("_action"))))
         {
+            handled = true;
             String key = strVal(action.get("key"));
             Object val = action.get("value");
             int idx = wzIdx.intValue();
@@ -1085,6 +1084,7 @@ public class BattleWorld {
             && levels.get(2) instanceof Long
             && "SetRange".equals(strVal(action.get("_action"))))
         {
+            handled = true;
             Object valuesObj = action.get("values");
             if (valuesObj instanceof List<?> values) {
                 for (int i = 0; i < values.size(); i++) {
@@ -1098,10 +1098,17 @@ public class BattleWorld {
                 }
             }
         }
+
+        // fail-visible：未识别的 state 更新路径——版本结构变化时可见，而非静默丢数据
+        if (!handled) {
+            log.debug("state 更新未识别: levels={} action={}", levels, action);
+        }
     }
 
     private void ingestSmokePointsUpdate(int entityId, Object decoded) {
-        // Handle smoke screen points updates
+        // SmokeScreen 'points' 形状精化更新暂未实现（EntityCreate 已建基础烟幕）；
+        // fail-visible：记录到达，避免静默丢失。
+        log.debug("SmokeScreen points update: entity={} decoded={}", entityId, decoded);
     }
 
     private void ingestComponentsStateUpdate(int entityId, Object decoded) {
@@ -1118,18 +1125,30 @@ public class BattleWorld {
         {
             String key = strVal(action.get("key"));
             Object val = action.get("value");
-            // Find the InteractiveZone by entity_id and update its CP state
-            for (int i = 0; i < capturePoints.size(); i++) {
-                var cp = capturePoints.get(i);
-                switch (key) {
-                    case "hasInvaders"  -> cp.hasInvaders = longVal(val) != 0;
-                    case "invaderTeam"  -> cp.invaderTeam = longVal(val);
-                    case "progress"     -> cp.progress = val instanceof Double d ? d.floatValue() : 0f;
-                    case "bothInside"   -> cp.bothInside = longVal(val) != 0;
-                    case "isEnabled"    -> cp.isEnabled = longVal(val) != 0;
-                }
+            // 只更新该 InteractiveZone 实体对应的占领点，避免多占领点地图互相串数据
+            CapturePointState target = null;
+            for (var cp : capturePoints) {
+                if (cp.entityId == entityId) { target = cp; break; }
+            }
+            if (target == null) {
+                log.debug("componentsState 更新找不到对应占领点: entity={} key={}", entityId, key);
+                return;
+            }
+            switch (key) {
+                case "hasInvaders"  -> target.hasInvaders = longVal(val) != 0;
+                case "invaderTeam"  -> target.invaderTeam = longVal(val);
+                case "progress"     -> target.progress = progressOf(val);
+                case "bothInside"   -> target.bothInside = longVal(val) != 0;
+                case "isEnabled"    -> target.isEnabled = longVal(val) != 0;
             }
         }
+    }
+
+    /** 占领点 progress 是 (value, pointsPerSecond) 二元组（java-port.md §8.6），取第一项。 */
+    private static float progressOf(Object val) {
+        if (val instanceof Number n) return n.floatValue();
+        if (val instanceof List<?> l && !l.isEmpty() && l.get(0) instanceof Number n) return n.floatValue();
+        return 0f;
     }
 
     /** Safe string extraction from pickle values. */
@@ -1199,7 +1218,10 @@ public class BattleWorld {
             var pi = e.getValue();
             var es = entities.get(pi.entityId);
             boolean dead = es != null && !es.isAlive;
-            double damage = damageByAggressor.getOrDefault(pi.entityId, List.of())
+            // 伤害按 aggressor 实体 id（Vehicle）记账，玩家查询需反查其车辆实体，
+            // 否则独立车辆实体与 Avatar 分离时伤害会漏算（对齐 BattleReportBuilder）。
+            int vehicleEid = resolveVehicleEid(pi.entityId);
+            double damage = damageByAggressor.getOrDefault(vehicleEid, List.of())
                 .stream().mapToDouble(d -> d.amount).sum();
             playerSnapshots.add(new BattleSnapshot.Player(
                 e.getKey(), pi.username, pi.entityId, pi.teamId, pi.relation,
@@ -1263,6 +1285,14 @@ public class BattleWorld {
             buildings.size(),
             deadShipSnapshots
         );
+    }
+
+    /** 反查 vehicleToOwner 得到玩家车辆实体 id；玩家船复用 Avatar id 时就是它自己。 */
+    public int resolveVehicleEid(int playerEntityId) {
+        for (var e : vehicleToOwner.entrySet()) {
+            if (e.getValue() == playerEntityId) return e.getKey();
+        }
+        return playerEntityId;
     }
 
     // ── Dumper 公开访问器（对标 Rust BattleWorld read API）─────────────
@@ -1522,6 +1552,8 @@ public class BattleWorld {
     public record CapturedBuff(int entityId, long paramsId, int capturedBy, float clock) {}
 
     public static class CapturePointState {
+        /** 对应 InteractiveZone 实体 id（componentsState 更新定位用），-1 表示未知。 */
+        public int entityId = -1;
         public int index;
         public long teamId = -1;
         public long invaderTeam = -1;
