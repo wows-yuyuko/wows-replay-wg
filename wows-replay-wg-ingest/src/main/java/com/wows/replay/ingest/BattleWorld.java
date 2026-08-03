@@ -17,14 +17,14 @@ import java.util.*;
  *
  * <p>Mirrors Rust {@code BattleWorld} + ingest dispatch. Processes
  * {@link DecodedPayload} events, maintains entity state and resources,
- * and produces a {@link BattleReport} on finish.</p>
+ * and produces a {@link com.wows.replay.ingest.report.BattleReport} on finish.</p>
  *
  * <p>Architecture:
  * <pre>
  *   Parser → Packet → PacketDecoder → DecodedPayload → BattleWorld.process()
  *                                                                 ├── entities (Map)
  *                                                                 └── resources (scores, kills, etc.)
- *   BattleWorld.finish() → BattleReport
+ *   BattleWorld.finish() → com.wows.replay.ingest.report.BattleReport
  * </pre>
  */
 @Slf4j
@@ -80,6 +80,14 @@ public class BattleWorld {
     Float  battleStartClock;
     Float  battleResultClock;
     Float  battleEndClock;
+    /** 收到 BattleEnd 置 true（匹配 report.rs MatchState.match_finished）。 */
+    boolean matchFinished;
+    /** finishType 原始 int（battle.xml FINISH_TYPE id）。 */
+    int finishTypeId;
+    /** 0x22 BattleResults 原始 JSON 字符串。 */
+    String battleResultsJson;
+    /** receiveDamageStat 累积（服务端权威的自我玩家按武器伤害）。 */
+    final List<com.wows.replay.ingest.report.DamageStatEntry> selfDamageStats = new ArrayList<>();
     /** BattleLogic timeLeft 属性（秒），minimap frame 用 */
     Float  timeLeft;
     /** BattleLogic battleStage 属性 id（BATTLE_STAGES：0=Waiting,1=Battle,2=Results,3=Finishing,4=Ended） */
@@ -135,255 +143,327 @@ public class BattleWorld {
     /**
      * Process one decoded packet. This is the main entry point called
      * for each packet in the replay stream.
+     *
+     * <p>Equivalent to Rust {@code ingest::dispatch}: the switch is the single
+     * router, each handled variant delegates to a dedicated handler (below) so
+     * the compiler keeps the exhaustive sealed-switch safety net.</p>
      */
     public void process(DecodedPayload payload, GameClock clock) {
         float elapsed = clock.seconds();
 
         switch (payload) {
             // ── Arena / Player state ───────────────────────────────────
-            case DecodedPayload.OnArenaStateReceivedPayload as -> {
-                // 保留首个 arena id（onWorldStateReceived 等后续包 arenaId=0，不覆盖）
-                if (arenaId == null && as.arenaId() != 0) {
-                    arenaId = String.valueOf(as.arenaId());
-                }
-                ingestArenaPlayers(as.playerStates(), as.botStates(), clock);
-            }
-            case DecodedPayload.NewPlayerSpawnedInBattlePayload ns -> {
-                ingestNewPlayers(ns.playerStates(), ns.botStates());
-            }
+            case DecodedPayload.OnArenaStateReceivedPayload as -> handleArenaStateReceived(as, clock);
+            case DecodedPayload.NewPlayerSpawnedInBattlePayload ns -> handleNewPlayerSpawned(ns);
 
             // ── Entity lifecycle ───────────────────────────────────────
-            case DecodedPayload.EntityCreatePayload ec -> {
-                entityTypes.add(ec.packet().entityType());
-                ingestEntityCreate(ec.packet(), elapsed);
-            }
-            case DecodedPayload.EntityEnterPayload ee -> {
-                // entity_id → space
-            }
-            case DecodedPayload.EntityLeavePayload el -> {
-                int eid = el.packet().entityId().value();
-                var es = entities.get(eid);
-                if (es != null) es.isAlive = false;
-                // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
-                // buff zones are removed from the active set on EntityLeave)
-                if (smokeScreens.remove(eid) != null || buffZones.remove(eid) != null
-                        || "SmokeScreen".equals(es != null ? es.type : null)) {
-                    entities.remove(eid);
-                }
-            }
-            case DecodedPayload.BasePlayerCreatePayload bp -> {
-                entityTypes.add(bp.packet().entityType());
-                ingestBasePlayerCreate(bp.packet());
-            }
-            case DecodedPayload.CellPlayerCreatePayload cp -> {
-                entityTypes.add(cp.packet().entityType());
-                ingestCellPlayerCreate(cp.packet());
-            }
+            case DecodedPayload.EntityCreatePayload ec -> handleEntityCreate(ec, elapsed);
+            case DecodedPayload.EntityLeavePayload el -> handleEntityLeave(el);
+            case DecodedPayload.BasePlayerCreatePayload bp -> handleBasePlayerCreate(bp);
+            case DecodedPayload.CellPlayerCreatePayload cp -> handleCellPlayerCreate(cp);
 
-            // ── Entity properties ──────────────────────────────────────
-            case DecodedPayload.PropertyChangePayload pc -> {
-                ingestPropertyChange(pc.change(), elapsed);
-            }
-
-            // ── Position ───────────────────────────────────────────────
-            case DecodedPayload.PositionPayload pos -> {
-                ingestPosition(pos.packet());
-            }
+            // ── Entity properties / position ───────────────────────────
+            case DecodedPayload.PropertyChangePayload pc -> handlePropertyChange(pc, elapsed);
+            case DecodedPayload.PropertyUpdatePayload pu -> handlePropertyUpdate(pu, elapsed);
+            case DecodedPayload.PositionPayload pos -> handlePosition(pos);
 
             // ── Map ────────────────────────────────────────────────────
-            case DecodedPayload.MapPayload mp -> {
-                mapName = mp.packet().mapName();
-                mapArenaId = mp.packet().arenaId();
-            }
+            case DecodedPayload.MapPayload mp -> handleMap(mp);
 
             // ── Combat ─────────────────────────────────────────────────
-            case DecodedPayload.DamageReceivedPayload dr -> {
-                for (var a : dr.aggressors()) {
-                    // 直接用原始 aggressor 实体 id（对标 Rust damage_ledger）
-                    int agg = a.aggressor().value();
-                    var ev = new DamageEvent(elapsed, agg, dr.victim().value(), a.damage());
-                    damageEvents.add(ev);
-                    damageByAggressor.computeIfAbsent(agg, k -> new ArrayList<>()).add(ev);
-                }
-            }
-            case DecodedPayload.ShipDestroyedPayload sd -> {
-                // 直接用原始实体 id（对标 Rust KillRecord，不再经 vehicleToOwner 翻译）
-                int victimEid = sd.victim().value();
-                int killerEid = sd.killer().value();
-                var kl = entityToPlayer.get(killerEid);
-                var vl = entityToPlayer.get(victimEid);
-                killLog.add(new KillRecord(elapsed, killerEid, victimEid,
-                    kl != null ? kl.dbId : 0, kl != null ? kl.username : "",
-                    vl != null ? vl.dbId : 0, vl != null ? vl.username : "",
-                    sd.cause()));
-                var es = entities.get(sd.victim().value());
-                if (es != null) es.isAlive = false;
-                deadShips.add(new DeadShipRecord(elapsed, sd.victim().value(),
-                    es != null ? es.x : 0, es != null ? es.z : 0));
-            }
-            // ── Chat ───────────────────────────────────────────────────
-            case DecodedPayload.ChatMessagePayload chat -> {
-                // 发送者是 args[0] 的账号 ID（与 meta/arena 的 id 字段一致），
-                // 不能用接收方 entity_id（即 replay 主视角 Avatar）来归属消息。
-                long senderDbId = Integer.toUnsignedLong(chat.senderId().value());
-                // System messages carry sender_id 0 and are dropped (mirrors Rust).
-                if (senderDbId == 0) break;
-                var pl = players.get(senderDbId);
-                chatLog.add(new ChatEvent(elapsed, chat.entityId().value(),
-                    senderDbId,
-                    pl != null ? pl.username : "account " + senderDbId,
-                    chat.audience(), chat.message()));
-            }
+            case DecodedPayload.DamageReceivedPayload dr -> handleDamageReceived(dr, elapsed);
+            case DecodedPayload.ShipDestroyedPayload sd -> handleShipDestroyed(sd, elapsed);
 
-            // ── Consumable ─────────────────────────────────────────────
-            case DecodedPayload.ConsumablePayload cons -> {
-                var pl = entityToPlayer.get(cons.entity().value());
-                consumableLog.add(new ConsumableEvent(elapsed, cons.entity().value(),
-                    pl != null ? pl.dbId : 0, pl != null ? pl.username : "",
-                    cons.consumableId(), cons.duration()));
-            }
+            // ── Chat / Consumable ──────────────────────────────────────
+            case DecodedPayload.ChatMessagePayload chat -> handleChat(chat, elapsed);
+            case DecodedPayload.ConsumablePayload cons -> handleConsumable(cons, elapsed);
 
-            // ── Battle end ─────────────────────────────────────────────
-            case DecodedPayload.BattleEndPayload be -> {
-                if (be.winningTeam() != null) winningTeam = be.winningTeam();
-                if (be.finishType() != 0) finishType = String.valueOf(be.finishType());
-                battleEndClock = elapsed;
-            }
-
-            // ── Battle results ─────────────────────────────────────────
-            case DecodedPayload.BattleResultsPayload br -> {
-                try {
-                    var node = com.wows.replay.JsonMapper.readTree(br.json());
-                    if (node.has("matchResult")) matchResult = node.get("matchResult").asText();
-                    if (node.has("finishReason") && finishType == null)
-                        finishType = node.get("finishReason").asText();
-                } catch (Exception ignored) {}
-            }
-
-            // ── Match state / property updates ─────────────────────────
-            case DecodedPayload.PropertyUpdatePayload pu -> {
-                ingestPropertyUpdate(pu.packet(), elapsed);
-            }
+            // ── Battle end / results ───────────────────────────────────
+            case DecodedPayload.BattleEndPayload be -> handleBattleEnd(be, elapsed);
+            case DecodedPayload.BattleResultsPayload br -> handleBattleResults(br);
 
             // ── Position (non-volatile, player orientation) ────────────
-            case DecodedPayload.PlayerOrientationPayload po -> {
-                int eid = po.packet().entityId().value();
-                var es = getOrCreateEntity(eid, null);
-                es.x = po.packet().position().x();
-                es.y = po.packet().position().y();
-                es.z = po.packet().position().z();
-            }
-            case DecodedPayload.NonVolatilePositionPayload nvp -> {
-                int eid = nvp.packet().entityId().value();
-                var es = getOrCreateEntity(eid, null);
-                es.x = nvp.packet().position().x();
-                es.y = nvp.packet().position().y();
-                es.z = nvp.packet().position().z();
-            }
+            case DecodedPayload.PlayerOrientationPayload po -> handlePlayerOrientation(po);
+            case DecodedPayload.NonVolatilePositionPayload nvp -> handleNonVolatilePosition(nvp);
 
-            // ── Artillery / Torpedo events (record for later analysis) ──
-            case DecodedPayload.ArtilleryShotsPayload asp -> {
-                for (var salvo : asp.salvos()) {
-                    firedSalvos.add(new ArtillerySalvo(elapsed, salvo, asp.avatarId().value()));
-                }
-                var ownerEid = asp.avatarId().value();
-                var es = entities.get(ownerEid);
-                if (es != null) es.shotsFired += asp.salvos().stream().mapToLong(s -> s.shots().size()).sum();
-            }
-            case DecodedPayload.TorpedoesReceivedPayload trp -> {
-                for (var td : trp.torpedoes()) {
-                    var rec = new TorpedoRecord(elapsed, td);
-                    torpedoes.add(rec);
-                    activeTorpedoes.put(torpedoKey(td.ownerId().value(), td.shotId()), rec);
-                }
-            }
-            case DecodedPayload.ShotKillsPayload skp -> {
-                for (var hit : skp.hits()) {
-                    shotHits.add(new ShotHitRecord(elapsed, skp.avatarId(), hit));
-                    // 命中即移除对应在飞鱼雷（对标 Rust remove_matching_torpedo）
-                    activeTorpedoes.remove(torpedoKey(hit.ownerId().value(), hit.shotId()));
-                }
-            }
-            case DecodedPayload.TorpedoDirectionPayload tdp -> {
-                // Update matching torpedo's maneuver flag
-                for (var t : torpedoes) {
-                    if (t.data.shotId() == tdp.shotId() && t.data.ownerId().value() == tdp.ownerId().value()) {
-                        torpedoes.set(torpedoes.indexOf(t), t.withManeuver(tdp.targetYaw(), tdp.speedCoef()));
-                        break;
-                    }
-                }
-            }
+            // ── Artillery / Torpedo events ─────────────────────────────
+            case DecodedPayload.ArtilleryShotsPayload asp -> handleArtilleryShots(asp, elapsed);
+            case DecodedPayload.TorpedoesReceivedPayload trp -> handleTorpedoesReceived(trp, elapsed);
+            case DecodedPayload.ShotKillsPayload skp -> handleShotKills(skp, elapsed);
+            case DecodedPayload.TorpedoDirectionPayload tdp -> handleTorpedoDirection(tdp);
 
             // ── Gun sync / Ammo ────────────────────────────────────────
-            case DecodedPayload.GunSyncPayload gsp -> {
-                var es = entities.get(gsp.entityId().value());
-                if (es != null) es.turrets.put(gsp.gunId(), new float[]{gsp.yaw(), gsp.pitch()});
-            }
-            case DecodedPayload.SetAmmoForWeaponPayload saw -> {
-                var es = entities.get(saw.entityId().value());
-                if (es != null) es.ammoByWeapon.put(saw.weaponType(), saw.ammoParamId().value());
-            }
+            case DecodedPayload.GunSyncPayload gsp -> handleGunSync(gsp);
+            case DecodedPayload.SetAmmoForWeaponPayload saw -> handleSetAmmo(saw);
 
-            // ── Aviation ────────────────────────────────────────────────
-            case DecodedPayload.PlaneAddedPayload pap -> {
-                var ps = new PlaneState(pap.planeId(), pap.entityId().value(), pap.teamId(),
-                    pap.paramsId(), pap.x(), pap.z(), elapsed, elapsed);
-                activePlanes.put(pap.planeId(), ps);
-                planeEvents.add(new PlaneRecord(elapsed, "added", pap.planeId(), ps));
-            }
-            case DecodedPayload.PlaneRemovedPayload prp -> {
-                var ps = activePlanes.remove(prp.planeId());
-                planeEvents.add(new PlaneRecord(elapsed, "removed", prp.planeId(), ps));
-            }
-            case DecodedPayload.PlanePositionPayload ppp -> {
-                var ps = activePlanes.get(ppp.planeId());
-                if (ps != null) {
-                    activePlanes.put(ppp.planeId(), ps.withPosition(ppp.x(), ppp.z(), elapsed));
-                }
-            }
-            case DecodedPayload.WardAddedPayload wap -> {
-                activeWards.put(wap.planeId(), new WardState(wap.planeId(), wap.entityId(), wap.ownerId(),
-                    wap.position(), wap.radius(), elapsed));
-            }
-            case DecodedPayload.WardRemovedPayload wrp -> {
-                activeWards.remove(wrp.planeId());
-            }
+            // ── Aviation ───────────────────────────────────────────────
+            case DecodedPayload.PlaneAddedPayload pap -> handlePlaneAdded(pap, elapsed);
+            case DecodedPayload.PlaneRemovedPayload prp -> handlePlaneRemoved(prp, elapsed);
+            case DecodedPayload.PlanePositionPayload ppp -> handlePlanePosition(ppp, elapsed);
+            case DecodedPayload.WardAddedPayload wap -> handleWardAdded(wap, elapsed);
+            case DecodedPayload.WardRemovedPayload wrp -> handleWardRemoved(wrp);
 
-            // ── Self damage stats ───────────────────────────────────────
-            case DecodedPayload.DamageStatPayload dsp -> {
-                // Damage stats are per-avatar; accumulate on the avatar entity
-                // (stored on the first entity we find with matching type "Avatar")
-            }
+            // ── Self damage stats ──────────────────────────────────────
+            case DecodedPayload.DamageStatPayload dsp -> handleDamageStat(dsp);
 
-            // ── Minimap ─────────────────────────────────────────────────
-            case DecodedPayload.MinimapUpdatePayload mup -> {
-                for (var entry : mup.updates()) {
-                    var es = getOrCreateEntity(entry.entityId().value(), null);
-                    es.isInvisible = !entry.visible();
-                    es.visible = entry.visible();
-                    es.lastUpdated = elapsed;
-                    // 不可见/哨兵时保留上次位置与朝向（对标 Rust MinimapPlacement 保留逻辑）
-                    if (entry.visible() && !entry.isSentinel()) {
-                        es.minimapX = entry.x();
-                        es.minimapZ = entry.z();
-                        es.minimapHeading = entry.heading();
-                    }
-                }
-            }
+            // ── Minimap / Ribbon / Voice ───────────────────────────────
+            case DecodedPayload.MinimapUpdatePayload mup -> handleMinimapUpdate(mup, elapsed);
+            case DecodedPayload.RibbonPayload rp -> handleRibbon(rp, elapsed);
+            case DecodedPayload.VoiceLinePayload vl -> handleVoiceLine(vl, elapsed);
 
-            // ── Ribbon ──────────────────────────────────────────────────
-            case DecodedPayload.RibbonPayload rp -> {
-                ribbonLog.add(new RibbonEvent(elapsed, rp.ribbonId()));
-            }
-
-            // ── Voice line ───────────────────────────────────────────────
-            case DecodedPayload.VoiceLinePayload vl -> {
-                voiceLineLog.add(new VoiceLineEvent(elapsed, vl.senderId(), vl.isGlobal(), vl.message()));
-            }
-
-            // ── Ignored (for now) ──────────────────────────────────────
+            // ── Ignored by design（不入战报：EntityMethod 直通、EntityEnter/EntityControl、
+            //     OnGameRoomStateChanged、Camera/Cruise/OwnShip/ServerTick/ServerTimestamp/
+            //     GunMarker/PlayerNetStats/InitFlag/InitMarker/SetWeaponLock/SubController/
+            //     ShotTracking/Version/Map（已处理）/Unknown/Invalid）──────────
             default -> { /* pass-through for unhandled variants */ }
         }
+    }
+
+    // ── 分发 handlers（对标 Rust ingest::dispatch 各 handler 模块）──────────
+
+    private void handleArenaStateReceived(DecodedPayload.OnArenaStateReceivedPayload as, GameClock clock) {
+        // 保留首个 arena id（onWorldStateReceived 等后续包 arenaId=0，不覆盖）
+        if (arenaId == null && as.arenaId() != 0) {
+            arenaId = String.valueOf(as.arenaId());
+        }
+        ingestArenaPlayers(as.playerStates(), as.botStates(), clock);
+    }
+
+    private void handleNewPlayerSpawned(DecodedPayload.NewPlayerSpawnedInBattlePayload ns) {
+        ingestNewPlayers(ns.playerStates(), ns.botStates());
+    }
+
+    private void handleEntityCreate(DecodedPayload.EntityCreatePayload ec, float elapsed) {
+        entityTypes.add(ec.packet().entityType());
+        ingestEntityCreate(ec.packet(), elapsed);
+    }
+
+    private void handleEntityLeave(DecodedPayload.EntityLeavePayload el) {
+        int eid = el.packet().entityId().value();
+        var es = entities.get(eid);
+        if (es != null) es.isAlive = false;
+        // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
+        // buff zones are removed from the active set on EntityLeave)
+        if (smokeScreens.remove(eid) != null || buffZones.remove(eid) != null
+                || "SmokeScreen".equals(es != null ? es.type : null)) {
+            entities.remove(eid);
+        }
+    }
+
+    private void handleBasePlayerCreate(DecodedPayload.BasePlayerCreatePayload bp) {
+        entityTypes.add(bp.packet().entityType());
+        ingestBasePlayerCreate(bp.packet());
+    }
+
+    private void handleCellPlayerCreate(DecodedPayload.CellPlayerCreatePayload cp) {
+        entityTypes.add(cp.packet().entityType());
+        ingestCellPlayerCreate(cp.packet());
+    }
+
+    private void handlePropertyChange(DecodedPayload.PropertyChangePayload pc, float elapsed) {
+        ingestPropertyChange(pc.change(), elapsed);
+    }
+
+    private void handlePropertyUpdate(DecodedPayload.PropertyUpdatePayload pu, float elapsed) {
+        ingestPropertyUpdate(pu.packet(), elapsed);
+    }
+
+    private void handlePosition(DecodedPayload.PositionPayload pos) {
+        ingestPosition(pos.packet());
+    }
+
+    private void handleMap(DecodedPayload.MapPayload mp) {
+        mapName = mp.packet().mapName();
+        mapArenaId = mp.packet().arenaId();
+    }
+
+    private void handleDamageReceived(DecodedPayload.DamageReceivedPayload dr, float elapsed) {
+        for (var a : dr.aggressors()) {
+            // 直接用原始 aggressor 实体 id（对标 Rust damage_ledger）
+            int agg = a.aggressor().value();
+            var ev = new DamageEvent(elapsed, agg, dr.victim().value(), a.damage());
+            damageEvents.add(ev);
+            damageByAggressor.computeIfAbsent(agg, k -> new ArrayList<>()).add(ev);
+        }
+    }
+
+    private void handleShipDestroyed(DecodedPayload.ShipDestroyedPayload sd, float elapsed) {
+        // 直接用原始实体 id（对标 Rust KillRecord，不再经 vehicleToOwner 翻译）
+        int victimEid = sd.victim().value();
+        int killerEid = sd.killer().value();
+        var kl = entityToPlayer.get(killerEid);
+        var vl = entityToPlayer.get(victimEid);
+        killLog.add(new KillRecord(elapsed, killerEid, victimEid,
+            kl != null ? kl.dbId : 0, kl != null ? kl.username : "",
+            vl != null ? vl.dbId : 0, vl != null ? vl.username : "",
+            sd.cause()));
+        var es = entities.get(sd.victim().value());
+        if (es != null) es.isAlive = false;
+        deadShips.add(new DeadShipRecord(elapsed, sd.victim().value(),
+            es != null ? es.x : 0, es != null ? es.z : 0));
+    }
+
+    private void handleChat(DecodedPayload.ChatMessagePayload chat, float elapsed) {
+        // 发送者是 args[0] 的账号 ID（与 meta/arena 的 id 字段一致），
+        // 不能用接收方 entity_id（即 replay 主视角 Avatar）来归属消息。
+        long senderDbId = Integer.toUnsignedLong(chat.senderId().value());
+        // System messages carry sender_id 0 and are dropped (mirrors Rust).
+        if (senderDbId == 0) return;
+        var pl = players.get(senderDbId);
+        chatLog.add(new ChatEvent(elapsed, chat.entityId().value(),
+            senderDbId,
+            pl != null ? pl.username : "account " + senderDbId,
+            chat.audience(), chat.message()));
+    }
+
+    private void handleConsumable(DecodedPayload.ConsumablePayload cons, float elapsed) {
+        var pl = entityToPlayer.get(cons.entity().value());
+        consumableLog.add(new ConsumableEvent(elapsed, cons.entity().value(),
+            pl != null ? pl.dbId : 0, pl != null ? pl.username : "",
+            cons.consumableId(), cons.duration()));
+    }
+
+    private void handleBattleEnd(DecodedPayload.BattleEndPayload be, float elapsed) {
+        if (be.winningTeam() != null) winningTeam = be.winningTeam();
+        if (be.finishType() != 0) {
+            finishType = String.valueOf(be.finishType());
+            finishTypeId = be.finishType();
+        }
+        battleEndClock = elapsed;
+        matchFinished = true;
+    }
+
+    private void handleBattleResults(DecodedPayload.BattleResultsPayload br) {
+        battleResultsJson = br.json();
+        try {
+            var node = com.wows.replay.JsonMapper.readTree(br.json());
+            if (node.has("matchResult")) matchResult = node.get("matchResult").asText();
+            if (node.has("finishReason") && finishType == null)
+                finishType = node.get("finishReason").asText();
+        } catch (Exception ignored) {}
+    }
+
+    private void handlePlayerOrientation(DecodedPayload.PlayerOrientationPayload po) {
+        int eid = po.packet().entityId().value();
+        var es = getOrCreateEntity(eid, null);
+        es.x = po.packet().position().x();
+        es.y = po.packet().position().y();
+        es.z = po.packet().position().z();
+    }
+
+    private void handleNonVolatilePosition(DecodedPayload.NonVolatilePositionPayload nvp) {
+        int eid = nvp.packet().entityId().value();
+        var es = getOrCreateEntity(eid, null);
+        es.x = nvp.packet().position().x();
+        es.y = nvp.packet().position().y();
+        es.z = nvp.packet().position().z();
+    }
+
+    private void handleArtilleryShots(DecodedPayload.ArtilleryShotsPayload asp, float elapsed) {
+        for (var salvo : asp.salvos()) {
+            firedSalvos.add(new ArtillerySalvo(elapsed, salvo, asp.avatarId().value()));
+        }
+        var ownerEid = asp.avatarId().value();
+        var es = entities.get(ownerEid);
+        if (es != null) es.shotsFired += asp.salvos().stream().mapToLong(s -> s.shots().size()).sum();
+    }
+
+    private void handleTorpedoesReceived(DecodedPayload.TorpedoesReceivedPayload trp, float elapsed) {
+        for (var td : trp.torpedoes()) {
+            var rec = new TorpedoRecord(elapsed, td);
+            torpedoes.add(rec);
+            activeTorpedoes.put(torpedoKey(td.ownerId().value(), td.shotId()), rec);
+        }
+    }
+
+    private void handleShotKills(DecodedPayload.ShotKillsPayload skp, float elapsed) {
+        for (var hit : skp.hits()) {
+            shotHits.add(new ShotHitRecord(elapsed, skp.avatarId(), hit));
+            // 命中即移除对应在飞鱼雷（对标 Rust remove_matching_torpedo）
+            activeTorpedoes.remove(torpedoKey(hit.ownerId().value(), hit.shotId()));
+        }
+    }
+
+    private void handleTorpedoDirection(DecodedPayload.TorpedoDirectionPayload tdp) {
+        // Update matching torpedo's maneuver flag
+        for (var t : torpedoes) {
+            if (t.data.shotId() == tdp.shotId() && t.data.ownerId().value() == tdp.ownerId().value()) {
+                torpedoes.set(torpedoes.indexOf(t), t.withManeuver(tdp.targetYaw(), tdp.speedCoef()));
+                break;
+            }
+        }
+    }
+
+    private void handleGunSync(DecodedPayload.GunSyncPayload gsp) {
+        var es = entities.get(gsp.entityId().value());
+        if (es != null) es.turrets.put(gsp.gunId(), new float[]{gsp.yaw(), gsp.pitch()});
+    }
+
+    private void handleSetAmmo(DecodedPayload.SetAmmoForWeaponPayload saw) {
+        var es = entities.get(saw.entityId().value());
+        if (es != null) es.ammoByWeapon.put(saw.weaponType(), saw.ammoParamId().value());
+    }
+
+    private void handlePlaneAdded(DecodedPayload.PlaneAddedPayload pap, float elapsed) {
+        var ps = new PlaneState(pap.planeId(), pap.entityId().value(), pap.teamId(),
+            pap.paramsId(), pap.x(), pap.z(), elapsed, elapsed);
+        activePlanes.put(pap.planeId(), ps);
+        planeEvents.add(new PlaneRecord(elapsed, "added", pap.planeId(), ps));
+    }
+
+    private void handlePlaneRemoved(DecodedPayload.PlaneRemovedPayload prp, float elapsed) {
+        var ps = activePlanes.remove(prp.planeId());
+        planeEvents.add(new PlaneRecord(elapsed, "removed", prp.planeId(), ps));
+    }
+
+    private void handlePlanePosition(DecodedPayload.PlanePositionPayload ppp, float elapsed) {
+        var ps = activePlanes.get(ppp.planeId());
+        if (ps != null) {
+            activePlanes.put(ppp.planeId(), ps.withPosition(ppp.x(), ppp.z(), elapsed));
+        }
+    }
+
+    private void handleWardAdded(DecodedPayload.WardAddedPayload wap, float elapsed) {
+        activeWards.put(wap.planeId(), new WardState(wap.planeId(), wap.entityId(), wap.ownerId(),
+            wap.position(), wap.radius(), elapsed));
+    }
+
+    private void handleWardRemoved(DecodedPayload.WardRemovedPayload wrp) {
+        activeWards.remove(wrp.planeId());
+    }
+
+    private void handleDamageStat(DecodedPayload.DamageStatPayload dsp) {
+        // receiveDamageStat 是服务端权威的自我玩家伤害统计（服务端覆盖 AoI 外持续伤害）。
+        // 累积到 world.selfDamageStats（对标 Rust SelfStats.damage_stats）。
+        for (var e : dsp.entries()) {
+            selfDamageStats.add(new com.wows.replay.ingest.report.DamageStatEntry(
+                e.weaponId(),
+                com.wows.replay.ingest.report.DamageStatCategory.fromRaw(e.categoryId()),
+                e.count(), e.total()));
+        }
+    }
+
+    private void handleMinimapUpdate(DecodedPayload.MinimapUpdatePayload mup, float elapsed) {
+        for (var entry : mup.updates()) {
+            var es = getOrCreateEntity(entry.entityId().value(), null);
+            es.isInvisible = !entry.visible();
+            es.visible = entry.visible();
+            es.lastUpdated = elapsed;
+            // 不可见/哨兵时保留上次位置与朝向（对标 Rust MinimapPlacement 保留逻辑）
+            if (entry.visible() && !entry.isSentinel()) {
+                es.minimapX = entry.x();
+                es.minimapZ = entry.z();
+                es.minimapHeading = entry.heading();
+            }
+        }
+    }
+
+    private void handleRibbon(DecodedPayload.RibbonPayload rp, float elapsed) {
+        ribbonLog.add(new RibbonEvent(elapsed, rp.ribbonId()));
+    }
+
+    private void handleVoiceLine(DecodedPayload.VoiceLinePayload vl, float elapsed) {
+        voiceLineLog.add(new VoiceLineEvent(elapsed, vl.senderId(), vl.isGlobal(), vl.message()));
     }
 
     // ── Ingest: Arena players ──────────────────────────────────────────
@@ -478,6 +558,14 @@ public class BattleWorld {
                 ArgValue sc = props.get("shipConfig");
                 if (sc instanceof ArgValue.BlobVal bv) {
                     es.shipConfig = bv.value();
+                }
+                // Captain: crewModifiersCompactParams.paramsId（EntityCreate 时冻结，永不刷新）
+                ArgValue cmcp = props.get("crewModifiersCompactParams");
+                if (cmcp instanceof ArgValue.DictVal d) {
+                    ArgValue pid = d.entries().get("paramsId");
+                    if (pid instanceof ArgValue.IntVal iv) {
+                        es.captainParamsId = iv.value();
+                    }
                 }
             }
             case "Avatar" -> {
@@ -745,6 +833,7 @@ public class BattleWorld {
                     ArgValue reason = d.get("finishReason");
                     if (reason instanceof ArgValue.IntVal iv2 && iv2.value() > 0) {
                         finishType = finishTypeName((int) iv2.value());
+                        finishTypeId = (int) iv2.value();
                     }
                 }
             }
@@ -1171,6 +1260,12 @@ public class BattleWorld {
     public Float playedDuration() { return playedDuration; }
     public Float extraDuration() { return extraDuration; }
     public Float battleStartClock() { return battleStartClock; }
+    public Float battleResultClock() { return battleResultClock; }
+    public Float battleEndClock() { return battleEndClock; }
+    public boolean matchFinished() { return matchFinished; }
+    public int finishTypeId() { return finishTypeId; }
+    public String battleResultsJson() { return battleResultsJson; }
+    public List<com.wows.replay.ingest.report.DamageStatEntry> selfDamageStats() { return selfDamageStats; }
     public Float timeLeft() { return timeLeft; }
 
     public Map<Integer, EntityState> entities() { return entities; }

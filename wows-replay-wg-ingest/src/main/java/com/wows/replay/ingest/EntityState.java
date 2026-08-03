@@ -33,6 +33,8 @@ public final class EntityState {
     public EntityId ownerEntityId;
     public Long dbId;
     public String playerName;
+    /** 船长参数 id（EntityCreate 时从 crewModifiersCompactParams.paramsId 解析，之后永不刷新）。 */
+    public Long captainParamsId;
     /** Raw ship configuration blob */
     public byte[] shipConfig;
     /** Smoke screen radius (for SmokeScreen entities) */

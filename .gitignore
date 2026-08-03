@@ -63,6 +63,7 @@ buildNumber.properties
 
 # User-specific stuff
 .idea/
+.claude/
 # File-based project format
 *.iws
 

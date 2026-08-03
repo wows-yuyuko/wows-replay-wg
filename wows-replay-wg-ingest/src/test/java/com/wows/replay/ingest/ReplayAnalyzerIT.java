@@ -462,29 +462,69 @@ class ReplayAnalyzerIT {
         }
     }
 
+    // ── ReplayAnalyzer.buildBattleReport（battle-report.md into_report）──
+
+    @Test
+    @DisplayName("buildBattleReport: 文档化 BattleReport 快照（self_player/players/frags/时长/胜负）")
+    void buildBattleReportFromWorld() {
+        var analyzer = ReplayAnalyzer.builder()
+            .specProvider(specProvider)
+            .config(ReplayAnalyzerConfig.builder().decodePackets(true).build())
+            .build();
+        var report = analyzer.buildBattleReport(replay);
+
+        // §7.3: self_player 必须存在
+        assertNotNull(report.selfPlayer(), "self_player 不应为 null");
+        assertEquals(0, report.selfPlayer().relation(), "self_player.relation 应为 0 (Self)");
+
+        // 玩家列表：24 名玩家 + self 在内
+        assertNotNull(report.players(), "players 不应为 null");
+        assertTrue(report.players().size() >= 24, "players 至少 24 名 (实际: " + report.players().size() + ")");
+        assertEquals(report.selfPlayer(), report.players().stream()
+            .filter(p -> p.relation() == 0).findFirst().orElse(null), "self_player 应出现在 players 中");
+
+        // 元数据
+        assertNotNull(report.version(), "version 不应为 null");
+        assertNotNull(report.mapName(), "map_name 不应为 null");
+        assertEquals("spaces/56_AngelWings", report.mapName(), "map_name");
+        assertEquals(com.wows.replay.ingest.report.MatchResult.LOSS, report.matchResult(),
+            "match_result 应为 Loss (winningTeam=1, self 在队伍 2)");
+
+        // 战斗统计字段
+        assertNotNull(report.frags(), "frags 不应为 null");
+        assertTrue(report.players().stream().anyMatch(p -> p.vehicleEntity() != null),
+            "应至少有一名玩家带 VehicleEntity");
+        assertTrue(report.players().stream().anyMatch(p -> p.vehicleEntity() != null
+                && p.vehicleEntity().damage() > 0),
+            "应至少有一名玩家有 >0 伤害");
+
+        // 时长
+        assertEquals(1200, report.maxDuration(), "max_duration 应为 meta duration 1200");
+        assertNotNull(report.playedDuration(), "played_duration 不应为 null");
+        assertTrue(report.playedDuration() > 0, "played_duration 应 > 0");
+
+        // 战报 JSON（0x22）应有内容
+        assertNotNull(report.battleResults(), "battle_results 不应为 null");
+
+        // 可序列化
+        var json = com.wows.replay.JsonMapper.toPrettyJson(report);
+        assertTrue(json.contains("\"arena_id\"") && json.contains("\"self_player\""),
+            "JSON 应包含 arena_id / self_player");
+        log.info("BattleReport JSON (head): {}", json.substring(0, Math.min(300, json.length())));
+    }
+
     // ── ReplayAnalyzer：quick / analyze 端到端 ──────────────────────
 
     @Test
-    @DisplayName("quick(): 无 spec 快速 JSON（元数据 + 包类型统计）")
-    void quickJson() throws Exception {
-        String json = ReplayAnalyzer.quick(replay);
-        var node = com.wows.replay.JsonMapper.readTree(json);
-
-        assertNotNull(node.get("meta"), "应有 meta section");
-        assertEquals("spaces/56_AngelWings",
-            node.get("meta").get("map_name").asText(), "meta.map_name");
-
-        assertNotNull(node.get("packets"), "应有 packets section");
-        var byType = node.get("packets").get("by_type");
-        assertNotNull(byType, "应有 by_type 统计");
-        assertTrue(byType.size() > 0, "by_type 不应为空");
-        assertTrue(byType.get("entity method").asInt() > 10_000, "EntityMethod 应超过 1 万");
-
-        log.info("quick() ✓: {} bytes, {} packet types", json.length(), byType.size());
+    @DisplayName("quick(): 无 EntitySpecProvider 时抛出 IllegalArgumentException")
+    void quickRequiresSpec() {
+        var e = assertThrows(IllegalArgumentException.class, () -> ReplayAnalyzer.quick(replay),
+            "quick() 依赖 EntitySpecProvider");
+        log.info("quick() 无 spec ✓: {}", e.getMessage());
     }
 
     @Test
-    @DisplayName("analyze(): 完整解码 JSON（meta/packets/chat/damage/vehicles）")
+    @DisplayName("analyze(): 新 BattleReport JSON（arena_id/self_player/players/game_chat）")
     void analyzeJson() throws Exception {
         var analyzer = ReplayAnalyzer.builder()
             .specProvider(specProvider)
@@ -493,51 +533,22 @@ class ReplayAnalyzerIT {
         String json = analyzer.analyze(replay);
         var node = com.wows.replay.JsonMapper.readTree(json);
 
-        assertNotNull(node.get("meta"), "应有 meta section");
-        assertNotNull(node.get("packets"), "应有 packets section");
-        assertTrue(node.get("packets").get("invalid_packets").asInt() >= 0, "invalid_packets 应 >= 0");
+        assertNotNull(node.get("arena_id"), "应有 arena_id");
+        assertNotNull(node.get("self_player"), "应有 self_player");
+        assertEquals(0, node.get("self_player").get("relation").asInt(), "self_player.relation 应为 0");
 
-        assertNotNull(node.get("chat"), "应有 chat section");
-        assertTrue(node.get("chat").size() > 0, "chat 应非空");
-        assertNotNull(node.get("damage"), "应有 damage section");
-        assertTrue(node.get("damage").get("total_damage_dealt").asLong() > 0, "total_damage_dealt 应 > 0");
-        assertNotNull(node.get("vehicles"), "应有 vehicles section");
-        assertEquals(24, node.get("vehicles").size(), "应有 24 辆玩家船");
+        assertNotNull(node.get("players"), "应有 players");
+        assertTrue(node.get("players").size() >= 24, "players 至少 24 名 (实际: " + node.get("players").size() + ")");
 
-        log.info("analyze() ✓: {} bytes, chat={}, damage_dealt={}, vehicles={}",
-            json.length(),
-            node.get("chat").size(),
-            node.get("damage").get("total_damage_dealt").asLong(),
-            node.get("vehicles").size());
-    }
+        assertNotNull(node.get("game_chat"), "应有 game_chat");
+        assertTrue(node.get("game_chat").size() > 0, "game_chat 应非空");
+        assertNotNull(node.get("battle_results"), "应有 battle_results");
+        assertNotNull(node.get("match_result"), "应有 match_result");
+        assertEquals("spaces/56_AngelWings", node.get("map_name").asText(), "map_name");
+        assertEquals(1200, node.get("max_duration").asLong(), "max_duration");
 
-    // ── ReplayAnalyzer.buildReport（基于 BattleWorld.intoReport）──────
-
-    @Test
-    @DisplayName("buildReport: 战斗状态字段来自 intoReport 快照")
-    void buildReportFromWorld() {
-        var analyzer = ReplayAnalyzer.builder()
-            .specProvider(specProvider)
-            .config(ReplayAnalyzerConfig.builder().decodePackets(true).build())
-            .build();
-        var report = analyzer.buildReport(replay);
-
-        assertNotNull(report, "report 不应为 null");
-        assertNotNull(report.meta(), "meta 不应为 null");
-        assertNotNull(report.packets(), "packets 不应为 null");
-        assertTrue(report.packets().byType().containsKey("entity method"), "应有 EntityMethod 统计");
-        assertTrue(report.packets().byType().get("entity method") > 10_000, "EntityMethod 应超过 1 万");
-
-        // chat/damage/vehicles 现在来自 world.intoReport()，不再为空占位
-        assertNotNull(report.chat(), "chat 不应为 null");
-        assertTrue(report.chat().size() > 0, "应有聊天消息");
-        assertNotNull(report.damage(), "damage 不应为 null");
-        assertTrue(report.damage().totalDamageDealt() > 0, "应有造成伤害");
-        assertNotNull(report.vehicles(), "vehicles 不应为 null");
-        assertEquals(24, report.vehicles().size(), "应有 24 辆玩家船");
-
-        log.info("buildReport ✓: chat={}, damage_dealt={}, vehicles={}",
-            report.chat().size(), report.damage().totalDamageDealt(), report.vehicles().size());
+        log.info("analyze() ✓: {} bytes, chat={}, players={}",
+            json.length(), node.get("game_chat").size(), node.get("players").size());
     }
 
     // ── BattleSnapshot ────────────────────────────────────────────────

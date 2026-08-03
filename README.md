@@ -42,21 +42,19 @@ import com.wows.replay.ingest.ReplayAnalyzer;
 // 1. Parse replay file
 ReplayFile replay = ReplayFile.fromFile(Path.of("replay.wowsreplay"));
 
-// 2. Quick analysis (framing stats only, no game data)
-String json = ReplayAnalyzer.quick(replay);
-
-// 3. Full analysis (requires game data for entity specs)
+// 2. Full analysis -> JSON report (requires game data for entity specs)
 var config = ReplayAnalyzerConfig.DEFAULT;
 var analyzer = new ReplayAnalyzer.Builder()
     .specProvider(specProvider)
     .config(config)
     .build();
-String report = analyzer.analyze(replay);   // JSON report
+String report = analyzer.analyze(replay);
 
-// 4. Structured report (BattleReport record tree)
-BattleReport report2 = analyzer.buildReport(replay);
+// 3. Doc-aligned battle report (replay-parser-battle-report.md into_report):
+//    self_player / players / frags / match_result / durations, etc.
+com.wows.replay.ingest.report.BattleReport report2 = analyzer.buildBattleReport(replay);
 
-// 5. Read metadata only (skip decryption, very fast)
+// 4. Read metadata only (skip decryption, very fast)
 ReplayMeta meta = ReplayFile.metaFromFile(Path.of("replay.wowsreplay"));
 ```
 

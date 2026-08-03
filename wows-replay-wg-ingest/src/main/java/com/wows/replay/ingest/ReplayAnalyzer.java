@@ -1,30 +1,23 @@
 package com.wows.replay.ingest;
 
-import com.wows.replay.PacketTypeId;
-import com.wows.replay.packet.RawPacket;
+import com.wows.replay.JsonMapper;
 import com.wows.replay.ReplayException;
 import com.wows.replay.ReplayFile;
-import com.wows.replay.packet.*;
+import com.wows.replay.decode.PacketDecoder;
+import com.wows.replay.packet.Packet;
+import com.wows.replay.packet.Parser;
 import com.wows.replay.spi.EntitySpecProvider;
 import com.wows.replay.spi.GameConstantsProvider;
-import com.wows.replay.model.GameClock;
-import com.wows.replay.decode.PacketDecoder;
-import com.wows.replay.JsonMapper;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 回放分析入口，对标 wows-toolkit 的 replay-dumper 管线。
  *
- * <p>遍历回放的所有数据包，解码、统计并生成 {@link BattleReport}。可选注入
- * {@link EntitySpecProvider}（实体属性解码）和 {@link GameConstantsProvider}
- * （常量名称解析）。</p>
+ * <p>遍历回放的所有数据包，解码、统计并生成
+ * {@link com.wows.replay.ingest.report.BattleReport}。需要 {@link EntitySpecProvider}
+ * 做实体属性解码，可选注入 {@link GameConstantsProvider}（常量名称解析）。</p>
  */
 public final class ReplayAnalyzer {
 
@@ -42,7 +35,9 @@ public final class ReplayAnalyzer {
 
     // ── 快捷 API ─────────────────────────────────────────────────────────────
 
-    /** 快速分析（无实体规范、无包解码），只输出元数据 + 包类型统计。 */
+    /** 快速分析：等价于默认配置下的 {@link #analyze(ReplayFile)}，需要已注入的
+     * {@link EntitySpecProvider}（缺少 spec 时 {@link #analyze(ReplayFile)} 会抛出
+     * {@link IllegalArgumentException}）。 */
     public static String quick(ReplayFile replay) throws ReplayException {
         if (replay == null) throw new ReplayException("replay 不能为 null");
         var analyzer = new ReplayAnalyzer(null, null, ReplayAnalyzerConfig.DEFAULT);
@@ -72,164 +67,38 @@ public final class ReplayAnalyzer {
     // ── 分析 ─────────────────────────────────────────────────────────────────
 
     /** 分析回放并返回 JSON 报告。 */
-    public String analyze(ReplayFile replay) throws ReplayException {
-        var report = buildReport(replay);
+    public String analyze(ReplayFile replay) {
+        var report = buildBattleReport(replay);
         return config.prettyPrint() ? JsonMapper.toPrettyJson(report) : JsonMapper.toJson(report);
     }
 
-    /** 分析回放并返回结构化 {@link BattleReport}。 */
-    public BattleReport buildReport(ReplayFile replay) {
-        var parser = (specProvider != null && config.decodePackets())
-                ? new Parser(specProvider, replay.version())
-                : new Parser();
+    // ── 文档化战报（replay-parser-battle-report.md into_report）────────────
 
-        // 战斗状态容器：chat/damage/vehicles/players 等字段统一来自 world.intoReport()，
-        // 避免与 BattleWorld 内部状态两套来源漂移。
-        var world = config.decodePackets() ? new BattleWorld(replay.meta(), replay.version()) : null;
-        var decoder = config.decodePackets() ? new PacketDecoder(replay.version()) : null;
-
-        var packetCounts = new LinkedHashMap<String, Integer>();
-        int unknownCount = 0;
-        int invalidCount = 0;
-        int positionCount = 0;
-        int entityCreateCount = 0;
-        int entityMethodCount = 0;
-
-        var entityEvents = new ArrayList<BattleReport.EntityEvent>();
-        var minimapFrames = new ArrayList<BattleReport.MinimapFrame>();
-        int minimapTickCounter = 0;
-        int minimapStep = config.minimapStep();
-
-        GameClock battleStart = replay.battleStartClock();
-        GameClock lastClock = GameClock.ZERO;
+    /**
+     * 分析回放并返回结构化 {@link com.wows.replay.ingest.report.BattleReport}。
+     *
+     * <p>对标 Rust {@code BattleWorld::into_report()}：驱动一个 {@link BattleWorld}
+     * 处理全部包，结束后 finish + {@code BattleReportBuilder} 装配出独立的终局快照。
+     * 需要 {@link EntitySpecProvider} 做实体属性/方法解码。</p>
+     */
+    public com.wows.replay.ingest.report.BattleReport buildBattleReport(ReplayFile replay) {
+        if (specProvider == null) {
+            throw new IllegalArgumentException("buildBattleReport 需要 EntitySpecProvider");
+        }
+        var parser = new Parser(specProvider, replay.version());
+        var world = new BattleWorld(replay.meta(), replay.version());
+        var decoder = new PacketDecoder(replay.version());
 
         var iter = replay.packetIterator();
         while (iter.hasNext()) {
             var raw = iter.next();
-            lastClock = raw.clock();
-
-            String typeName = raw.packetType() != null ? raw.packetType().displayName() : "unknown";
-            packetCounts.merge(typeName, 1, Integer::sum);
-            if (raw.isUnknown()) unknownCount++;
-
-            if (raw.packetType() != null) {
-                switch (raw.packetType()) {
-                    case POSITION -> positionCount++;
-                    case ENTITY_CREATE -> entityCreateCount++;
-                    case ENTITY_METHOD -> entityMethodCount++;
-                }
-            }
-
-            if (world != null && decoder != null) {
-                var packet = parser.parse(raw);
-                Object payload = packet.payload();
-                if (payload instanceof Packet.InvalidPayload) invalidCount++;
-
-                if (payload instanceof EntityCreatePacket ecp) {
-                    entityEvents.add(new BattleReport.EntityEvent(
-                            raw.clock().seconds(), "create", ecp.entityId().value(),
-                            ecp.entityType(), ecp.vehicleId().value()));
-                } else if (payload instanceof EntityEnterPacket eep) {
-                    entityEvents.add(new BattleReport.EntityEvent(
-                            raw.clock().seconds(), "enter", eep.entityId().value(),
-                            null, eep.vehicleId().value()));
-                } else if (payload instanceof EntityLeavePacket elp) {
-                    entityEvents.add(new BattleReport.EntityEvent(
-                            raw.clock().seconds(), "leave", elp.entityId().value(),
-                            null, 0));
-                }
-
-                world.process(decoder.decode(packet), raw.clock());
-            }
-
-            if (config.minimap() && minimapTickCounter % minimapStep == 0) {
-                if (raw.packetType() == PacketTypeId.POSITION && raw.clock().seconds() >= battleStart.seconds()) {
-                    extractMinimapFrame(raw, minimapFrames);
-                }
-            }
-            minimapTickCounter++;
+            var packet = parser.parse(raw);
+            if (packet == null || packet.payload() instanceof Packet.InvalidPayload) continue;
+            if (packet.packetType() == null) continue;
+            world.process(decoder.decode(packet), raw.clock());
         }
+        world.finish();
 
-        // 终局快照：战斗状态字段的唯一权威来源。
-        BattleSnapshot snapshot = null;
-        if (world != null) {
-            world.finish();
-            snapshot = world.intoReport();
-        }
-
-        var resolvedVehicles = resolveVehicleNames(replay);
-
-        return new BattleReport(
-                BattleReport.MetaSection.from(replay.meta()),
-                new BattleReport.SummarySection(
-                        packetCounts.values().stream().mapToInt(Integer::intValue).sum(),
-                        battleStart.seconds(), lastClock.seconds(),
-                        positionCount, entityCreateCount, entityMethodCount),
-                new BattleReport.PacketsSection(packetCounts, unknownCount, invalidCount),
-                entityEvents.isEmpty() ? null : entityEvents,
-                snapshot != null ? buildVehicleTimelines(snapshot, replay) : null,
-                snapshot != null && !snapshot.chat().isEmpty()
-                        ? snapshot.chat().stream()
-                            .map(c -> new BattleReport.ChatMessage(c.clock(), (int) c.senderDbId(), c.message()))
-                            .toList()
-                        : null,
-                snapshot != null ? buildDamageSection(snapshot) : null,
-                minimapFrames.isEmpty() ? null : new BattleReport.MinimapSection(minimapStep, minimapFrames),
-                resolvedVehicles.isEmpty() ? null : resolvedVehicles);
-    }
-
-    /** 从终局快照构建每玩家车辆时间线（原为 null 占位）。 */
-    private List<BattleReport.VehicleTimeline> buildVehicleTimelines(BattleSnapshot snapshot, ReplayFile replay) {
-        var shipIdByDbId = new HashMap<Long, Long>();
-        if (replay.meta().vehicles() != null) {
-            for (var v : replay.meta().vehicles()) {
-                shipIdByDbId.put(Integer.toUnsignedLong(v.id().value()), v.shipId().value());
-            }
-        }
-        var out = new ArrayList<BattleReport.VehicleTimeline>();
-        for (var p : snapshot.players()) {
-            long shipId = shipIdByDbId.getOrDefault(p.dbId(), 0L);
-            out.add(new BattleReport.VehicleTimeline(
-                    p.entityId(), shipId,
-                    List.of(Map.of("clock", snapshot.playedDuration() != null ? snapshot.playedDuration() : 0f,
-                            "type", "damage", "amount", p.totalDamage()))));
-        }
-        return out.isEmpty() ? null : out;
-    }
-
-    /** 从终局快照构建伤害汇总（原为 null 占位）。 */
-    private BattleReport.DamageSection buildDamageSection(BattleSnapshot snapshot) {
-        long dealt = Math.round(snapshot.players().stream()
-                .mapToDouble(BattleSnapshot.Player::totalDamage).sum());
-        return new BattleReport.DamageSection(dealt, 0, Map.of());
-    }
-
-    /** 从回放元数据中提取车辆列表。 */
-    private List<BattleReport.ResolvedVehicle> resolveVehicleNames(ReplayFile replay) {
-        var vehicles = replay.meta().vehicles();
-        if (vehicles == null || vehicles.isEmpty()) return List.of();
-        return vehicles.stream()
-            .map(v -> new BattleReport.ResolvedVehicle(v.shipId().value(), v.relation(), v.name()))
-            .toList();
-    }
-
-    // ── 小地图 ───────────────────────────────────────────────────────────────
-
-    private void extractMinimapFrame(RawPacket raw, List<BattleReport.MinimapFrame> frames) {
-        try {
-            var buf = java.nio.ByteBuffer.wrap(raw.payload()).order(java.nio.ByteOrder.LITTLE_ENDIAN);
-            if (buf.remaining() < 41) return;
-
-            int entityId = buf.getInt();
-            buf.getInt(); // spaceId
-            float x = buf.getFloat();
-            float y = buf.getFloat();
-            buf.getFloat(); // z
-            buf.getFloat(); buf.getFloat(); buf.getFloat(); // direction
-            float yaw = buf.getFloat(); // rotation.yaw
-
-            var entity = new BattleReport.MinimapEntity(entityId, x, y, yaw, 0);
-            frames.add(new BattleReport.MinimapFrame(raw.clock().seconds(), List.of(entity)));
-        } catch (Exception ignored) {}
+        return new com.wows.replay.ingest.report.BattleReportBuilder(world, replay.meta()).build();
     }
 }
