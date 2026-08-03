@@ -3,6 +3,7 @@ package com.wows.replay.ingest;
 import com.wows.replay.JsonMapper;
 import com.wows.replay.ReplayException;
 import com.wows.replay.ReplayFile;
+import com.wows.replay.ReplayVersionMismatchException;
 import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.packet.Packet;
 import com.wows.replay.packet.Parser;
@@ -67,7 +68,7 @@ public final class ReplayAnalyzer {
     // ── 分析 ─────────────────────────────────────────────────────────────────
 
     /** 分析回放并返回 JSON 报告。 */
-    public String analyze(ReplayFile replay) {
+    public String analyze(ReplayFile replay) throws ReplayException {
         var report = buildBattleReport(replay);
         return config.prettyPrint() ? JsonMapper.toPrettyJson(report) : JsonMapper.toJson(report);
     }
@@ -81,12 +82,13 @@ public final class ReplayAnalyzer {
      * 处理全部包，结束后 finish + {@code BattleReportBuilder} 装配出独立的终局快照。
      * 需要 {@link EntitySpecProvider} 做实体属性/方法解码。</p>
      */
-    public com.wows.replay.ingest.report.BattleReport buildBattleReport(ReplayFile replay) {
+    public com.wows.replay.ingest.report.BattleReport buildBattleReport(ReplayFile replay) throws ReplayException {
+        verifyExpectedBuild(replay);
         if (specProvider == null) {
             throw new IllegalArgumentException("buildBattleReport 需要 EntitySpecProvider");
         }
         var parser = new Parser(specProvider, replay.version());
-        var world = new BattleWorld(replay.meta(), replay.version());
+        var world = new BattleWorld(replay.meta(), replay.version(), constantsProvider);
         var decoder = new PacketDecoder(replay.version());
 
         var iter = replay.packetIterator();
@@ -100,5 +102,24 @@ public final class ReplayAnalyzer {
         world.finish();
 
         return new com.wows.replay.ingest.report.BattleReportBuilder(world, replay.meta()).build();
+    }
+
+    /**
+     * 版本门禁（§5.1 / §12.4.1）：clientVersionFromExe 按 {@code ,} 拆 4 段，
+     * 第 4 段（build）必须等于 {@link ReplayAnalyzerConfig#expectedBuild()}，
+     * 否则拒绝解析。未配置 expectedBuild 时跳过校验。
+     */
+    private void verifyExpectedBuild(ReplayFile replay) throws ReplayVersionMismatchException {
+        String expected = config.expectedBuild();
+        if (expected == null || expected.isBlank()) return;
+
+        String clientVersion = replay.meta().clientVersionFromExe();
+        String[] parts = clientVersion != null ? clientVersion.split(",") : new String[0];
+        String actualBuild = parts.length >= 4 ? parts[3] : "";
+        if (!expected.equals(actualBuild)) {
+            throw new ReplayVersionMismatchException(
+                "回放版本 build 不匹配：期望 " + expected + "，实际 " + actualBuild
+                    + "（clientVersionFromExe=" + clientVersion + "）");
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.wows.replay.ingest;
 
 import com.wows.replay.ReplayException;
 import com.wows.replay.ReplayFile;
+import com.wows.replay.ReplayVersionMismatchException;
 import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.decode.DecodedPayload;
 import com.wows.replay.model.Version;
@@ -466,7 +467,7 @@ class ReplayAnalyzerIT {
 
     @Test
     @DisplayName("buildBattleReport: 文档化 BattleReport 快照（self_player/players/frags/时长/胜负）")
-    void buildBattleReportFromWorld() {
+    void buildBattleReportFromWorld() throws Exception {
         var analyzer = ReplayAnalyzer.builder()
             .specProvider(specProvider)
             .config(ReplayAnalyzerConfig.builder().decodePackets(true).build())
@@ -596,5 +597,31 @@ class ReplayAnalyzerIT {
         assertThrows(IOException.class,
             () -> ReplayAnalyzer.quick(Path.of("nonexistent_12345.wowsreplay")),
             "quick(nonexistent path) should throw IOException");
+    }
+
+    // ── §12.4.1 版本门禁 ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("版本门禁: expectedBuild 不匹配抛 ReplayVersionMismatchException")
+    void versionGateRejectsMismatch() {
+        var analyzer = ReplayAnalyzer.builder()
+            .config(ReplayAnalyzerConfig.builder().expectedBuild("99999999").build())
+            .build();
+        assertThrows(ReplayVersionMismatchException.class, () -> analyzer.buildBattleReport(replay),
+            "expectedBuild 不匹配应拒绝解析");
+    }
+
+    @Test
+    @DisplayName("版本门禁: build 匹配时先过门禁，再进入管线（无 spec → IllegalArgumentException）")
+    void versionGatePassesOnMatch() {
+        var analyzer = ReplayAnalyzer.builder()
+            .config(ReplayAnalyzerConfig.builder()
+                .expectedBuild(String.valueOf(replay.version().build()))
+                .build())
+            .build();
+        // 若门禁未通过会抛 ReplayVersionMismatchException，assertThrows 将失败；
+        // 此处抛 IllegalArgumentException 说明已过门禁、进入 spec 前置检查。
+        assertThrows(IllegalArgumentException.class, () -> analyzer.buildBattleReport(replay),
+            "build 匹配后应继续管线（无 spec 前置检查抛 IllegalArgumentException）");
     }
 }

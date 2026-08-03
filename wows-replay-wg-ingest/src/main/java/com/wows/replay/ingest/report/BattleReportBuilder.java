@@ -138,7 +138,9 @@ public final class BattleReportBuilder {
         // 9. 元数据（§5.7）
         Version version = Version.fromClientExe(meta.clientVersionFromExe());
         String mapName = localizedNameOrFallback("IDS_" + meta.mapName().toUpperCase(), meta.mapName());
-        String gameMode = localizedNameOrFallback("IDS_SCENARIO_" + meta.scenario().toUpperCase(), meta.scenario());
+        // 本地化缺失时回退到常量里的模式名（§12.4.3），再无则原始 scenario。
+        String gameMode = localizedNameOrFallback("IDS_SCENARIO_" + meta.scenario().toUpperCase(),
+            world.constants().gameModeName(meta.gameMode()).orElse(meta.scenario()));
         Recognized<BattleType> gameType = BattleType.fromValue(meta.gameType(), version);
         String matchGroup = meta.matchGroup() != null ? meta.matchGroup() : "";
         long maxDuration = world.maxDuration() != null

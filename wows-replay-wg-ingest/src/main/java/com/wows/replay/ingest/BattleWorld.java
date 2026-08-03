@@ -4,6 +4,7 @@ import com.wows.replay.ReplayMeta;
 import com.wows.replay.decode.DecodedPayload;
 import com.wows.replay.decode.PlayerStateData;
 import com.wows.replay.decode.PropertyDecoder;
+import com.wows.replay.spi.GameConstantsProvider;
 import com.wows.replay.types.ArgValue;
 import com.wows.replay.model.*;
 import com.wows.replay.packet.*;
@@ -33,6 +34,10 @@ public class BattleWorld {
     private final ReplayMeta meta;
     private final Version version;
     private final List<MetaPlayer> metaPlayers;
+    /** 游戏常量查询（消耗品/战斗阶段/模式名），无注入时兜底为空实现（§12.4.3）。 */
+    private final GameConstantsProvider constants;
+    /** 当前推进时钟（§12.4.4），由 process() 按规则更新。 */
+    private GameClock currentClock = GameClock.ZERO;
 
     // ── Entity state ───────────────────────────────────────────────────
     /** entity_id → EntityState */
@@ -118,8 +123,17 @@ public class BattleWorld {
     // ── Constructor ────────────────────────────────────────────────────
 
     public BattleWorld(ReplayMeta meta, Version version) {
+        this(meta, version, null);
+    }
+
+    /**
+     * @param constants 游戏常量查询；可为 null，内部兜底为 {@link GameConstantsProvider#empty()}
+     *                 （§12.4.3：无 GameConstants 用默认实现，而不是不喂常量）。
+     */
+    public BattleWorld(ReplayMeta meta, Version version, GameConstantsProvider constants) {
         this.meta = meta;
         this.version = version;
+        this.constants = constants != null ? constants : GameConstantsProvider.empty();
         this.metaPlayers = new ArrayList<>();
         this.gameMode = meta.gameMode();
         this.matchGroup = meta.matchGroup();
@@ -149,11 +163,16 @@ public class BattleWorld {
      * the compiler keeps the exhaustive sealed-switch safety net.</p>
      */
     public void process(DecodedPayload payload, GameClock clock) {
-        float elapsed = clock.seconds();
+        // 时钟推进（§12.4.4）：packet.clock > 0 || 当前 clock == 0 才更新，
+        // 保证开局前 clock=0 的包不把已推进的时钟倒退回 0。
+        if (clock.seconds() > 0f || currentClock.seconds() == 0f) {
+            currentClock = clock;
+        }
+        float elapsed = currentClock.seconds();
 
         switch (payload) {
             // ── Arena / Player state ───────────────────────────────────
-            case DecodedPayload.OnArenaStateReceivedPayload as -> handleArenaStateReceived(as, clock);
+            case DecodedPayload.OnArenaStateReceivedPayload as -> handleArenaStateReceived(as, currentClock);
             case DecodedPayload.NewPlayerSpawnedInBattlePayload ns -> handleNewPlayerSpawned(ns);
 
             // ── Entity lifecycle ───────────────────────────────────────
@@ -1248,6 +1267,8 @@ public class BattleWorld {
 
     // ── Dumper 公开访问器（对标 Rust BattleWorld read API）─────────────
 
+    public GameClock currentClock() { return currentClock; }
+    public GameConstantsProvider constants() { return constants; }
     public String arenaId() { return arenaId; }
     public String mapName() { return mapName; }
     public long mapArenaId() { return mapArenaId; }
