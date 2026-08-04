@@ -185,7 +185,6 @@ public final class ReplayDumper {
      */
     static String compressMinimapField(Object value, int quality) {
         byte[] json = JsonMapper.toJson(value).getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        com.aayushatharva.brotli4j.Brotli4jLoader.ensureAvailability();
         var params = new com.aayushatharva.brotli4j.encoder.Encoder.Parameters().setQuality(quality);
         byte[] compressed;
         try {
@@ -194,6 +193,10 @@ public final class ReplayDumper {
             throw new IllegalStateException("brotli 压缩失败", e);
         }
         return java.util.Base64.getEncoder().encodeToString(compressed);
+    }
+
+    static {
+        com.aayushatharva.brotli4j.Brotli4jLoader.ensureAvailability();
     }
 
     /** 加载 constants.json（GameConstantsProvider 为 JsonConstantsProvider 时直接用，否则从 game-data 读）。 */

@@ -16,11 +16,11 @@ import java.util.Arrays;
  * <p>用法：</p>
  * <pre>{@code
  * java -cp ... com.wows.replay.dumper.DumperMain <REPLAY> -b <game-data-base>
- *   [-o out.json] [--minimap [--minimap-step N]] [--self-damage-stats]
- *   [--vehicle-events] [--battle-results]
+ *   [-o out.json] [--minimap [--minimap-step N]] [--compress N]
+ *   [--self-damage-stats] [--vehicle-events] [--battle-results]
  * }</pre>
  *
- * <p>多 rep 合并（--merge-mode/--alt-replays）与 brotli 压缩（--compress）暂未实现。</p>
+ * <p>多 rep 合并（--merge-mode/--alt-replays）暂未实现。</p>
  */
 @Slf4j
 public final class DumperMain {

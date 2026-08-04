@@ -577,6 +577,10 @@ public class Parser {
         }
         if (p instanceof ArgType.FixedDict fixed) {
             int idx = (int) r.read(bitWidthFor(fixed.properties().size()));
+            if (idx >= fixed.properties().size()) {
+                throw new IllegalStateException("nested FixedDict index " + idx + " out of bounds ("
+                    + fixed.properties().size() + ")");
+            }
             var prop = fixed.properties().get(idx);
             var pair = ensureDict(value, fixed);
             Map<String, ArgValue> dict = pair.dict();
@@ -618,6 +622,10 @@ public class Parser {
         var p = peel(t);
         if (p instanceof ArgType.FixedDict fixed) {
             int idx = (int) r.read(bitWidthFor(fixed.properties().size()));
+            if (idx >= fixed.properties().size()) {
+                throw new IllegalStateException("terminal FixedDict index " + idx + " out of bounds ("
+                    + fixed.properties().size() + ")");
+            }
             var entry = fixed.properties().get(idx);
             ArgValue leaf = parseAlignedScalar(entry.propType(), r);
             var pair = ensureDict(value, fixed);

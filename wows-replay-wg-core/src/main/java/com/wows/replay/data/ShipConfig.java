@@ -51,9 +51,9 @@ public record ShipConfig(
         if (blob == null) return null;
         var buf = ByteBuffer.wrap(blob).order(ByteOrder.LITTLE_ENDIAN);
 
-        long blobVersion = readU32(buf, 0L);
+        readU32(buf, 0L); // blob version
         long shipParamsId = readU32(buf, 0L);
-        long elementCount = readU32(buf, 0L);
+        readU32(buf, 0L); // element count
 
         long unitCount = readU32(buf, 0L);
         var units = readIds(buf, unitCount);

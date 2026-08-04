@@ -83,11 +83,13 @@ public final class MinimapExtractor {
                     if (seenSalvos.add(key)) firingEvents.add(toShotEntry(s));
                 }
 
-                // 2b. shot_id → fired_at 映射（shot_hits 关联起源齐射）
+                // 2b. shot_id → fired_at 映射（shot_hits 关联起源齐射；用 (owner,shot) 组合 key
+                //     避免不同齐射 shot_id 复用导致的覆盖误配）
                 var firedAtByShot = new java.util.HashMap<Long, Float>();
                 for (var s : world.firedSalvos()) {
+                    int owner = s.salvo().ownerId().value();
                     for (var sh : s.salvo().shots()) {
-                        firedAtByShot.put((long) sh.shotId(), s.clock());
+                        firedAtByShot.put(((long) owner << 32) | (sh.shotId() & 0xFFFFFFFFL), s.clock());
                     }
                 }
 
@@ -155,16 +157,18 @@ public final class MinimapExtractor {
             salvo.paramsId().value(), salvo.salvoId(), s.clock(), shots);
     }
 
-    /** 命中事件：victim_id（接收 receiveShotKills 的实体）+ fired_at（关联齐射）+ victim_position。 */
+    /** 命中事件：victim_id（接收 receiveShotKills 的实体）+ fired_at（关联齐射）+ victim_position（hit 到达瞬间快照）。 */
     private static MinimapOutput.ShotHitEntry toShotHitEntry(BattleWorld.ShotHitRecord r,
                                                              java.util.Map<Long, Float> firedAtByShot,
                                                              BattleWorld world) {
         var hit = r.hit();
         int victimId = r.avatarId().value();
-        Float firedAt = firedAtByShot.get((long) hit.shotId());
-        var es = world.entities().get(victimId);
-        com.wows.replay.model.Vec3 victimPos = es != null
-            ? new com.wows.replay.model.Vec3(es.x, es.y, es.z) : null;
+        Float firedAt = firedAtByShot.get(((long) hit.ownerId().value() << 32) | (hit.shotId() & 0xFFFFFFFFL));
+        var victimPos = r.victimPosition();
+        if (victimPos == null) {
+            var es = world.entities().get(victimId);
+            victimPos = es != null ? new com.wows.replay.model.Vec3(es.x, es.y, es.z) : null;
+        }
         return new MinimapOutput.ShotHitEntry(r.clock(), hit.ownerId().value(), victimId, hit.shotId(),
             hit.hitType().raw(), hit.position(), hit.terminalBallistics(), firedAt, victimPos);
     }

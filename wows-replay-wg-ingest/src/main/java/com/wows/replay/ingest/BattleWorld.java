@@ -395,8 +395,13 @@ public class BattleWorld {
     }
 
     private void handleShotKills(DecodedPayload.ShotKillsPayload skp, float elapsed) {
+        // 命中包到达瞬间快照被命中船（victim）的位置：比时钟边界处理时再查 world.entities()
+        // 更接近命中时刻（边界内位置已被后续 Position 包更新）。打海水/空射不产生 receiveShotKills。
+        var victimEs = entities.get(skp.avatarId().value());
+        com.wows.replay.model.Vec3 victimPosition = victimEs != null
+            ? new com.wows.replay.model.Vec3(victimEs.x, victimEs.y, victimEs.z) : null;
         for (var hit : skp.hits()) {
-            shotHits.add(new ShotHitRecord(elapsed, skp.avatarId(), hit));
+            shotHits.add(new ShotHitRecord(elapsed, skp.avatarId(), hit, victimPosition));
             // 命中即移除对应在飞鱼雷（对标 Rust remove_matching_torpedo）
             activeTorpedoes.remove(torpedoKey(hit.ownerId().value(), hit.shotId()));
         }
@@ -1555,7 +1560,8 @@ public class BattleWorld {
     }
 
     public record ShotHitRecord(float clock, com.wows.replay.model.AvatarId avatarId,
-                                 com.wows.replay.decode.DecodedPayload.ShotHitEntry hit) {}
+                                 com.wows.replay.decode.DecodedPayload.ShotHitEntry hit,
+                                 com.wows.replay.model.Vec3 victimPosition) {}
 
     public record PlaneState(long planeId, int ownerEntityId, int teamId,
                               com.wows.replay.model.GameParamId paramsId,
