@@ -47,6 +47,9 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     /** 获取顶级节点，返回 null 表示该版本无此字段。 */
     public JsonNode section(String name) { return root.get(name); }
 
+    /** 整个 constants.json 的原始 JSON 树。 */
+    public JsonNode root() { return root; }
+
     /** 在 name→value 节点中按名称查找。 */
     public Optional<JsonNode> lookup(String section, String name) {
         var node = root.get(section);

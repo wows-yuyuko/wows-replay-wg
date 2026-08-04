@@ -29,8 +29,8 @@ public record MinimapOutput(
     @JsonProperty("shot_hits") List<ShotHitEntry> shotHits,
     /** 沉船（位置+时间）。 */
     @JsonProperty("dead_ships") List<DeadShip> deadShips,
-    /** 最终战斗阶段 id。 */
-    @JsonProperty("battle_stage") Integer battleStage,
+    /** 最终战斗阶段名（Waiting/Battle/Results/Finishing/Ended，对齐 Rust Option&lt;String&gt;）。 */
+    @JsonProperty("battle_stage") String battleStage,
     /** 获胜队伍 0/1，-1 平局。 */
     @JsonProperty("winning_team") Integer winningTeam,
     /** 结束方式。 */
@@ -81,15 +81,17 @@ public record MinimapOutput(
     ) {}
 
     public record TorpedoEntry(
-        @JsonProperty("owner_id") long ownerId,
         @JsonProperty("shot_id") int shotId,
-        @JsonProperty("x") float x,
-        @JsonProperty("y") float y,
-        @JsonProperty("z") float z,
-        @JsonProperty("dir_x") float dirX,
-        @JsonProperty("dir_y") float dirY,
-        @JsonProperty("dir_z") float dirZ,
-        @JsonProperty("armed") boolean armed
+        @JsonProperty("owner_id") long ownerId,
+        @JsonProperty("params_id") long paramsId,
+        @JsonProperty("salvo_id") int salvoId,
+        @JsonProperty("origin") com.wows.replay.model.Vec3 origin,
+        @JsonProperty("direction") com.wows.replay.model.Vec3 direction,
+        @JsonProperty("armed") boolean armed,
+        @JsonProperty("launched_at") float launchedAt,
+        @JsonProperty("updated_at") float updatedAt,
+        @JsonProperty("has_maneuver") boolean hasManeuver,
+        @JsonProperty("has_acoustic") boolean hasAcoustic
     ) {}
 
     public record SmokeEntry(
@@ -185,16 +187,20 @@ public record MinimapOutput(
         @JsonProperty("owner_id") long ownerId,
         @JsonProperty("params_id") long paramsId,
         @JsonProperty("salvo_id") int salvoId,
+        @JsonProperty("fired_at") float firedAt,
         @JsonProperty("shots") List<ShotDetail> shots
     ) {}
 
     public record ShotHitEntry(
         @JsonProperty("clock") float clock,
         @JsonProperty("owner_id") long ownerId,
+        @JsonProperty("victim_id") int victimId,
         @JsonProperty("shot_id") int shotId,
         @JsonProperty("hit_type") int hitType,
         @JsonProperty("position") com.wows.replay.model.Vec3 position,
-        @JsonProperty("terminal_ballistics") com.wows.replay.decode.DecodedPayload.TerminalBallistics terminalBallistics
+        @JsonProperty("terminal_ballistics") com.wows.replay.decode.DecodedPayload.TerminalBallistics terminalBallistics,
+        @JsonProperty("fired_at") Float firedAt,
+        @JsonProperty("victim_position") com.wows.replay.model.Vec3 victimPosition
     ) {}
 
     /** 沉船；alt 视角无坐标时 x/z 可为 null。 */

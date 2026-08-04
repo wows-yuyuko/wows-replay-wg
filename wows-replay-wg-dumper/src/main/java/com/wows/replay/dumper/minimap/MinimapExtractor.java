@@ -3,6 +3,7 @@ package com.wows.replay.dumper.minimap;
 import com.wows.replay.ReplayFile;
 import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.ingest.BattleWorld;
+import com.wows.replay.packet.NamedArgs;
 import com.wows.replay.packet.Parser;
 import com.wows.replay.spi.EntitySpecProvider;
 import com.wows.replay.spi.GameConstantsProvider;
@@ -19,7 +20,7 @@ import java.util.List;
  * （damage 条数 diff / 齐射去重 / shot_hits diff），每 {@code step} 个时钟边界抽一帧快照，
  * 循环结束后装配终局状态。多视角合并（Full/Fast）暂不实现。</p>
  *
- * <p>坐标解码复用 {@link PacketDecoder#decodeMinimapVision}（packedData 位布局见
+ * <p>坐标解码复用 {@link PacketDecoder#decodeMinimapVision(NamedArgs)}（packedData 位布局见
  * docs §3），位置直接读 {@link EntityState} 的 minimap 状态。</p>
  */
 public final class MinimapExtractor {
@@ -82,10 +83,18 @@ public final class MinimapExtractor {
                     if (seenSalvos.add(key)) firingEvents.add(toShotEntry(s));
                 }
 
+                // 2b. shot_id → fired_at 映射（shot_hits 关联起源齐射）
+                var firedAtByShot = new java.util.HashMap<Long, Float>();
+                for (var s : world.firedSalvos()) {
+                    for (var sh : s.salvo().shots()) {
+                        firedAtByShot.put((long) sh.shotId(), s.clock());
+                    }
+                }
+
                 // 3. shot_hits：条数 diff
                 var hits = world.shotHits();
                 for (int i = lastHitCount; i < hits.size(); i++) {
-                    shotHits.add(toShotHitEntry(hits.get(i)));
+                    shotHits.add(toShotHitEntry(hits.get(i), firedAtByShot, world));
                 }
                 lastHitCount = hits.size();
 
@@ -113,12 +122,25 @@ public final class MinimapExtractor {
             world.deadShips().stream()
                 .map(ds -> new MinimapOutput.DeadShip(ds.clock(), ds.victimId(), ds.x(), ds.z()))
                 .toList(),
-            world.battleStageId(), world.winningTeam(), finishType,
+            battleStageName(world.battleStageId()), world.winningTeam(), finishType,
             new MinimapOutput.ScoringRules(world.teamWinScore(), world.holdReward(),
                 world.holdPeriod(), world.holdCpIndices()),
             world.capturedBuffs().stream()
                 .map(cb -> new MinimapOutput.CapturedBuff(cb.entityId(), cb.paramsId(), cb.capturedBy(), cb.clock()))
                 .toList());
+    }
+
+    /** 战斗阶段 id → 阶段名（对齐 Rust BattleStage Debug，0=Waiting..4=Ended）。 */
+    private static String battleStageName(Integer id) {
+        if (id == null) return null;
+        return switch (id) {
+            case 0 -> "Waiting";
+            case 1 -> "Battle";
+            case 2 -> "Results";
+            case 3 -> "Finishing";
+            case 4 -> "Ended";
+            default -> "Stage(" + id + ")";
+        };
     }
 
     // ── 事件装配 ──────────────────────────────────────────────────────
@@ -130,13 +152,21 @@ public final class MinimapExtractor {
                 sh.gunBarrelId(), sh.serverTimeLeft(), sh.shooterHeight(), sh.hitDistance()))
             .toList();
         return new MinimapOutput.ShotEntry(s.clock(), s.avatarId(), salvo.ownerId().value(),
-            salvo.paramsId().value(), salvo.salvoId(), shots);
+            salvo.paramsId().value(), salvo.salvoId(), s.clock(), shots);
     }
 
-    private static MinimapOutput.ShotHitEntry toShotHitEntry(BattleWorld.ShotHitRecord r) {
+    /** 命中事件：victim_id（接收 receiveShotKills 的实体）+ fired_at（关联齐射）+ victim_position。 */
+    private static MinimapOutput.ShotHitEntry toShotHitEntry(BattleWorld.ShotHitRecord r,
+                                                             java.util.Map<Long, Float> firedAtByShot,
+                                                             BattleWorld world) {
         var hit = r.hit();
-        return new MinimapOutput.ShotHitEntry(r.clock(), hit.ownerId().value(), hit.shotId(),
-            hit.hitType().raw(), hit.position(), hit.terminalBallistics());
+        int victimId = r.avatarId().value();
+        Float firedAt = firedAtByShot.get((long) hit.shotId());
+        var es = world.entities().get(victimId);
+        com.wows.replay.model.Vec3 victimPos = es != null
+            ? new com.wows.replay.model.Vec3(es.x, es.y, es.z) : null;
+        return new MinimapOutput.ShotHitEntry(r.clock(), hit.ownerId().value(), victimId, hit.shotId(),
+            hit.hitType().raw(), hit.position(), hit.terminalBallistics(), firedAt, victimPos);
     }
 
     // ── 帧快照（docs §4.2）────────────────────────────────────────────
@@ -159,9 +189,9 @@ public final class MinimapExtractor {
         var torpedoes = world.activeTorpedoes().values().stream()
             .map(t -> {
                 var d = t.data();
-                return new MinimapOutput.TorpedoEntry(d.ownerId().value(), d.shotId(),
-                    d.origin().x(), d.origin().y(), d.origin().z(),
-                    d.direction().x(), d.direction().y(), d.direction().z(), d.armed());
+                return new MinimapOutput.TorpedoEntry(d.shotId(), d.ownerId().value(), d.paramsId().value(),
+                    d.salvoId(), d.origin(), d.direction(), d.armed(), t.clock(), t.clock(),
+                    t.hasManeuver(), false);
             })
             .toList();
 

@@ -874,7 +874,18 @@ public class BattleWorld {
                 es.visibilityFlags = intFromArg(val);
             }
             case STATE -> traverseStateDict(eid, val, elapsed);
-            case SHIP_CONFIG, VEHICLE_ID, OWNER_ID, OTHER -> { /* recorded but not yet handled */ }
+            case SHIP_CONFIG -> {
+                // shipConfig 二进制 blob：EntityCreate 已捕获，属性更新时再刷新
+                if (val instanceof ArgValue.BlobVal bv) {
+                    getOrCreateEntity(eid, null).shipConfig = bv.value();
+                }
+            }
+            case VEHICLE_ID -> {
+                if (val instanceof ArgValue.IntVal iv) {
+                    getOrCreateEntity(eid, null).vehicleId = new GameParamId((int) iv.value());
+                }
+            }
+            case OWNER_ID, OTHER -> { /* recorded but not yet handled */ }
         }
     }
 

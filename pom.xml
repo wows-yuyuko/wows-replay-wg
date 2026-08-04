@@ -30,6 +30,7 @@
         <bcprov.version>1.84</bcprov.version>
         <!-- jlibdeflate -->
         <jlibdeflate.version>0.1.0</jlibdeflate.version>
+        <brotli.version>1.23.0</brotli.version>
         <slf4j.version>2.0.18</slf4j.version>
         <logback.version>1.5.38</logback.version>
         <lombok.version>1.18.46</lombok.version>
@@ -94,6 +95,19 @@
             <groupId>com.fulcrumgenomics</groupId>
             <artifactId>jlibdeflate</artifactId>
             <version>${jlibdeflate.version}</version>
+        </dependency>
+
+        <!-- Brotli 编码（replay-dumper 压缩开关用；brotli4j 含 Windows 原生库） -->
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>brotli4j</artifactId>
+            <version>${brotli.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>native-windows-x86_64</artifactId>
+            <version>${brotli.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- SLF4J API -->

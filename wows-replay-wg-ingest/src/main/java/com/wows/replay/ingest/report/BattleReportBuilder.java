@@ -217,6 +217,12 @@ public final class BattleReportBuilder {
             if (publicInfo != null) resultsInfo = publicInfo.get(String.valueOf(dbId));
         }
 
+        com.wows.replay.data.ShipConfig shipConfig = null;
+        if (es.shipConfig != null) {
+            shipConfig = com.wows.replay.data.ShipConfig.parse(es.shipConfig,
+                Version.fromClientExe(meta.clientVersionFromExe()));
+        }
+
         return new VehicleEntity(
             id,
             0.0f,                                   // visibilityChangedAt 恒为 0.0（§5.3）
@@ -225,7 +231,8 @@ public final class BattleReportBuilder {
             damage,
             deathByVictim.get(id),
             resultsInfo,
-            fragsByKiller.getOrDefault(id, List.of()));
+            fragsByKiller.getOrDefault(id, List.of()),
+            shipConfig);
     }
 
     /** 反查 vehicleToOwner 得到玩家车辆的实体 id；玩家船复用 Avatar id 时就是它自己。 */

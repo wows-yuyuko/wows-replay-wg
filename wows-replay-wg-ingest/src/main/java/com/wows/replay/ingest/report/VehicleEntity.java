@@ -1,6 +1,8 @@
 package com.wows.replay.ingest.report;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.wows.replay.data.ShipConfig;
 import com.wows.replay.model.EntityId;
 import com.wows.replay.model.GameParamId;
 import tools.jackson.databind.JsonNode;
@@ -18,5 +20,7 @@ public record VehicleEntity(
     @JsonProperty("damage") double damage,
     @JsonProperty("death_info") DeathInfo deathInfo,
     @JsonProperty("results_info") JsonNode resultsInfo,
-    @JsonProperty("frags") List<DeathInfo> frags
+    @JsonProperty("frags") List<DeathInfo> frags,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("ship_config") ShipConfig shipConfig
 ) {}
