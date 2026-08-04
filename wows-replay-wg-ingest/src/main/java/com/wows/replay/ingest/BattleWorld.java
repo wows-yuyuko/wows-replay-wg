@@ -8,7 +8,6 @@ import com.wows.replay.spi.GameConstantsProvider;
 import com.wows.replay.types.ArgValue;
 import com.wows.replay.model.*;
 import com.wows.replay.packet.*;
-import com.wows.replay.pickle.PickleReader;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -956,213 +955,167 @@ public class BattleWorld {
     // ── Ingest: PropertyUpdate ─────────────────────────────────────────
 
     private void ingestPropertyUpdate(PropertyUpdatePacket pu, float elapsed) {
-        // updateCmd is byte[] from Parser — try to decode it
-        byte[] raw = null;
-        if (pu.updateCmd() instanceof byte[] b) {
-            raw = b;
-        } else {
+        // 载荷非 pickle：Parser 已解出「位流路径 + 类型化叶子值」（capture-point-audit.md §3），
+        // 这里按解码后的 path/action 直接应用。
+        NestedUpdate u = pu.update();
+        if (u == null) {
+            log.debug("PropertyUpdate: entity={} property={} 无解码结果", pu.entityId(), pu.property());
             return;
         }
-
-        // Only try PickleReader if the data looks like pickle（单一来源见
-        // PickleReader.isSupportedFirstByte，覆盖 parse() 支持的全部 opcode）
-        if (raw.length == 0) return;
-        if (!PickleReader.isSupportedFirstByte(raw[0])) return;
-
-        Object decoded;
-        try {
-            decoded = PickleReader.decode(raw);
-        } catch (Exception e) {
-            log.debug("PropertyUpdate pickle decode failed: {}", e.getMessage());
-            return;
-        }
-        if (decoded == null) return;
-
-        // Handle known patterns
-        if ("state".equals(pu.property())) {
-            ingestStatePropertyUpdate(decoded, elapsed);
-        } else if ("points".equals(pu.property())) {
-            ingestSmokePointsUpdate(pu.entityId().value(), decoded);
-        } else if ("componentsState".equals(pu.property())) {
-            ingestComponentsStateUpdate(pu.entityId().value(), decoded);
+        String prop = pu.property();
+        int eid = pu.entityId().value();
+        switch (prop) {
+            case "state" -> ingestStatePropertyUpdate(pu.path(), u, elapsed);
+            case "componentsState" -> ingestComponentsStateUpdate(eid, pu.path(), u);
+            case "points" -> log.debug("SmokeScreen points update: entity={} path={} update={}", eid, pu.path(), u);
+            default -> log.debug("PropertyUpdate: entity={} property={} path={} update={}", eid, prop, pu.path(), u);
         }
     }
 
-    /** Parse state.missions.teamsScore / state.controlPoints updates. */
-    private void ingestStatePropertyUpdate(Object decoded, float elapsed) {
-        if (!(decoded instanceof Map<?, ?> root)) return;
-
-        // { levels: [...], action: {...} }
-        Object levelsObj = root.get("levels");
-        Object actionObj = root.get("action");
-
-        if (!(levelsObj instanceof List<?> levels) || !(actionObj instanceof Map<?, ?> action)) return;
-
-        // fail-visible：版本结构变化时打出未识别路径，而不是静默丢数据
+    /** 按解码后的 path/action 直接应用 BattleLogic.state 的子字段更新。 */
+    private void ingestStatePropertyUpdate(List<String> path, NestedUpdate u, float elapsed) {
+        var keys = new ArrayList<String>();
+        var indexes = new ArrayList<Integer>();
+        for (var seg : path) {
+            if (seg.startsWith("[") && seg.endsWith("]")) {
+                indexes.add(Integer.parseInt(seg.substring(1, seg.length() - 1)));
+            } else {
+                keys.add(seg);
+            }
+        }
         boolean handled = false;
 
-        // state → missions → teamsScore → [N] → SetKey{score}
-        if (levels.size() >= 3
-            && "missions".equals(strVal(levels.get(0)))
-            && "teamsScore".equals(strVal(levels.get(1)))
-            && levels.get(2) instanceof Long teamIdx
-            && "SetKey".equals(strVal(action.get("_action"))))
-        {
-            handled = true;
-            String key = strVal(action.get("key"));
-            if ("score".equals(key)) {
-                int idx = teamIdx.intValue();
-                Object scoreVal = action.get("value");
-                long score = scoreVal instanceof Long l ? l : (scoreVal instanceof Double d ? d.longValue() : 0);
-                ensureTeamScore(idx);
-                teamScores.set(idx, new TeamScore(idx, score));
+        // state.missions.teamsScore = [..]（全量数组 SetKey）
+        if (keys.size() == 1 && keys.get(0).equals("missions")
+            && u instanceof NestedUpdate.SetKey sk && sk.key().equals("teamsScore")
+            && sk.value() instanceof ArgValue.ArrayVal arr) {
+            for (int i = 0; i < arr.elements().size(); i++) {
+                ensureTeamScore(i);
+                teamScores.set(i, new TeamScore(i, scoreOf(arr.elements().get(i))));
             }
-        }
-
-        // state → controlPoints → [N] → SetKey{...} (legacy)
-        if (levels.size() >= 2
-            && "controlPoints".equals(strVal(levels.get(0)))
-            && levels.get(1) instanceof Long cpIdx
-            && "SetKey".equals(strVal(action.get("_action"))))
-        {
             handled = true;
-            String key = strVal(action.get("key"));
-            int idx = cpIdx.intValue();
-            ensureCpIndex(idx);
-            var cp = capturePoints.get(idx);
-            Object val = action.get("value");
-            switch (key) {
-                case "teamId"       -> cp.teamId = longVal(val);
-                case "invaderTeam"  -> cp.invaderTeam = longVal(val);
-                case "hasInvaders"  -> cp.hasInvaders = longVal(val) != 0;
-                case "bothInside"   -> cp.bothInside = longVal(val) != 0;
-                case "isEnabled"    -> cp.isEnabled = longVal(val) != 0;
-                case "progress"     -> cp.progress = progressOf(val);
-            }
         }
-
-        // state → weather → localWeather → [N] → SetKey
-        if (levels.size() >= 3
-            && "weather".equals(strVal(levels.get(0)))
-            && "localWeather".equals(strVal(levels.get(1)))
-            && levels.get(2) instanceof Long wzIdx
-            && "SetKey".equals(strVal(action.get("_action"))))
-        {
+        // state.missions.teamsScore[N].score = v（元素 SetKey 标量叶子）
+        if (keys.size() == 2 && keys.get(0).equals("missions") && keys.get(1).equals("teamsScore")
+            && !indexes.isEmpty() && u instanceof NestedUpdate.SetKey sk && sk.key().equals("score")
+            && sk.value() instanceof ArgValue.IntVal iv) {
+            int idx = indexes.get(indexes.size() - 1);
+            ensureTeamScore(idx);
+            teamScores.set(idx, new TeamScore(idx, iv.value()));
             handled = true;
-            String key = strVal(action.get("key"));
-            Object val = action.get("value");
-            int idx = wzIdx.intValue();
+        }
+        // state.missions.teamsScore[N] = {teamId, score}（数组 SetElement 整元素）
+        if (keys.size() == 1 && keys.get(0).equals("missions") && indexes.size() == 1
+            && u instanceof NestedUpdate.SetElement se) {
+            int idx = indexes.get(0);
+            ensureTeamScore(idx);
+            teamScores.set(idx, new TeamScore(idx, scoreOf(se.value())));
+            handled = true;
+        }
+        // state.weather.localWeather[N].{position/radius/paramsId}（SetKey 标量叶子 / SetElement）
+        if (keys.size() == 2 && keys.get(0).equals("weather") && keys.get(1).equals("localWeather")
+            && !indexes.isEmpty()) {
+            int idx = indexes.get(indexes.size() - 1);
             while (weatherZones.size() <= idx) {
                 weatherZones.add(new WeatherZoneState("", 0, 0, 0, 0, null));
             }
             var wz = weatherZones.get(idx);
-            switch (key) {
-                case "position" -> {
-                    if (val instanceof List<?> p && p.size() >= 2) {
-                        // WeatherZoneState is a record, so replace the entry
-                        weatherZones.set(idx, new WeatherZoneState(wz.name(),
-                            p.get(0) instanceof Number n ? n.floatValue() : 0,
-                            p.get(1) instanceof Number n ? n.floatValue() : 0,
-                            wz.radius(), wz.paramsId(), wz.entityId()));
+            if (u instanceof NestedUpdate.SetKey sk) {
+                switch (sk.key()) {
+                    case "position" -> {
+                        Float x = null, z = null;
+                        if (sk.value() instanceof ArgValue.Vec2Val v2) { x = v2.x(); z = v2.y(); }
+                        else if (sk.value() instanceof ArgValue.ArrayVal av && av.elements().size() >= 2) {
+                            x = floatFromArg(av.elements().get(0));
+                            z = floatFromArg(av.elements().get(1));
+                        }
+                        if (x != null) {
+                            weatherZones.set(idx, new WeatherZoneState(wz.name(), x, z, wz.radius(), wz.paramsId(), wz.entityId()));
+                        }
                     }
+                    case "radius" -> weatherZones.set(idx, new WeatherZoneState(
+                        wz.name(), wz.x(), wz.z(), floatFromArg(sk.value()), wz.paramsId(), wz.entityId()));
+                    case "paramsId" -> weatherZones.set(idx, new WeatherZoneState(
+                        wz.name(), wz.x(), wz.z(), wz.radius(), longOfArg(sk.value()), wz.entityId()));
+                    default -> log.debug("weather.localWeather 更新未处理: key={}", sk.key());
                 }
-                case "radius" -> {
-                    float r = val instanceof Number n ? n.floatValue() : 0;
-                    weatherZones.set(idx, new WeatherZoneState(wz.name(), wz.x(), wz.z(), r, wz.paramsId(), wz.entityId()));
+                handled = true;
+            } else if (u instanceof NestedUpdate.SetElement se && se.value() instanceof ArgValue.DictVal d) {
+                String name = d.entries().get("name") instanceof ArgValue.BlobVal b
+                    ? new String(b.value(), java.nio.charset.StandardCharsets.UTF_8)
+                    : wz.name();
+                Float x = wz.x(), z = wz.z();
+                ArgValue pos = d.entries().get("position");
+                if (pos instanceof ArgValue.Vec2Val v2) { x = v2.x(); z = v2.y(); }
+                else if (pos instanceof ArgValue.ArrayVal av && av.elements().size() >= 2) {
+                    x = floatFromArg(av.elements().get(0));
+                    z = floatFromArg(av.elements().get(1));
                 }
-                case "paramsId" -> {
-                    long pid = longVal(val);
-                    weatherZones.set(idx, new WeatherZoneState(wz.name(), wz.x(), wz.z(), wz.radius(), pid, wz.entityId()));
-                }
+                float r = d.entries().get("radius") != null ? floatFromArg(d.entries().get("radius")) : wz.radius();
+                long pid = d.entries().get("paramsId") != null ? longOfArg(d.entries().get("paramsId")) : wz.paramsId();
+                weatherZones.set(idx, new WeatherZoneState(name, x, z, r, pid, wz.entityId()));
+                handled = true;
             }
         }
 
-        // state → missions → teamsScore → [N] → SetRange (initial scores array)
-        if (levels.size() >= 3
-            && "missions".equals(strVal(levels.get(0)))
-            && "teamsScore".equals(strVal(levels.get(1)))
-            && levels.get(2) instanceof Long
-            && "SetRange".equals(strVal(action.get("_action"))))
-        {
-            handled = true;
-            Object valuesObj = action.get("values");
-            if (valuesObj instanceof List<?> values) {
-                for (int i = 0; i < values.size(); i++) {
-                    Object entry = values.get(i);
-                    if (entry instanceof Map<?, ?> entryMap) {
-                        Object sv = entryMap.get("score");
-                        long s = sv instanceof Long l ? l : (sv instanceof Double d ? d.longValue() : 0);
-                        ensureTeamScore(i);
-                        teamScores.set(i, new TeamScore(i, s));
-                    }
-                }
-            }
-        }
-
-        // fail-visible：未识别的 state 更新路径——版本结构变化时可见，而非静默丢数据
         if (!handled) {
-            log.debug("state 更新未识别: levels={} action={}", levels, action);
+            log.debug("state 更新未识别: path={} update={}", path, u);
         }
     }
 
-    private void ingestSmokePointsUpdate(int entityId, Object decoded) {
-        // SmokeScreen 'points' 形状精化更新暂未实现（EntityCreate 已建基础烟幕）；
-        // fail-visible：记录到达，避免静默丢失。
-        log.debug("SmokeScreen points update: entity={} decoded={}", entityId, decoded);
-    }
-
-    private void ingestComponentsStateUpdate(int entityId, Object decoded) {
-        if (!(decoded instanceof Map<?, ?> root)) return;
-        Object levelsObj = root.get("levels");
-        Object actionObj = root.get("action");
-        if (!(actionObj instanceof Map<?, ?> action)) return;
-
-        // componentsState → captureLogic → SetKey{...}
-        if (levelsObj instanceof List<?> levels
-            && levels.size() >= 1
-            && "captureLogic".equals(strVal(levels.get(0)))
-            && "SetKey".equals(strVal(action.get("_action"))))
-        {
-            String key = strVal(action.get("key"));
-            Object val = action.get("value");
-            // 只更新该 InteractiveZone 实体对应的占领点，避免多占领点地图互相串数据
+    private void ingestComponentsStateUpdate(int entityId, List<String> path, NestedUpdate u) {
+        // componentsState.captureLogic.{field} = v
+        if (path.size() == 1 && path.get(0).equals("captureLogic")
+            && u instanceof NestedUpdate.SetKey sk) {
             CapturePointState target = null;
             for (var cp : capturePoints) {
                 if (cp.entityId == entityId) { target = cp; break; }
             }
             if (target == null) {
-                log.debug("componentsState 更新找不到对应占领点: entity={} key={}", entityId, key);
+                log.debug("componentsState 更新找不到对应占领点: entity={} key={}", entityId, sk.key());
                 return;
             }
-            switch (key) {
-                case "hasInvaders"  -> target.hasInvaders = longVal(val) != 0;
-                case "invaderTeam"  -> target.invaderTeam = longVal(val);
-                case "progress"     -> target.progress = progressOf(val);
-                case "bothInside"   -> target.bothInside = longVal(val) != 0;
-                case "isEnabled"    -> target.isEnabled = longVal(val) != 0;
+            switch (sk.key()) {
+                case "hasInvaders" -> target.hasInvaders = longOfArg(sk.value()) != 0;
+                case "invaderTeam" -> target.invaderTeam = longOfArg(sk.value());
+                case "progress"    -> target.progress = progressOfArg(sk.value());
+                case "bothInside"  -> target.bothInside = longOfArg(sk.value()) != 0;
+                case "isEnabled"   -> target.isEnabled = longOfArg(sk.value()) != 0;
+                default -> log.debug("componentsState captureLogic 更新未处理: key={} value={}", sk.key(), sk.value());
             }
+        } else {
+            log.debug("componentsState 更新未识别: entity={} path={} update={}", entityId, path, u);
         }
     }
 
-    /** 占领点 progress 是 (value, pointsPerSecond) 二元组（java-port.md §8.6），取第一项。 */
-    private static float progressOf(Object val) {
-        if (val instanceof Number n) return n.floatValue();
-        if (val instanceof List<?> l && !l.isEmpty() && l.get(0) instanceof Number n) return n.floatValue();
-        return 0f;
-    }
-
-    /** Safe string extraction from pickle values. */
-    private static String strVal(Object v) {
-        if (v instanceof String s) return s;
-        if (v instanceof byte[] b) return new String(b, java.nio.charset.StandardCharsets.UTF_8);
-        return v != null ? v.toString() : "";
-    }
-
-    private static long longVal(Object v) {
-        if (v instanceof Long l) return l;
-        if (v instanceof Double d) return d.longValue();
-        if (v instanceof Number n) return n.longValue();
+    /** TEAM_SCORE 元素/字段取 score 值。 */
+    private static long scoreOf(ArgValue v) {
+        if (v instanceof ArgValue.IntVal iv) return iv.value();
+        if (v instanceof ArgValue.FloatVal fv) return fv.value() > 0 ? (long) fv.value() : 0;
+        if (v instanceof ArgValue.DictVal d && d.entries().get("score") instanceof ArgValue.IntVal s) return s.value();
         return 0;
+    }
+
+    /** 占领点 progress 是 FLOAT（旧 def 可能为 (value, pointsPerSecond) 二元组），取第一项。 */
+    private static float progressOfArg(ArgValue v) {
+        return switch (v) {
+            case ArgValue.FloatVal fv -> (float) fv.value();
+            case ArgValue.IntVal iv -> (float) iv.value();
+            case ArgValue.ArrayVal av when !av.elements().isEmpty() -> floatFromArg(av.elements().get(0));
+            case ArgValue.TupleVal tv when !tv.elements().isEmpty() -> floatFromArg(tv.elements().get(0));
+            case ArgValue.DictVal d when d.entries().get("progress") != null -> progressOfArg(d.entries().get("progress"));
+            default -> 0f;
+        };
+    }
+
+    /** ArgValue → long。 */
+    private static long longOfArg(ArgValue v) {
+        return switch (v) {
+            case ArgValue.IntVal iv -> iv.value();
+            case ArgValue.FloatVal fv -> (long) fv.value();
+            case ArgValue.BoolVal bv -> bv.value() ? 1 : 0;
+            default -> 0;
+        };
     }
 
     // ── Finish ─────────────────────────────────────────────────────────

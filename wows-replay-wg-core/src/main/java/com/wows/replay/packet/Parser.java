@@ -307,18 +307,16 @@ public class Parser {
             var spec = getSpec(entityType, "BasePlayerCreate");
 
             var props = new LinkedHashMap<String, ArgValue>();
-            var storedProps = new ArrayList<ArgValue>();
             for (int i = 0; i < spec.baseProperties().size(); i++) {
                 var propSpec = spec.baseProperties().get(i);
                 var value = parseValue(buf, propSpec.propType());
                 props.put(propSpec.name(), value);
-                storedProps.add(value);
             }
 
             byte[] componentData = new byte[buf.remaining()];
             buf.get(componentData);
 
-            entities.put(eid.value(), new EntityState(entityType, storedProps));
+            entities.put(eid.value(), new EntityState(entityType, props));
 
             return Packet.fromRaw(raw, new BasePlayerCreatePacket(eid, spec.name(), props, componentData), new byte[0]);
         } catch (Exception e) {
@@ -337,7 +335,7 @@ public class Parser {
             byte[] componentData = new byte[buf.remaining()];
             buf.get(componentData);
 
-            entities.put(eid.value(), new EntityState(entityType, List.of()));
+            entities.put(eid.value(), new EntityState(entityType, new LinkedHashMap<>()));
 
             return Packet.fromRaw(raw, new BasePlayerCreatePacket(eid, spec.name(), Map.of(), componentData), new byte[0]);
         } catch (Exception e) {
@@ -400,12 +398,11 @@ public class Parser {
             var spec = getSpec(entityType, "EntityCreate");
 
             // 先注册实体，即使属性解析失败，后续 EntityMethod/EntityProperty 仍可解析
-            entities.put(eid.value(), new EntityState(entityType, new ArrayList<>()));
+            entities.put(eid.value(), new EntityState(entityType, new LinkedHashMap<>()));
 
             // Parse state: [num_props: u8][(prop_id: u8, value)...]
             int numProps = buf.get() & 0xFF;
             var props = new LinkedHashMap<String, ArgValue>();
-            var storedProps = new ArrayList<ArgValue>();
             for (int i = 0; i < numProps && buf.hasRemaining(); i++) {
                 int propId = buf.get() & 0xFF;
                 if (propId >= spec.clientProperties().size()) break;
@@ -413,7 +410,6 @@ public class Parser {
                 try {
                     var value = parseValue(buf, propSpec.propType());
                     props.put(propSpec.name(), value);
-                    storedProps.add(value);
                 } catch (Exception e) {
                     log.warn("EntityCreate {} {}: prop[{}]={} parse failed: {}",
                         eid, spec.name(), propId, propSpec.name(), e.toString());
@@ -421,8 +417,8 @@ public class Parser {
                 }
             }
 
-            if (!storedProps.isEmpty()) {
-                entities.put(eid.value(), new EntityState(entityType, storedProps));
+            if (!props.isEmpty()) {
+                entities.put(eid.value(), new EntityState(entityType, props));
             }
 
             return Packet.fromRaw(raw, new EntityCreatePacket(eid, entityType, spec.name(), spaceId, vehicleId, pos, rot, stateLen, props), remaining(raw, buf));
@@ -447,6 +443,8 @@ public class Parser {
             var propSpec = spec.clientProperties().get(propId);
 
             var value = parseValue(buf, propSpec.propType());
+            // 维护当前值（供 NestedPropertyUpdate 的 Array 索引位宽依赖）
+            state.properties.put(propSpec.name(), value);
 
             int consumed = raw.payload().length - 4 - 4 - 4 - buf.remaining();
             if (consumed < payloadLen) {
@@ -509,41 +507,235 @@ public class Parser {
             byte[] payload = new byte[Math.min(payloadSize, buf.remaining())];
             buf.get(payload);
 
-            // Resolve property name from bit-packed prop_idx in the payload
-            String propertyName = "nested";
             var state = entities.get(eid.value());
-            if (state != null) {
-                var spec = getSpec(state.entityType, "NestedPropertyUpdate");
-                if (!spec.clientProperties().isEmpty()) {
-                    int numProps = spec.clientProperties().size();
-                    // ceil(log2(numProps)) 位即可编码 0..numProps-1；
-                    // 之前用 highestOneBit<<1 会多算一位导致 propIdx 越界（恒为 "nested"）。
-                    int bitWidth = numProps > 1
-                        ? Integer.SIZE - Integer.numberOfLeadingZeros(numProps - 1)
-                        : 0;
-                    var bits = new BitReader(payload);
-                    // cont flag (must be 1)
-                    int cont = bits.read(1);
-                    if (cont == 1 && bits.remaining() >= bitWidth) {
-                        int propIdx = bits.read(bitWidth);
-                        if (propIdx < numProps) {
-                            propertyName = spec.clientProperties().get(propIdx).name();
-                        }
-                    }
-                }
+            if (state == null) {
+                return Packet.invalid(raw, "NestedPropertyUpdate for unknown entity " + eid);
+            }
+            var spec = getSpec(state.entityType, "NestedPropertyUpdate");
+            if (spec.clientProperties().isEmpty()) {
+                return Packet.unknown(raw);
             }
 
-            return Packet.fromRaw(raw, new PropertyUpdatePacket(eid, propertyName, payload), new byte[0]);
+            // 顶层：cont(1 bit, 恒 1) + propIdx(ceil(log2(numProps)) bit)
+            int numProps = spec.clientProperties().size();
+            int bitWidth = bitWidthFor(numProps);
+            var bits = new BitReader(payload);
+            int cont = bits.read(1);
+            if (cont != 1) {
+                return Packet.invalid(raw, "NestedPropertyUpdate: top-level cont != 1");
+            }
+            int propIdx = bits.read(bitWidth);
+            if (propIdx >= numProps) {
+                return Packet.invalid(raw, "NestedPropertyUpdate: propIdx " + propIdx + " out of bounds for " + spec.name());
+            }
+            var propSpec = spec.clientProperties().get(propIdx);
+
+            // 走位流路径 + 解码类型化叶子值（对照 Rust nested_property_path.rs），
+            // 并在属性当前值树上应用更新（Array 索引位宽依赖当前长度）。
+            var properties = state.properties;
+            ArgValue current = properties.getOrDefault(propSpec.name(), new ArgValue.NullVal());
+            var result = walkNested((isSlice & 0x1) == 1, propSpec.propType(), current, bits);
+            properties.put(propSpec.name(), result.value());
+
+            return Packet.fromRaw(raw, new PropertyUpdatePacket(eid, propSpec.name(), payload,
+                result.levels(), result.action()), new byte[0]);
         } catch (Exception e) {
             return Packet.invalid(raw, "NestedPropertyUpdate parse error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
-    /** Minimal big-endian bit reader for nested-property payloads. */
+    /** ceil(log2(n))，对标 Rust {@code n.next_power_of_two().trailing_zeros()}。 */
+    private static int bitWidthFor(int n) {
+        return n > 1 ? Integer.SIZE - Integer.numberOfLeadingZeros(n - 1) : 0;
+    }
+
+    /** 去掉 NamedType/UserType 透明包装（对标 Rust {@code ArgType::peeled}）。 */
+    private static ArgType peel(ArgType t) {
+        while (true) {
+            if (t instanceof ArgType.NamedType nt) t = nt.inner();
+            else if (t instanceof ArgType.UserType ut) t = ut.inner();
+            else return t;
+        }
+    }
+
+    private static boolean isScalar(ArgType t) {
+        return t instanceof ArgType.Primitive;
+    }
+
+    /** 走查结果：路径片段 + 更新命令 + 应用更新后的值。 */
+    private record NestedResult(List<String> levels, NestedUpdate action, ArgValue value) {}
+
+    /**
+     * 递归走查嵌套属性路径（对标 Rust {@code get_nested_prop_path_helper}）。
+     * 顺带把更新应用到 {@code value}；未物化（NullVal）容器会被替换为默认空容器并随返回值持久化。
+     */
+    private NestedResult walkNested(boolean isSlice, ArgType t, ArgValue value, BitReader r) {
+        var p = peel(t);
+        int cont = r.read(1);
+        if (cont == 0) {
+            return terminalCommand(isSlice, p, value, r);
+        }
+        if (p instanceof ArgType.FixedDict fixed) {
+            int idx = (int) r.read(bitWidthFor(fixed.properties().size()));
+            var prop = fixed.properties().get(idx);
+            var pair = ensureDict(value, fixed);
+            Map<String, ArgValue> dict = pair.dict();
+            if (isScalar(peel(prop.propType()))) {
+                // scalar 叶子：无 cont 位，字节对齐后读值（对标新版 Rust read_aligned_scalar）
+                ArgValue leaf = parseAlignedScalar(prop.propType(), r);
+                dict.put(prop.name(), leaf);
+                return new NestedResult(List.of(), new NestedUpdate.SetKey(prop.name(), leaf), pair.value());
+            }
+            var child = dict.get(prop.name());
+            var inner = walkNested(isSlice, prop.propType(), child, r);
+            dict.put(prop.name(), inner.value());
+            var levels = new ArrayList<String>(inner.levels());
+            levels.add(0, prop.name());
+            return new NestedResult(levels, inner.action(), pair.value());
+        } else if (p instanceof ArgType.Array arr) {
+            var pair = ensureArray(value, arr.elementType());
+            List<ArgValue> elems = pair.elems();
+            int idx = (int) r.read(bitWidthFor(elems.size()));
+            if (isScalar(peel(arr.elementType()))) {
+                ArgValue leaf = parseAlignedScalar(arr.elementType(), r);
+                ensureArraySize(elems, idx, arr.elementType());
+                elems.set(idx, leaf);
+                return new NestedResult(List.of("[" + idx + "]"), new NestedUpdate.SetElement(idx, leaf), pair.value());
+            }
+            ensureArraySize(elems, idx, arr.elementType());
+            var child = elems.get(idx);
+            var inner = walkNested(isSlice, arr.elementType(), child, r);
+            elems.set(idx, inner.value());
+            var levels = new ArrayList<String>(inner.levels());
+            levels.add(0, "[" + idx + "]");
+            return new NestedResult(levels, inner.action(), pair.value());
+        }
+        throw new IllegalStateException("nested property walk into unsupported type: " + t.typeName());
+    }
+
+    /** 终端更新命令（对标 Rust {@code nested_update_command}，cont==0 到达更新层）。 */
+    private NestedResult terminalCommand(boolean isSlice, ArgType t, ArgValue value, BitReader r) {
+        var p = peel(t);
+        if (p instanceof ArgType.FixedDict fixed) {
+            int idx = (int) r.read(bitWidthFor(fixed.properties().size()));
+            var entry = fixed.properties().get(idx);
+            ArgValue leaf = parseAlignedScalar(entry.propType(), r);
+            var pair = ensureDict(value, fixed);
+            pair.dict().put(entry.name(), leaf);
+            return new NestedResult(List.of(), new NestedUpdate.SetKey(entry.name(), leaf), pair.value());
+        } else if (p instanceof ArgType.Array arr) {
+            var pair = ensureArray(value, arr.elementType());
+            List<ArgValue> elems = pair.elems();
+            int idxBits = bitWidthFor(isSlice ? elems.size() + 1 : elems.size());
+            int idx1 = (int) r.read(idxBits);
+            Integer idx2 = isSlice ? (int) r.read(idxBits) : null;
+            byte[] rest = r.rest();
+            var values = parseElements(rest, arr.elementType());
+
+            if (isSlice) {
+                sliceInsert(elems, idx1, idx2, values);
+                return new NestedResult(List.of(), new NestedUpdate.SetRange(idx1, idx2, values), pair.value());
+            }
+            if (values.isEmpty()) {
+                throw new IllegalStateException("non-slice element set with empty value");
+            }
+            ensureArraySize(elems, idx1, arr.elementType());
+            elems.set(idx1, values.get(0));
+            return new NestedResult(List.of("[" + idx1 + "]"), new NestedUpdate.SetElement(idx1, values.get(0)), pair.value());
+        }
+        throw new IllegalStateException("terminal command on unsupported type: " + t.typeName());
+    }
+
+    /** 取可变 dict；未物化时造默认空 dict 并作为替换值返回。 */
+    private static DictPair ensureDict(ArgValue v, ArgType.FixedDict fixed) {
+        if (v instanceof ArgValue.DictVal d) {
+            return new DictPair(d.entries(), d);
+        }
+        var map = new LinkedHashMap<String, ArgValue>();
+        for (var prop : fixed.properties()) {
+            map.put(prop.name(), defaultArgValue(prop.propType()));
+        }
+        return new DictPair(map, new ArgValue.DictVal(map));
+    }
+
+    /** 取可变数组；未物化时造空数组并作为替换值返回。 */
+    private static ArrayPair ensureArray(ArgValue v, ArgType elementType) {
+        if (v instanceof ArgValue.ArrayVal a) {
+            return new ArrayPair(a.elements(), a);
+        }
+        var list = new ArrayList<ArgValue>();
+        return new ArrayPair(list, new ArgValue.ArrayVal(list));
+    }
+
+    private record DictPair(Map<String, ArgValue> dict, ArgValue value) {}
+    private record ArrayPair(List<ArgValue> elems, ArgValue value) {}
+
+    /** 字节对齐后按 def schema 读单个叶子值（对标 Rust read_aligned_scalar）。 */
+    private ArgValue parseAlignedScalar(ArgType t, BitReader r) {
+        byte[] rest = r.rest();
+        return parseValue(ByteBuffer.wrap(rest).order(ByteOrder.LITTLE_ENDIAN), t);
+    }
+
+    /** 从剩余字节读一串同类型元素（终端数组 SetRange/SetElement）。 */
+    private List<ArgValue> parseElements(byte[] rest, ArgType elementType) {
+        var buf = ByteBuffer.wrap(rest).order(ByteOrder.LITTLE_ENDIAN);
+        var out = new ArrayList<ArgValue>();
+        while (buf.hasRemaining()) {
+            int before = buf.position();
+            var v = parseValue(buf, elementType);
+            if (buf.position() == before) break; // 不前进 = 错位，停止
+            out.add(v);
+        }
+        return out;
+    }
+
+    private void ensureArraySize(List<ArgValue> elems, int idx, ArgType elementType) {
+        while (elems.size() <= idx) {
+            elems.add(defaultArgValue(elementType));
+        }
+    }
+
+    private static ArgValue defaultArgValue(ArgType t) {
+        return switch (peel(t)) {
+            case ArgType.Primitive p -> switch (p) {
+                case INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64 -> new ArgValue.IntVal(0);
+                case FLOAT, DOUBLE -> new ArgValue.FloatVal(0);
+                case BOOL -> new ArgValue.BoolVal(false);
+                case VECTOR2 -> new ArgValue.Vec2Val(0, 0);
+                case VECTOR3 -> new ArgValue.Vec3Val(0, 0, 0);
+                case VECTOR4 -> new ArgValue.Vec4Val(0, 0, 0, 0);
+                default -> new ArgValue.NullVal();
+            };
+            case ArgType.Array a -> new ArgValue.ArrayVal(new ArrayList<>());
+            case ArgType.FixedDict f -> {
+                var map = new LinkedHashMap<String, ArgValue>();
+                for (var prop : f.properties()) map.put(prop.name(), defaultArgValue(prop.propType()));
+                yield new ArgValue.DictVal(map);
+            }
+            case ArgType.Tuple tuple -> {
+                var elems = new ArrayList<ArgValue>();
+                for (var et : tuple.elementTypes()) elems.add(defaultArgValue(et));
+                yield new ArgValue.TupleVal(elems);
+            }
+            default -> new ArgValue.NullVal();
+        };
+    }
+
+    /** Python 切片语义（对标 Rust slice_insert）：删 target[start..stop]，再在 start 插入 source。 */
+    private static void sliceInsert(List<ArgValue> target, int start, int stop, List<ArgValue> source) {
+        for (int i = start; i < stop; i++) {
+            if (target.size() <= start) break;
+            target.remove(start);
+        }
+        for (int i = 0; i < source.size(); i++) {
+            target.add(Math.min(start + i, target.size()), source.get(i));
+        }
+    }
+
+    /** MSB-first bit reader for nested-property payloads（对标 Rust BitReader）。 */
     private static final class BitReader {
         private final byte[] data;
-        private int bytePos;
-        private int bitPos;  // 0..7 within current byte
+        private int bitOffset;
         private final int totalBits;
 
         BitReader(byte[] data) {
@@ -554,20 +746,28 @@ public class Parser {
         int read(int nBits) {
             int value = 0;
             for (int i = 0; i < nBits; i++) {
-                if (bytePos >= data.length) break;
-                int bit = (data[bytePos] >> (7 - bitPos)) & 1;
-                value = (value << 1) | bit;
-                bitPos++;
-                if (bitPos == 8) {
-                    bitPos = 0;
-                    bytePos++;
-                }
+                if (bitOffset >= totalBits) break;
+                int byteIdx = bitOffset / 8;
+                int bitIdx = 7 - (bitOffset % 8);
+                value = (value << 1) | ((data[byteIdx] >> bitIdx) & 1);
+                bitOffset++;
             }
             return value;
         }
 
         int remaining() {
-            return totalBits - (bytePos * 8 + bitPos);
+            return totalBits - bitOffset;
+        }
+
+        /** 补位到字节边界并取出剩余字节（对标 Rust 的 align + read_u8_slice）。 */
+        byte[] rest() {
+            while (remaining() % 8 != 0) read(1);
+            int n = remaining() / 8;
+            byte[] out = new byte[n];
+            int start = bitOffset / 8;
+            System.arraycopy(data, start, out, 0, n);
+            bitOffset += n * 8;
+            return out;
         }
     }
 
@@ -727,7 +927,7 @@ public class Parser {
 
     // ── Inner types ─────────────────────────────────────────────────────────
 
-    private record EntityState(int entityType, List<ArgValue> properties) {}
+    private record EntityState(int entityType, Map<String, ArgValue> properties) {}
 
     /**
      * Non-fatal parsing diagnostic: a method/property payload was not fully consumed.

@@ -71,6 +71,11 @@ class MinimapExtractorIT {
         assertNotNull(out.winningTeam(), "应有 winning_team");
         assertTrue(out.frames().stream().anyMatch(f -> f.teamScores().size() >= 2), "应有队伍比分");
 
+        // 占领点 progress 应被捕获（capture-point-audit.md §3：NestedPropertyUpdate 值解码修复后非零）
+        assertTrue(out.frames().stream().flatMap(f -> f.capturePoints().stream())
+                .anyMatch(cp -> cp.progress() > 0f),
+            "占领点 progress 应被捕获（应出现非零值）");
+
         // 帧内归一化坐标范围检查
         var entity = out.frames().stream().flatMap(f -> f.entities().stream())
             .findFirst().orElse(null);
