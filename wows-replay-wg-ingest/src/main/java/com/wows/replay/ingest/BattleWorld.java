@@ -609,8 +609,8 @@ public class BattleWorld {
                 ingestInteractiveZone(eid, props, ec.position());
             }
             case "Building" -> {
-                float bx = ec.position() != null ? ec.position().x() : 0;
-                float bz = ec.position() != null ? ec.position().z() : 0;
+                float bx = posX(ec.position());
+                float bz = posZ(ec.position());
                 int teamId = getIntProp(props, "teamId");
                 long paramsId = getLongProp(props, "paramsId");
                 boolean alive = getBoolProp(props, "isAlive", true);
@@ -622,8 +622,8 @@ public class BattleWorld {
                 smokeScreens.put(eid, es);
             }
             case "WeatherZone", "LocalWeatherZone" -> {
-                float wx = ec.position() != null ? ec.position().x() : 0;
-                float wz = ec.position() != null ? ec.position().z() : 0;
+                float wx = posX(ec.position());
+                float wz = posZ(ec.position());
                 float wr = getFloatProp(props, "radius");
                 long wparams = getLongProp(props, "paramsId");
                 // Decode name from byte array
@@ -631,8 +631,8 @@ public class BattleWorld {
                 weatherZones.add(new WeatherZoneState(wname, wx, wz, wr, wparams, eid));
             }
             case "BuffZone" -> {
-                float bfx = ec.position() != null ? ec.position().x() : 0;
-                float bfz = ec.position() != null ? ec.position().z() : 0;
+                float bfx = posX(ec.position());
+                float bfz = posZ(ec.position());
                 float bfr = getFloatProp(props, "radius");
                 int bfTeam = getIntProp(props, "teamId");
                 boolean bfActive = getBoolProp(props, "isActive", true);
@@ -706,8 +706,8 @@ public class BattleWorld {
     }
 
     private void ingestInteractiveZone(int eid, Map<String, ArgValue> props, Vec3 position) {
-        float px = position != null ? position.x() : 0;
-        float pz = position != null ? position.z() : 0;
+        float px = posX(position);
+        float pz = posZ(position);
         float radius = getFloatProp(props, "radius");
         int teamId = getIntProp(props, "teamId");
 
@@ -1077,7 +1077,7 @@ public class BattleWorld {
 
     private void ingestComponentsStateUpdate(int entityId, List<String> path, NestedUpdate u) {
         // componentsState.captureLogic.{field} = v
-        if (path.size() == 1 && path.get(0).equals("captureLogic")
+        if (path.size() == 1 && path.getFirst().equals("captureLogic")
             && u instanceof NestedUpdate.SetKey(String key, ArgValue value)) {
             CapturePointState target = null;
             for (var cp : capturePoints) {
@@ -1194,7 +1194,7 @@ public class BattleWorld {
             // 否则独立战舰实体与 Avatar 分离时伤害会漏算（对齐 BattleReportBuilder）。
             int vehicleEid = resolveVehicleEid(pi.entityId);
             double damage = damageByAggressor.getOrDefault(vehicleEid, List.of())
-                    .stream().mapToDouble(d -> d.amount()).sum();
+                    .stream().mapToDouble(DamageEvent::amount).sum();
             playerSnapshots.add(new BattleSnapshot.Player(
                     e.getKey(), pi.username, pi.entityId, pi.teamId, pi.relation,
                     es != null && es.isBot, dead, damage));
@@ -1519,11 +1519,10 @@ public class BattleWorld {
 
     // ── Helpers: Resources ─────────────────────────────────────────────
 
-    private TeamScore ensureTeamScore(int index) {
+    private void ensureTeamScore(int index) {
         while (teamScores.size() <= index) {
             teamScores.add(new TeamScore(teamScores.size(), 0));
         }
-        return teamScores.get(index);
     }
 
     private void ensureCpIndex(int index) {
@@ -1565,7 +1564,7 @@ public class BattleWorld {
         v = dict.get("progress");
         if (v instanceof ArgValue.FloatVal(double value2)) s.progress = (float) value2;
         else if (v instanceof ArgValue.ArrayVal(List<ArgValue> elements) && elements.size() >= 2) {
-            s.progress = floatFromArg(elements.get(0));
+            s.progress = floatFromArg(elements.getFirst());
         }
         v = dict.get("bothInside");
         if (v instanceof ArgValue.IntVal(long value1)) s.bothInside = value1 != 0;
@@ -1574,6 +1573,12 @@ public class BattleWorld {
     }
 
     // ── Static helpers ─────────────────────────────────────────────────
+
+    /** 位置 x，null 安全（无位置视为 0）。 */
+    static float posX(Vec3 p) { return p != null ? p.x() : 0f; }
+
+    /** 位置 z，null 安全（无位置视为 0）。 */
+    static float posZ(Vec3 p) { return p != null ? p.z() : 0f; }
 
     /** Resolve a FINISH_TYPE id from battle.xml to a display name. */
     static String finishTypeName(int id) {
