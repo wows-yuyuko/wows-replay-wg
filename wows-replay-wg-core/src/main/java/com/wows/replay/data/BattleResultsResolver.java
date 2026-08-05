@@ -82,8 +82,8 @@ public final class BattleResultsResolver {
         if (!names.isArray() || !values.isArray()) return obj;
         for (int i = 0; i < names.size(); i++) {
             JsonNode name = names.get(i);
-            if (name.isTextual() && i < values.size()) {
-                obj.set(name.textValue(), values.get(i));
+            if (name.isString() && i < values.size()) {
+                obj.set(name.stringValue(), values.get(i));
             }
         }
         return obj;
@@ -115,8 +115,8 @@ public final class BattleResultsResolver {
         JsonNode nested = constants != null ? constants.path("BR_NESTED").path("PLAYER_PRIVATE_RESULTS") : null;
         if (nested != null && nested.isArray()) {
             for (var entry : nested) {
-                String field = entry.path("field").asText(null);
-                String subList = entry.path("sub_list").asText(null);
+                String field = entry.path("field").asString(null);
+                String subList = entry.path("sub_list").asString(null);
                 if (field == null || subList == null) continue;
                 JsonNode fieldVal = obj.get(field);
                 if (fieldVal != null && fieldVal.isArray()) {

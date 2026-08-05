@@ -43,47 +43,47 @@ public class BattleWorld {
     final Map<Integer, EntityState> entities = new LinkedHashMap<>();
 
     // ── Resources ──────────────────────────────────────────────────────
-    final List<TeamScore>      teamScores        = new ArrayList<>();
-    final List<KillRecord>     killLog           = new ArrayList<>();
-    final List<DamageEvent>    damageEvents      = new ArrayList<>();
+    final List<TeamScore> teamScores = new ArrayList<>();
+    final List<KillRecord> killLog = new ArrayList<>();
+    final List<DamageEvent> damageEvents = new ArrayList<>();
     final Map<Integer, List<DamageEvent>> damageByAggressor = new LinkedHashMap<>();
-    final List<ChatEvent>      chatLog           = new ArrayList<>();
-    final List<ConsumableEvent> consumableLog    = new ArrayList<>();
-    final List<CapturePointState> capturePoints  = new ArrayList<>();
+    final List<ChatEvent> chatLog = new ArrayList<>();
+    final List<ConsumableEvent> consumableLog = new ArrayList<>();
+    final List<CapturePointState> capturePoints = new ArrayList<>();
     /** Active buff zones keyed by entity id (despawned on EntityLeave, mirrors Rust). */
-    final Map<Integer, BuffZoneState> buffZones  = new LinkedHashMap<>();
-    final List<WeatherZoneState> weatherZones    = new ArrayList<>();
-    final List<BuildingState>  buildings         = new ArrayList<>();
-    final List<DeadShipRecord> deadShips         = new ArrayList<>();
-    final List<CapturedBuff>   capturedBuffs     = new ArrayList<>();
-    final Set<String>          entityTypes       = new LinkedHashSet<>();
+    final Map<Integer, BuffZoneState> buffZones = new LinkedHashMap<>();
+    final List<WeatherZoneState> weatherZones = new ArrayList<>();
+    final List<BuildingState> buildings = new ArrayList<>();
+    final List<DeadShipRecord> deadShips = new ArrayList<>();
+    final List<CapturedBuff> capturedBuffs = new ArrayList<>();
+    final Set<String> entityTypes = new LinkedHashSet<>();
 
     // ── Extended resources (Phase 4 ingest) ────────────────────────────
-    final List<ArtillerySalvo> firedSalvos         = new ArrayList<>();
-    final List<TorpedoRecord>  torpedoes            = new ArrayList<>();
+    final List<ArtillerySalvo> firedSalvos = new ArrayList<>();
+    final List<TorpedoRecord> torpedoes = new ArrayList<>();
     /** 在飞鱼雷（命中时移除），对标 Rust ActiveTorpedoOrder */
-    final Map<Long, TorpedoRecord> activeTorpedoes  = new LinkedHashMap<>();
-    final List<ShotHitRecord>  shotHits             = new ArrayList<>();
-    final List<PlaneRecord>    planeEvents          = new ArrayList<>();
-    final Map<Long, PlaneState> activePlanes        = new LinkedHashMap<>();
-    final Map<Long, WardState>  activeWards         = new LinkedHashMap<>();
-    final List<VoiceLineEvent> voiceLineLog         = new ArrayList<>();
-    final List<RibbonEvent>    ribbonLog            = new ArrayList<>();
+    final Map<Long, TorpedoRecord> activeTorpedoes = new LinkedHashMap<>();
+    final List<ShotHitRecord> shotHits = new ArrayList<>();
+    final List<PlaneRecord> planeEvents = new ArrayList<>();
+    final Map<Long, PlaneState> activePlanes = new LinkedHashMap<>();
+    final Map<Long, WardState> activeWards = new LinkedHashMap<>();
+    final List<VoiceLineEvent> voiceLineLog = new ArrayList<>();
+    final List<RibbonEvent> ribbonLog = new ArrayList<>();
 
     String arenaId;
     String mapName;
-    long   mapArenaId;
-    int    gameMode;
+    long mapArenaId;
+    int gameMode;
     String matchGroup;
     Integer winningTeam;
     String finishType;
     String matchResult;
-    Float  maxDuration;
-    Float  playedDuration;
-    Float  extraDuration;
-    Float  battleStartClock;
-    Float  battleResultClock;
-    Float  battleEndClock;
+    Float maxDuration;
+    Float playedDuration;
+    Float extraDuration;
+    Float battleStartClock;
+    Float battleResultClock;
+    Float battleEndClock;
     /** 收到 BattleEnd 置 true（匹配 report.rs MatchState.match_finished）。 */
     boolean matchFinished;
     /** finishType 原始 int（battle.xml FINISH_TYPE id）。 */
@@ -93,7 +93,7 @@ public class BattleWorld {
     /** receiveDamageStat 累积（服务端权威的自我玩家按武器伤害）。 */
     final List<com.wows.replay.ingest.report.DamageStatEntry> selfDamageStats = new ArrayList<>();
     /** BattleLogic timeLeft 属性（秒），minimap frame 用 */
-    Float  timeLeft;
+    Float timeLeft;
     /** BattleLogic battleStage 属性 id（BATTLE_STAGES：0=Waiting,1=Battle,2=Results,3=Finishing,4=Ended） */
     Integer battleStageId;
     /** 存活烟幕（EntityLeave 时移除），minimap frame 用 */
@@ -108,13 +108,13 @@ public class BattleWorld {
     /** entity_id → (meta_id, username) */
     final Map<Integer, PlayerLink> entityToPlayer = new LinkedHashMap<>();
     /** meta_id → PlayerInfo（战斗内 meta id，与 meta.vehicles[].id 同空间） */
-    final Map<Long, PlayerInfo>    players         = new LinkedHashMap<>();
+    final Map<Long, PlayerInfo> players = new LinkedHashMap<>();
     /** meta_id → 竞技场名册原始状态（dumper 输出 initial_state 用） */
     final Map<Long, com.wows.replay.decode.PlayerStateData> arenaPlayers = new LinkedHashMap<>();
     /** Vehicle entity_id → Avatar entity_id (owner) */
-    final Map<Integer, Integer>    vehicleToOwner  = new LinkedHashMap<>();
+    final Map<Integer, Integer> vehicleToOwner = new LinkedHashMap<>();
     /** meta_id → entity_id (from arena state) */
-    final Map<Long, Integer>       dbToEntity      = new LinkedHashMap<>();
+    final Map<Long, Integer> dbToEntity = new LinkedHashMap<>();
 
     int cellPlayerCreateCount;
     int vehicleCreateCount;
@@ -264,7 +264,7 @@ public class BattleWorld {
         // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
         // buff zones are removed from the active set on EntityLeave)
         if (smokeScreens.remove(eid) != null || buffZones.remove(eid) != null
-                || "SmokeScreen".equals(es != null ? es.type : null)) {
+            || "SmokeScreen".equals(es != null ? es.type : null)) {
             entities.remove(eid);
         }
     }
@@ -313,13 +313,13 @@ public class BattleWorld {
         var kl = entityToPlayer.get(killerEid);
         var vl = entityToPlayer.get(victimEid);
         killLog.add(new KillRecord(elapsed, killerEid, victimEid,
-            kl != null ? kl.metaId : 0, kl != null ? kl.username : "",
-            vl != null ? vl.metaId : 0, vl != null ? vl.username : "",
-            sd.cause()));
+                kl != null ? kl.metaId : 0, kl != null ? kl.username : "",
+                vl != null ? vl.metaId : 0, vl != null ? vl.username : "",
+                sd.cause()));
         var es = entities.get(sd.victim().value());
         if (es != null) es.isAlive = false;
         deadShips.add(new DeadShipRecord(elapsed, sd.victim().value(),
-            es != null ? es.x : 0, es != null ? es.z : 0));
+                es != null ? es.x : 0, es != null ? es.z : 0));
     }
 
     private void handleChat(DecodedPayload.ChatMessagePayload chat, float elapsed) {
@@ -330,16 +330,16 @@ public class BattleWorld {
         if (senderDbId == 0) return;
         var pl = players.get(senderDbId);
         chatLog.add(new ChatEvent(elapsed, chat.entityId().value(),
-            senderDbId,
-            pl != null ? pl.username : "account " + senderDbId,
-            chat.audience(), chat.message()));
+                senderDbId,
+                pl != null ? pl.username : "account " + senderDbId,
+                chat.audience(), chat.message()));
     }
 
     private void handleConsumable(DecodedPayload.ConsumablePayload cons, float elapsed) {
         var pl = entityToPlayer.get(cons.entity().value());
         consumableLog.add(new ConsumableEvent(elapsed, cons.entity().value(),
-            pl != null ? pl.metaId : 0, pl != null ? pl.username : "",
-            cons.consumableId(), cons.duration()));
+                pl != null ? pl.metaId : 0, pl != null ? pl.username : "",
+                cons.consumableId(), cons.duration()));
     }
 
     private void handleBattleEnd(DecodedPayload.BattleEndPayload be, float elapsed) {
@@ -356,10 +356,11 @@ public class BattleWorld {
         battleResultsJson = br.json();
         try {
             var node = com.wows.replay.JsonMapper.readTree(br.json());
-            if (node.has("matchResult")) matchResult = node.get("matchResult").asText();
+            if (node.has("matchResult")) matchResult = node.get("matchResult").asString();
             if (node.has("finishReason") && finishType == null)
-                finishType = node.get("finishReason").asText();
-        } catch (Exception ignored) {}
+                finishType = node.get("finishReason").asString();
+        } catch (Exception ignored) {
+        }
     }
 
     private void handlePlayerOrientation(DecodedPayload.PlayerOrientationPayload po) {
@@ -400,7 +401,7 @@ public class BattleWorld {
         // 更接近命中时刻（边界内位置已被后续 Position 包更新）。打海水/空射不产生 receiveShotKills。
         var victimEs = entities.get(skp.avatarId().value());
         com.wows.replay.model.Vec3 victimPosition = victimEs != null
-            ? new com.wows.replay.model.Vec3(victimEs.x, victimEs.y, victimEs.z) : null;
+                ? new com.wows.replay.model.Vec3(victimEs.x, victimEs.y, victimEs.z) : null;
         for (var hit : skp.hits()) {
             shotHits.add(new ShotHitRecord(elapsed, skp.avatarId(), hit, victimPosition));
             // 命中即移除对应在飞鱼雷（对标 Rust remove_matching_torpedo）
@@ -430,7 +431,7 @@ public class BattleWorld {
 
     private void handlePlaneAdded(DecodedPayload.PlaneAddedPayload pap, float elapsed) {
         var ps = new PlaneState(pap.planeId(), pap.entityId().value(), pap.teamId(),
-            pap.paramsId(), pap.x(), pap.z(), elapsed, elapsed);
+                pap.paramsId(), pap.x(), pap.z(), elapsed, elapsed);
         activePlanes.put(pap.planeId(), ps);
         planeEvents.add(new PlaneRecord(elapsed, "added", pap.planeId(), ps));
     }
@@ -449,7 +450,7 @@ public class BattleWorld {
 
     private void handleWardAdded(DecodedPayload.WardAddedPayload wap, float elapsed) {
         activeWards.put(wap.planeId(), new WardState(wap.planeId(), wap.entityId(), wap.ownerId(),
-            wap.position(), wap.radius(), elapsed));
+                wap.position(), wap.radius(), elapsed));
     }
 
     private void handleWardRemoved(DecodedPayload.WardRemovedPayload wrp) {
@@ -461,9 +462,9 @@ public class BattleWorld {
         // 累积到 world.selfDamageStats（对标 Rust SelfStats.damage_stats）。
         for (var e : dsp.entries()) {
             selfDamageStats.add(new com.wows.replay.ingest.report.DamageStatEntry(
-                e.weaponId(),
-                com.wows.replay.ingest.report.DamageStatCategory.fromRaw(e.categoryId()),
-                e.count(), e.total()));
+                    e.weaponId(),
+                    com.wows.replay.ingest.report.DamageStatCategory.fromRaw(e.categoryId()),
+                    e.count(), e.total()));
         }
     }
 
@@ -502,7 +503,7 @@ public class BattleWorld {
             ingestOneArenaPlayer(psd, true);
         }
         log.info("ArenaState: {} players + {} bots → {} entity→player mappings, {} players",
-            playerStates.size(), botStates.size(), entityToPlayer.size(), players.size());
+                playerStates.size(), botStates.size(), entityToPlayer.size(), players.size());
     }
 
     private void ingestOneArenaPlayer(PlayerStateData psd, boolean isBot) {
@@ -529,16 +530,18 @@ public class BattleWorld {
         // Create entity components from arena state
         var es = getOrCreateEntity(entityId, "Avatar");
         es.maxHealth = psd.maxHealth();
-        es.health    = psd.maxHealth(); // seed full HP from arena state
-        es.teamId    = (int) psd.teamId();
-        es.isBot     = isBot;
-        es.dbId      = metaId;
+        es.health = psd.maxHealth(); // seed full HP from arena state
+        es.teamId = (int) psd.teamId();
+        es.isBot = isBot;
+        es.dbId = metaId;
         es.playerName = psd.username();
 
         // Match meta player by metaShipId → get relation
         for (var mp : metaPlayers) {
             if (mp.metaId == metaId) {
                 es.relation = mp.relation;
+                mp.accountId = psd.dbId();
+                mp.entityId = entityId;
                 break;
             }
         }
@@ -546,7 +549,7 @@ public class BattleWorld {
 
     private void ingestNewPlayers(List<PlayerStateData> players, List<PlayerStateData> bots) {
         for (var psd : players) ingestOneArenaPlayer(psd, false);
-        for (var psd : bots)    ingestOneArenaPlayer(psd, true);
+        for (var psd : bots) ingestOneArenaPlayer(psd, true);
     }
 
     // ── Ingest: EntityCreate ───────────────────────────────────────────
@@ -570,39 +573,32 @@ public class BattleWorld {
             case "Vehicle" -> {
                 vehicleCreateCount++;
                 // Vehicle owner → Avatar mapping
-                ArgValue owner = props.get("owner");
-                if (owner instanceof ArgValue.IntVal iv) {
-                    int ownerEid = (int) iv.value();
+                if (props.get("owner") instanceof ArgValue.IntVal(long value)) {
+                    int ownerEid = (int) value;
                     vehicleToOwner.put(eid, ownerEid);
                     getOrCreateEntity(ownerEid, "Avatar");
                 }
                 extractHealth(props, eid);
                 extractTeam(props, eid);
                 // Extract shipConfig if present
-                ArgValue sc = props.get("shipConfig");
-                if (sc instanceof ArgValue.BlobVal bv) {
-                    es.shipConfig = bv.value();
+                if (props.get("shipConfig") instanceof ArgValue.BlobVal(byte[] value)) {
+                    es.shipConfig = value;
                 }
                 // Captain: crewModifiersCompactParams.paramsId（EntityCreate 时冻结，永不刷新）
-                ArgValue cmcp = props.get("crewModifiersCompactParams");
-                if (cmcp instanceof ArgValue.DictVal d) {
-                    ArgValue pid = d.entries().get("paramsId");
-                    if (pid instanceof ArgValue.IntVal iv) {
-                        es.captainParamsId = iv.value();
-                    }
+                if (props.get("crewModifiersCompactParams") instanceof ArgValue.DictVal(Map<String, ArgValue> cmcp)
+                    && cmcp.get("paramsId") instanceof ArgValue.IntVal(long value)) {
+                    es.captainParamsId = value;
                 }
             }
             case "Avatar" -> {
                 extractHealth(props, eid);
                 extractTeam(props, eid);
                 // Link to player by db_id if present
-                ArgValue dbIdVal = props.get("accountDBID");
-                if (dbIdVal instanceof ArgValue.IntVal iv) {
-                    long dbId = iv.value();
-                    es.dbId = dbId;
-                    es.playerName = players.containsKey(dbId) ? players.get(dbId).username : "";
-                    entityToPlayer.putIfAbsent(eid, new PlayerLink(dbId, es.playerName));
-                    var pi = players.get(dbId);
+                if (props.get("accountDBID") instanceof ArgValue.IntVal(long value)) {
+                    es.dbId = value;
+                    es.playerName = players.containsKey(es.dbId) ? players.get(es.dbId).username : "";
+                    entityToPlayer.putIfAbsent(eid, new PlayerLink(es.dbId, es.playerName));
+                    var pi = players.get(es.dbId);
                     if (pi != null) pi.entityId = eid;
                 }
             }
@@ -647,42 +643,39 @@ public class BattleWorld {
 
     private void ingestBattleLogic(Map<String, ArgValue> props) {
         ArgValue state = props.get("state");
-        if (!(state instanceof ArgValue.DictVal sd)) return;
+        if (!(state instanceof ArgValue.DictVal(Map<String, ArgValue> entries))) return;
 
         // Team scores
-        ArgValue missions = sd.entries().get("missions");
-        if (missions instanceof ArgValue.DictVal md) {
-            ArgValue ts = md.entries().get("teamsScore");
-            if (ts instanceof ArgValue.ArrayVal arr) {
-                for (int i = 0; i < arr.elements().size(); i++) {
-                    ArgValue entry = arr.elements().get(i);
-                    if (entry instanceof ArgValue.DictVal ed) {
-                        ArgValue score = ed.entries().get("score");
-                        if (score instanceof ArgValue.IntVal sv) {
+        ArgValue missions = entries.get("missions");
+        if (missions instanceof ArgValue.DictVal(Map<String, ArgValue> entries1)) {
+            ArgValue ts = entries1.get("teamsScore");
+            if (ts instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {
+                for (int i = 0; i < elements.size(); i++) {
+                    ArgValue entry = elements.get(i);
+                    if (entry instanceof ArgValue.DictVal(Map<String, ArgValue> entries2)) {
+                        ArgValue score = entries2.get("score");
+                        if (score instanceof ArgValue.IntVal(long value)) {
                             ensureTeamScore(i);
-                            teamScores.set(i, new TeamScore(i, sv.value()));
+                            teamScores.set(i, new TeamScore(i, value));
                         }
                     }
                 }
             }
 
             // Scoring rules
-            long winScore = md.entries().get("teamWinScore") instanceof ArgValue.IntVal iv ? iv.value() : 1000;
-            teamWinScore = winScore;
+            teamWinScore =  entries1.get("teamWinScore") instanceof ArgValue.IntVal(long value) ? value : 1000;
 
             // hold: [{ reward, period, cpIndices }] → scoring_rules
-            ArgValue hold = md.entries().get("hold");
-            if (hold instanceof ArgValue.ArrayVal ha && !ha.elements().isEmpty()) {
-                ArgValue first = ha.elements().get(0);
-                if (first instanceof ArgValue.DictVal hd) {
-                    if (hd.entries().get("reward") instanceof ArgValue.IntVal riv) holdReward = riv.value();
-                    if (hd.entries().get("period") instanceof ArgValue.FloatVal pfv) holdPeriod = (float) pfv.value();
-                    else if (hd.entries().get("period") instanceof ArgValue.IntVal piv) holdPeriod = piv.value();
-                    ArgValue cpIdx = hd.entries().get("cpIndices");
-                    if (cpIdx instanceof ArgValue.ArrayVal ca) {
+            if (entries1.get("hold") instanceof ArgValue.ArrayVal(List<ArgValue> holdElements)
+                && !holdElements.isEmpty()) {
+                if (holdElements.getFirst() instanceof ArgValue.DictVal(Map<String, ArgValue> hd)) {
+                    if (hd.get("reward") instanceof ArgValue.IntVal(long value)) holdReward = value;
+                    if (hd.get("period") instanceof ArgValue.FloatVal(double value)) holdPeriod = (float) value;
+                    else if (hd.get("period") instanceof ArgValue.IntVal(long value)) holdPeriod = value;
+                    if (hd.get("cpIndices") instanceof ArgValue.ArrayVal(List<ArgValue> cpIndices)) {
                         holdCpIndices.clear();
-                        for (var e : ca.elements()) {
-                            if (e instanceof ArgValue.IntVal civ) holdCpIndices.add((int) civ.value());
+                        for (ArgValue e : cpIndices) {
+                            if (e instanceof ArgValue.IntVal(long value)) holdCpIndices.add((int) value);
                         }
                     }
                 }
@@ -690,24 +683,21 @@ public class BattleWorld {
         }
 
         // Weather zones seeded from BattleLogic state
-        ArgValue weather = sd.entries().get("weather");
-        if (weather instanceof ArgValue.DictVal wd) {
-            ArgValue localWeather = wd.entries().get("localWeather");
-            if (localWeather instanceof ArgValue.ArrayVal lwArr) {
-                for (var lwVal : lwArr.elements()) {
-                    if (lwVal instanceof ArgValue.DictVal lwd) {
-                        var lw = lwd.entries();
+        if (entries.get("weather") instanceof ArgValue.DictVal(Map<String, ArgValue> wd)) {
+            if (wd.get("localWeather") instanceof ArgValue.ArrayVal(List<ArgValue> lwElements)) {
+                for (var lwVal : lwElements) {
+                    if (lwVal instanceof ArgValue.DictVal(Map<String, ArgValue> lw)) {
                         String name = decodeName(lw.get("name"));
                         float wx = 0, wz = 0, wr = 0;
-                        ArgValue pos = lw.get("position");
-                        if (pos instanceof ArgValue.Vec2Val v2) { wx = v2.x(); wz = v2.y(); }
-                        else if (pos instanceof ArgValue.ArrayVal pa && pa.elements().size() >= 2) {
-                            wx = floatFromArg(pa.elements().get(0));
-                            wz = floatFromArg(pa.elements().get(1));
+                        if (lw.get("position") instanceof ArgValue.Vec2Val(float x, float y)) {
+                            wx = x;
+                            wz = y;
+                        } else if (lw.get("position") instanceof ArgValue.ArrayVal(List<ArgValue> pa) && pa.size() >= 2) {
+                            wx = floatFromArg(pa.get(0));
+                            wz = floatFromArg(pa.get(1));
                         }
-                        ArgValue rad = lw.get("radius");
-                        if (rad instanceof ArgValue.FloatVal fv) wr = (float) fv.value();
-                        long paramsId = lw.get("paramsId") instanceof ArgValue.IntVal piv ? piv.value() : 0;
+                        if (lw.get("radius") instanceof ArgValue.FloatVal(double value)) wr = (float) value;
+                        long paramsId = lw.get("paramsId") instanceof ArgValue.IntVal(long value) ? value : 0;
                         weatherZones.add(new WeatherZoneState(name, wx, wz, wr, paramsId, null));
                     }
                 }
@@ -721,12 +711,9 @@ public class BattleWorld {
         float radius = getFloatProp(props, "radius");
         int teamId = getIntProp(props, "teamId");
 
-        ArgValue cs = props.get("componentsState");
-        if (cs instanceof ArgValue.DictVal csd) {
-            ArgValue cp = csd.entries().get("controlPoint");
-            if (cp instanceof ArgValue.DictVal cpd) {
-                var d = cpd.entries();
-                int idx = d.get("index") instanceof ArgValue.IntVal iv ? (int) iv.value() : capturePoints.size();
+        if (props.get("componentsState") instanceof ArgValue.DictVal(Map<String, ArgValue> csd)) {
+            if (csd.get("controlPoint") instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+                int idx = d.get("index") instanceof ArgValue.IntVal(long value) ? (int) value : capturePoints.size();
                 var cpState = new CapturePointState();
                 cpState.entityId = eid;
                 cpState.index = idx;
@@ -734,9 +721,8 @@ public class BattleWorld {
                 cpState.position = new float[]{px, pz};
                 cpState.radius = radius;
 
-                ArgValue cl = csd.entries().get("captureLogic");
-                if (cl instanceof ArgValue.DictVal cld) {
-                    applyCpDict(cpState, cld.entries());
+                if (csd.get("captureLogic") instanceof ArgValue.DictVal(Map<String, ArgValue> cld)) {
+                    applyCpDict(cpState, cld);
                 }
                 ensureCpIndex(idx);
                 capturePoints.set(idx, cpState);
@@ -759,27 +745,27 @@ public class BattleWorld {
             // Log first BasePlayerCreate to see actual prop names and componentData
             if (bpCount++ == 0) {
                 log.info("First BasePlayerCreate eid={} type={} props={} componentData={}bytes",
-                    eid, bp.entityType(),
-                    props.keySet(),
-                    bp.componentData() != null ? bp.componentData().length : 0);
+                        eid, bp.entityType(),
+                        props.keySet(),
+                        bp.componentData() != null ? bp.componentData().length : 0);
             }
 
             // Try to link to player by db_id
             for (String key : props.keySet()) {
                 if (key.toLowerCase().contains("dbid") || key.toLowerCase().contains("account")
                     || key.toLowerCase().contains("playerid")) {
-                    if (props.get(key) instanceof ArgValue.IntVal iv) {
-                        long dbId = iv.value();
+                    if (props.get(key) instanceof ArgValue.IntVal(long value)) {
                         var es = getOrCreateEntity(eid, null);
-                        es.dbId = dbId;
+                        es.dbId = value;
                         // Find player name from meta
                         for (var mp : metaPlayers) {
-                            if (mp.metaId == dbId) {
+                            if (mp.metaId == es.dbId) {
                                 es.playerName = mp.name;
                                 es.relation = mp.relation;
-                                entityToPlayer.put(eid, new PlayerLink(dbId, mp.name));
-                                var pi = players.get(dbId);
+                                entityToPlayer.put(eid, new PlayerLink(es.dbId, mp.name));
+                                var pi = players.get(es.dbId);
                                 if (pi != null) pi.entityId = eid;
+                                mp.entityId = eid;
                                 break;
                             }
                         }
@@ -810,6 +796,7 @@ public class BattleWorld {
                         es.playerName = mp.name;
                         es.relation = 0;
                     }
+                    mp.entityId = eid;
                     break;
                 }
             }
@@ -825,8 +812,14 @@ public class BattleWorld {
         ArgValue val = pc.value();
 
         switch (pc.kind()) {
-            case HEALTH -> { var es = getOrCreateEntity(eid, null); es.health = floatFromArg(val); }
-            case MAX_HEALTH -> { var es = getOrCreateEntity(eid, null); es.maxHealth = floatFromArg(val); }
+            case HEALTH -> {
+                var es = getOrCreateEntity(eid, null);
+                es.health = floatFromArg(val);
+            }
+            case MAX_HEALTH -> {
+                var es = getOrCreateEntity(eid, null);
+                es.maxHealth = floatFromArg(val);
+            }
             case TEAM_ID -> {
                 int tid = intFromArg(val);
                 getOrCreateEntity(eid, null).teamId = tid;
@@ -838,42 +831,49 @@ public class BattleWorld {
             }
             case IS_ALIVE -> getOrCreateEntity(eid, null).isAlive = intFromArg(val) != 0;
             case IS_INVISIBLE -> getOrCreateEntity(eid, null).isInvisible = intFromArg(val) != 0;
-            case MAX_DURATION -> { if (val instanceof ArgValue.FloatVal fv) maxDuration = (float) fv.value(); }
-            case PLAYED_DURATION -> { if (val instanceof ArgValue.FloatVal fv) playedDuration = (float) fv.value(); }
-            case EXTRA_DURATION -> { if (val instanceof ArgValue.FloatVal fv) extraDuration = (float) fv.value(); }
-            case FINISH_TYPE -> { if (val instanceof ArgValue.StrVal sv) finishType = sv.value(); }
-            case MATCH_RESULT -> { if (val instanceof ArgValue.StrVal sv) matchResult = sv.value(); }
+            case MAX_DURATION -> {
+                if (val instanceof ArgValue.FloatVal(double value)) maxDuration = (float) value;
+            }
+            case PLAYED_DURATION -> {
+                if (val instanceof ArgValue.FloatVal(double value)) playedDuration = (float) value;
+            }
+            case EXTRA_DURATION -> {
+                if (val instanceof ArgValue.FloatVal(double value)) extraDuration = (float) value;
+            }
+            case FINISH_TYPE -> {
+                if (val instanceof ArgValue.StrVal(String value)) finishType = value;
+            }
+            case MATCH_RESULT -> {
+                if (val instanceof ArgValue.StrVal(String value)) matchResult = value;
+            }
             // 15.x: onBattleEnd carries no args; win/finish arrive via BattleLogic
             // `battleResult` property: { winnerTeamId, finishReason }.
             case BATTLE_RESULT -> {
                 if (val instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
-                    ArgValue winner = d.get("winnerTeamId");
-                    if (winner instanceof ArgValue.IntVal iv) {
-                        long w = iv.value();
-                        if (w >= -1) {
-                            winningTeam = (int) w;
+                    if (d.get("winnerTeamId") instanceof ArgValue.IntVal(long value)) {
+                        if (value >= -1) {
+                            winningTeam = (int) value;
                             battleResultClock = elapsed;
                         }
                     }
-                    ArgValue reason = d.get("finishReason");
-                    if (reason instanceof ArgValue.IntVal iv2 && iv2.value() > 0) {
-                        finishType = finishTypeName((int) iv2.value());
-                        finishTypeId = (int) iv2.value();
+                    if (d.get("finishReason") instanceof ArgValue.IntVal(long value) && value > 0) {
+                        finishType = finishTypeName((int) value);
+                        finishTypeId = (int) value;
                     }
                 }
             }
             case BATTLE_STAGE -> {
                 // BATTLE_STAGES: 0=Waiting, 1=Battle, 2=Results, 3=Finishing, 4=Ended.
-                if (val instanceof ArgValue.IntVal iv) {
-                    battleStageId = (int) iv.value();
-                    if (iv.value() == 0 && battleStartClock == null) {
+                if (val instanceof ArgValue.IntVal(long value)) {
+                    battleStageId = (int) value;
+                    if (value == 0 && battleStartClock == null) {
                         battleStartClock = elapsed;
                     }
                 }
             }
             case TIME_LEFT -> {
-                if (val instanceof ArgValue.IntVal iv) timeLeft = (float) iv.value();
-                else if (val instanceof ArgValue.FloatVal fv) timeLeft = (float) fv.value();
+                if (val instanceof ArgValue.IntVal(long value)) timeLeft = (float) value;
+                else if (val instanceof ArgValue.FloatVal(double value)) timeLeft = (float) value;
             }
             case VISIBILITY_FLAGS -> {
                 var es = getOrCreateEntity(eid, null);
@@ -882,13 +882,13 @@ public class BattleWorld {
             case STATE -> traverseStateDict(eid, val, elapsed);
             case SHIP_CONFIG -> {
                 // shipConfig 二进制 blob：EntityCreate 已捕获，属性更新时再刷新
-                if (val instanceof ArgValue.BlobVal bv) {
-                    getOrCreateEntity(eid, null).shipConfig = bv.value();
+                if (val instanceof ArgValue.BlobVal(byte[] value)) {
+                    getOrCreateEntity(eid, null).shipConfig = value;
                 }
             }
             case VEHICLE_ID -> {
-                if (val instanceof ArgValue.IntVal iv) {
-                    getOrCreateEntity(eid, null).vehicleId = new GameParamId((int) iv.value());
+                if (val instanceof ArgValue.IntVal(long value)) {
+                    getOrCreateEntity(eid, null).vehicleId = new GameParamId((int) value);
                 }
             }
             case OWNER_ID, OTHER -> { /* recorded but not yet handled */ }
@@ -897,20 +897,17 @@ public class BattleWorld {
 
     /** Traverse nested state dict for team scores, control points, weather updates. */
     private void traverseStateDict(int eid, ArgValue val, float elapsed) {
-        if (!(val instanceof ArgValue.DictVal sd)) return;
+        if (!(val instanceof ArgValue.DictVal(Map<String, ArgValue> sd))) return;
 
         // state.missions.teamsScore
-        ArgValue missions = sd.entries().get("missions");
-        if (missions instanceof ArgValue.DictVal md) {
-            ArgValue ts = md.entries().get("teamsScore");
-            if (ts instanceof ArgValue.ArrayVal arr) {
-                for (int i = 0; i < arr.elements().size(); i++) {
-                    ArgValue entry = arr.elements().get(i);
-                    if (entry instanceof ArgValue.DictVal ed) {
-                        ArgValue score = ed.entries().get("score");
-                        if (score instanceof ArgValue.IntVal sv) {
+        if (sd.get("missions") instanceof ArgValue.DictVal(Map<String, ArgValue> md)) {
+            if (md.get("teamsScore") instanceof ArgValue.ArrayVal(List<ArgValue> tsElements)) {
+                for (int i = 0; i < tsElements.size(); i++) {
+                    ArgValue entry = tsElements.get(i);
+                    if (entry instanceof ArgValue.DictVal(Map<String, ArgValue> ed)) {
+                        if (ed.get("score") instanceof ArgValue.IntVal(long value)) {
                             ensureTeamScore(i);
-                            teamScores.set(i, new TeamScore(i, sv.value()));
+                            teamScores.set(i, new TeamScore(i, value));
                         }
                     }
                 }
@@ -918,38 +915,32 @@ public class BattleWorld {
         }
 
         // state.controlPoints
-        ArgValue cps = sd.entries().get("controlPoints");
-        if (cps instanceof ArgValue.ArrayVal cpArr) {
-            for (int i = 0; i < cpArr.elements().size(); i++) {
+        if (sd.get("controlPoints") instanceof ArgValue.ArrayVal(List<ArgValue> cpElements)) {
+            for (int i = 0; i < cpElements.size(); i++) {
                 ensureCpIndex(i);
                 var cp = capturePoints.get(i);
-                ArgValue cpEntry = cpArr.elements().get(i);
-                if (cpEntry instanceof ArgValue.DictVal cpd) {
-                    applyCpDict(cp, cpd.entries());
+                if (cpElements.get(i) instanceof ArgValue.DictVal(Map<String, ArgValue> cpd)) {
+                    applyCpDict(cp, cpd);
                 }
             }
         }
 
         // state.weather.localWeather
-        ArgValue weather = sd.entries().get("weather");
-        if (weather instanceof ArgValue.DictVal wd) {
-            ArgValue localWeather = wd.entries().get("localWeather");
-            if (localWeather instanceof ArgValue.ArrayVal lwArr) {
-                for (int i = 0; i < lwArr.elements().size(); i++) {
-                    ArgValue lwVal = lwArr.elements().get(i);
-                    if (lwVal instanceof ArgValue.DictVal lwd) {
-                        var lw = lwd.entries();
+        if (sd.get("weather") instanceof ArgValue.DictVal(Map<String, ArgValue> wd)) {
+            if (wd.get("localWeather") instanceof ArgValue.ArrayVal(List<ArgValue> lwElements)) {
+                for (int i = 0; i < lwElements.size(); i++) {
+                    if (lwElements.get(i) instanceof ArgValue.DictVal(Map<String, ArgValue> lw)) {
                         String name = decodeName(lw.get("name"));
                         float wx = 0, wz = 0, wr = 0;
-                        ArgValue pos = lw.get("position");
-                        if (pos instanceof ArgValue.Vec2Val v2) { wx = v2.x(); wz = v2.y(); }
-                        else if (pos instanceof ArgValue.ArrayVal pa && pa.elements().size() >= 2) {
-                            wx = floatFromArg(pa.elements().get(0));
-                            wz = floatFromArg(pa.elements().get(1));
+                        if (lw.get("position") instanceof ArgValue.Vec2Val(float x, float y)) {
+                            wx = x;
+                            wz = y;
+                        } else if (lw.get("position") instanceof ArgValue.ArrayVal(List<ArgValue> pa) && pa.size() >= 2) {
+                            wx = floatFromArg(pa.get(0));
+                            wz = floatFromArg(pa.get(1));
                         }
-                        ArgValue rad = lw.get("radius");
-                        if (rad instanceof ArgValue.FloatVal fv) wr = (float) fv.value();
-                        long paramsId = lw.get("paramsId") instanceof ArgValue.IntVal piv ? piv.value() : 0;
+                        if (lw.get("radius") instanceof ArgValue.FloatVal(double value)) wr = (float) value;
+                        long paramsId = lw.get("paramsId") instanceof ArgValue.IntVal(long value) ? value : 0;
                         while (weatherZones.size() <= i) {
                             weatherZones.add(new WeatherZoneState("", 0, 0, 0, 0, null));
                         }
@@ -1004,27 +995,27 @@ public class BattleWorld {
 
         // state.missions.teamsScore = [..]（全量数组 SetKey）
         if (keys.size() == 1 && keys.get(0).equals("missions")
-            && u instanceof NestedUpdate.SetKey sk && sk.key().equals("teamsScore")
-            && sk.value() instanceof ArgValue.ArrayVal arr) {
-            for (int i = 0; i < arr.elements().size(); i++) {
+            && u instanceof NestedUpdate.SetKey(String key, ArgValue value1) && key.equals("teamsScore")
+            && value1 instanceof ArgValue.ArrayVal(List<ArgValue> arr)) {
+            for (int i = 0; i < arr.size(); i++) {
                 ensureTeamScore(i);
-                teamScores.set(i, new TeamScore(i, scoreOf(arr.elements().get(i))));
+                teamScores.set(i, new TeamScore(i, scoreOf(arr.get(i))));
             }
             handled = true;
         }
         // state.missions.teamsScore[N].score = v（元素 SetKey 标量叶子）
         if (keys.size() == 2 && keys.get(0).equals("missions") && keys.get(1).equals("teamsScore")
-            && !indexes.isEmpty() && u instanceof NestedUpdate.SetKey sk && sk.key().equals("score")
-            && sk.value() instanceof ArgValue.IntVal iv) {
-            int idx = indexes.get(indexes.size() - 1);
+            && !indexes.isEmpty() && u instanceof NestedUpdate.SetKey(String key, ArgValue value1) && key.equals("score")
+            && value1 instanceof ArgValue.IntVal(long value)) {
+            int idx = indexes.getLast();
             ensureTeamScore(idx);
-            teamScores.set(idx, new TeamScore(idx, iv.value()));
+            teamScores.set(idx, new TeamScore(idx, value));
             handled = true;
         }
         // state.missions.teamsScore[N] = {teamId, score}（数组 SetElement 整元素）
         if (keys.size() == 1 && keys.get(0).equals("missions") && indexes.size() == 1
             && u instanceof NestedUpdate.SetElement se) {
-            int idx = indexes.get(0);
+            int idx = indexes.getFirst();
             ensureTeamScore(idx);
             teamScores.set(idx, new TeamScore(idx, scoreOf(se.value())));
             handled = true;
@@ -1032,44 +1023,48 @@ public class BattleWorld {
         // state.weather.localWeather[N].{position/radius/paramsId}（SetKey 标量叶子 / SetElement）
         if (keys.size() == 2 && keys.get(0).equals("weather") && keys.get(1).equals("localWeather")
             && !indexes.isEmpty()) {
-            int idx = indexes.get(indexes.size() - 1);
+            int idx = indexes.getLast();
             while (weatherZones.size() <= idx) {
                 weatherZones.add(new WeatherZoneState("", 0, 0, 0, 0, null));
             }
             var wz = weatherZones.get(idx);
-            if (u instanceof NestedUpdate.SetKey sk) {
-                switch (sk.key()) {
+            if (u instanceof NestedUpdate.SetKey(String key, ArgValue value)) {
+                switch (key) {
                     case "position" -> {
                         Float x = null, z = null;
-                        if (sk.value() instanceof ArgValue.Vec2Val v2) { x = v2.x(); z = v2.y(); }
-                        else if (sk.value() instanceof ArgValue.ArrayVal av && av.elements().size() >= 2) {
-                            x = floatFromArg(av.elements().get(0));
-                            z = floatFromArg(av.elements().get(1));
+                        if (value instanceof ArgValue.Vec2Val(float vx, float vz)) {
+                            x = vx;
+                            z = vz;
+                        } else if (value instanceof ArgValue.ArrayVal(List<ArgValue> av) && av.size() >= 2) {
+                            x = floatFromArg(av.get(0));
+                            z = floatFromArg(av.get(1));
                         }
                         if (x != null) {
                             weatherZones.set(idx, new WeatherZoneState(wz.name(), x, z, wz.radius(), wz.paramsId(), wz.entityId()));
                         }
                     }
                     case "radius" -> weatherZones.set(idx, new WeatherZoneState(
-                        wz.name(), wz.x(), wz.z(), floatFromArg(sk.value()), wz.paramsId(), wz.entityId()));
+                            wz.name(), wz.x(), wz.z(), floatFromArg(value), wz.paramsId(), wz.entityId()));
                     case "paramsId" -> weatherZones.set(idx, new WeatherZoneState(
-                        wz.name(), wz.x(), wz.z(), wz.radius(), longOfArg(sk.value()), wz.entityId()));
-                    default -> log.debug("weather.localWeather 更新未处理: key={}", sk.key());
+                            wz.name(), wz.x(), wz.z(), wz.radius(), longOfArg(value), wz.entityId()));
+                    default -> log.debug("weather.localWeather 更新未处理: key={}", key);
                 }
                 handled = true;
-            } else if (u instanceof NestedUpdate.SetElement se && se.value() instanceof ArgValue.DictVal d) {
-                String name = d.entries().get("name") instanceof ArgValue.BlobVal b
-                    ? new String(b.value(), java.nio.charset.StandardCharsets.UTF_8)
-                    : wz.name();
-                Float x = wz.x(), z = wz.z();
-                ArgValue pos = d.entries().get("position");
-                if (pos instanceof ArgValue.Vec2Val v2) { x = v2.x(); z = v2.y(); }
-                else if (pos instanceof ArgValue.ArrayVal av && av.elements().size() >= 2) {
-                    x = floatFromArg(av.elements().get(0));
-                    z = floatFromArg(av.elements().get(1));
+            } else if (u instanceof NestedUpdate.SetElement se
+                       && se.value() instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+                String name = d.get("name") instanceof ArgValue.BlobVal(byte[] b)
+                        ? new String(b, java.nio.charset.StandardCharsets.UTF_8)
+                        : wz.name();
+                float x = wz.x(), z = wz.z();
+                if (d.get("position") instanceof ArgValue.Vec2Val(float vx, float vz)) {
+                    x = vx;
+                    z = vz;
+                } else if (d.get("position") instanceof ArgValue.ArrayVal(List<ArgValue> av) && av.size() >= 2) {
+                    x = floatFromArg(av.get(0));
+                    z = floatFromArg(av.get(1));
                 }
-                float r = d.entries().get("radius") != null ? floatFromArg(d.entries().get("radius")) : wz.radius();
-                long pid = d.entries().get("paramsId") != null ? longOfArg(d.entries().get("paramsId")) : wz.paramsId();
+                float r = d.get("radius") != null ? floatFromArg(d.get("radius")) : wz.radius();
+                long pid = d.get("paramsId") != null ? longOfArg(d.get("paramsId")) : wz.paramsId();
                 weatherZones.set(idx, new WeatherZoneState(name, x, z, r, pid, wz.entityId()));
                 handled = true;
             }
@@ -1083,22 +1078,25 @@ public class BattleWorld {
     private void ingestComponentsStateUpdate(int entityId, List<String> path, NestedUpdate u) {
         // componentsState.captureLogic.{field} = v
         if (path.size() == 1 && path.get(0).equals("captureLogic")
-            && u instanceof NestedUpdate.SetKey sk) {
+            && u instanceof NestedUpdate.SetKey(String key, ArgValue value)) {
             CapturePointState target = null;
             for (var cp : capturePoints) {
-                if (cp.entityId == entityId) { target = cp; break; }
+                if (cp.entityId == entityId) {
+                    target = cp;
+                    break;
+                }
             }
             if (target == null) {
-                log.debug("componentsState 更新找不到对应占领点: entity={} key={}", entityId, sk.key());
+                log.debug("componentsState 更新找不到对应占领点: entity={} key={}", entityId, key);
                 return;
             }
-            switch (sk.key()) {
-                case "hasInvaders" -> target.hasInvaders = longOfArg(sk.value()) != 0;
-                case "invaderTeam" -> target.invaderTeam = longOfArg(sk.value());
-                case "progress"    -> target.progress = progressOfArg(sk.value());
-                case "bothInside"  -> target.bothInside = longOfArg(sk.value()) != 0;
-                case "isEnabled"   -> target.isEnabled = longOfArg(sk.value()) != 0;
-                default -> log.debug("componentsState captureLogic 更新未处理: key={} value={}", sk.key(), sk.value());
+            switch (key) {
+                case "hasInvaders" -> target.hasInvaders = longOfArg(value) != 0;
+                case "invaderTeam" -> target.invaderTeam = longOfArg(value);
+                case "progress" -> target.progress = progressOfArg(value);
+                case "bothInside" -> target.bothInside = longOfArg(value) != 0;
+                case "isEnabled" -> target.isEnabled = longOfArg(value) != 0;
+                default -> log.debug("componentsState captureLogic 更新未处理: key={} value={}", key, value);
             }
         } else {
             log.debug("componentsState 更新未识别: entity={} path={} update={}", entityId, path, u);
@@ -1107,20 +1105,21 @@ public class BattleWorld {
 
     /** TEAM_SCORE 元素/字段取 score 值。 */
     private static long scoreOf(ArgValue v) {
-        if (v instanceof ArgValue.IntVal iv) return iv.value();
-        if (v instanceof ArgValue.FloatVal fv) return fv.value() > 0 ? (long) fv.value() : 0;
-        if (v instanceof ArgValue.DictVal d && d.entries().get("score") instanceof ArgValue.IntVal s) return s.value();
+        if (v instanceof ArgValue.IntVal(long value)) return value;
+        if (v instanceof ArgValue.FloatVal(double value)) return value > 0 ? (long) value : 0;
+        if (v instanceof ArgValue.DictVal(Map<String, ArgValue> d)
+            && d.get("score") instanceof ArgValue.IntVal(long value)) return value;
         return 0;
     }
 
     /** 占领点 progress 是 FLOAT（旧 def 可能为 (value, pointsPerSecond) 二元组），取第一项。 */
     private static float progressOfArg(ArgValue v) {
         return switch (v) {
-            case ArgValue.FloatVal fv -> (float) fv.value();
-            case ArgValue.IntVal iv -> (float) iv.value();
-            case ArgValue.ArrayVal av when !av.elements().isEmpty() -> floatFromArg(av.elements().get(0));
-            case ArgValue.TupleVal tv when !tv.elements().isEmpty() -> floatFromArg(tv.elements().get(0));
-            case ArgValue.DictVal d when d.entries().get("progress") != null -> progressOfArg(d.entries().get("progress"));
+            case ArgValue.FloatVal(double value) -> (float) value;
+            case ArgValue.IntVal(long value) -> (float) value;
+            case ArgValue.ArrayVal(List<ArgValue> elements) when !elements.isEmpty() -> floatFromArg(elements.getFirst());
+            case ArgValue.TupleVal(List<ArgValue> elements) when !elements.isEmpty() -> floatFromArg(elements.getFirst());
+            case ArgValue.DictVal(Map<String, ArgValue> d) when d.get("progress") != null -> progressOfArg(d.get("progress"));
             default -> 0f;
         };
     }
@@ -1153,7 +1152,10 @@ public class BattleWorld {
         if (matchResult == null && winningTeam != null && battleEndClock != null) {
             int selfTeam = -1;
             for (var pi : players.values()) {
-                if (pi.relation == 0) { selfTeam = pi.teamId; break; }
+                if (pi.relation == 0) {
+                    selfTeam = pi.teamId;
+                    break;
+                }
             }
             if (selfTeam >= 0) {
                 if (winningTeam == -1) matchResult = "Draw";
@@ -1165,15 +1167,15 @@ public class BattleWorld {
         var entityTypeCounts = new LinkedHashMap<String, Integer>();
         for (var es : entities.values()) entityTypeCounts.merge(es.type, 1, Integer::sum);
         log.info("BattleWorld finish: {} entities (by type: {}, kinds={}), {} players, {} kills, {} damage, {} chat, {} consumables",
-            entities.size(), entityTypeCounts, entityKinds(), players.size(), killLog.size(),
-            damageEvents.size(), chatLog.size(), consumableLog.size());
+                entities.size(), entityTypeCounts, entityKinds(), players.size(), killLog.size(),
+                damageEvents.size(), chatLog.size(), consumableLog.size());
         log.info("  Vehicle Creates: {}, CellPlayer Creates: {}", vehicleCreateCount, cellPlayerCreateCount);
         log.info("  Entity types: {}", entityTypes);
         log.info("  Capture points: {}, Buff zones: {}, Weather zones: {}, Buildings: {}",
-            capturePoints.size(), buffZones.size(), weatherZones.size(), buildings.size());
+                capturePoints.size(), buffZones.size(), weatherZones.size(), buildings.size());
         log.info("  Salvos: {}, Torpedoes: {}, Shot hits: {}, Planes: {}, Wards: {}, Ribbons: {}, Voice lines: {}",
-            firedSalvos.size(), torpedoes.size(), shotHits.size(),
-            planeEvents.size(), activeWards.size(), ribbonLog.size(), voiceLineLog.size());
+                firedSalvos.size(), torpedoes.size(), shotHits.size(),
+                planeEvents.size(), activeWards.size(), ribbonLog.size(), voiceLineLog.size());
     }
 
     // ── Helpers: Entity management ─────────────────────────────────────
@@ -1192,68 +1194,69 @@ public class BattleWorld {
             // 否则独立车辆实体与 Avatar 分离时伤害会漏算（对齐 BattleReportBuilder）。
             int vehicleEid = resolveVehicleEid(pi.entityId);
             double damage = damageByAggressor.getOrDefault(vehicleEid, List.of())
-                .stream().mapToDouble(d -> d.amount).sum();
+                    .stream().mapToDouble(d -> d.amount).sum();
             playerSnapshots.add(new BattleSnapshot.Player(
-                e.getKey(), pi.username, pi.entityId, pi.teamId, pi.relation,
-                es != null && es.isBot, dead, damage));
+                    e.getKey(), pi.username, pi.entityId, pi.teamId, pi.relation,
+                    es != null && es.isBot, dead, damage));
         }
         playerSnapshots.sort(Comparator.comparingLong(BattleSnapshot.Player::dbId));
 
         var killSnapshots = killLog.stream()
-            .map(k -> new BattleSnapshot.Kill(k.clock(), k.killerEid(), k.killerName(),
-                k.victimEid(), k.victimName(), k.cause()))
-            .toList();
+                .map(k -> new BattleSnapshot.Kill(k.clock(), k.killerEid(), k.killerName(),
+                        k.victimEid(), k.victimName(), k.cause()))
+                .toList();
         var chatSnapshots = chatLog.stream()
-            .map(c -> new BattleSnapshot.Chat(c.clock(), c.dbId(), c.senderName(), c.channel(), c.message()))
-            .toList();
+                .map(c -> new BattleSnapshot.Chat(c.clock(), c.dbId(), c.senderName(), c.channel(), c.message()))
+                .toList();
         var cpSnapshots = capturePoints.stream()
-            .map(cp -> new BattleSnapshot.CapturePoint(cp.index, cp.teamId, cp.invaderTeam,
-                cp.progress, cp.isEnabled,
-                cp.position != null && cp.position.length >= 2 ? cp.position[0] : 0,
-                cp.position != null && cp.position.length >= 2 ? cp.position[1] : 0))
-            .toList();
+                .map(cp -> new BattleSnapshot.CapturePoint(cp.index, cp.teamId, cp.invaderTeam,
+                        cp.progress, cp.isEnabled,
+                        cp.position != null && cp.position.length >= 2 ? cp.position[0] : 0,
+                        cp.position != null && cp.position.length >= 2 ? cp.position[1] : 0))
+                .toList();
         var deadShipSnapshots = deadShips.stream()
-            .map(ds -> new BattleSnapshot.DeadShip(ds.clock(), ds.victimId(), ds.x(), ds.z()))
-            .toList();
+                .map(ds -> new BattleSnapshot.DeadShip(ds.clock(), ds.victimId(), ds.x(), ds.z()))
+                .toList();
 
         Long arenaIdLong = null;
         if (arenaId != null) {
             try {
                 arenaIdLong = Long.parseLong(arenaId);
-            } catch (NumberFormatException ignored) { }
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         return new BattleSnapshot(
-            version.toString(),
-            mapName,
-            arenaIdLong,
-            gameMode,
-            meta.gameType(),
-            matchGroup,
-            winningTeam,
-            finishType,
-            matchResult,
-            maxDuration != null ? maxDuration : 0f,
-            playedDuration,
-            extraDuration,
-            battleStartClock,
-            playerSnapshots,
-            killSnapshots,
-            chatSnapshots,
-            damageEvents.size(),
-            consumableLog.size(),
-            ribbonLog.size(),
-            voiceLineLog.size(),
-            firedSalvos.size(),
-            torpedoes.size(),
-            shotHits.size(),
-            planeEvents.size(),
-            activeWards.size(),
-            cpSnapshots,
-            buffZones.size(),
-            weatherZones.size(),
-            buildings.size(),
-            deadShipSnapshots
+                version.toString(),
+                mapName,
+                arenaIdLong,
+                gameMode,
+                meta.gameType(),
+                matchGroup,
+                winningTeam,
+                finishType,
+                matchResult,
+                maxDuration != null ? maxDuration : 0f,
+                playedDuration,
+                extraDuration,
+                battleStartClock,
+                playerSnapshots,
+                killSnapshots,
+                chatSnapshots,
+                damageEvents.size(),
+                consumableLog.size(),
+                ribbonLog.size(),
+                voiceLineLog.size(),
+                firedSalvos.size(),
+                torpedoes.size(),
+                shotHits.size(),
+                planeEvents.size(),
+                activeWards.size(),
+                cpSnapshots,
+                buffZones.size(),
+                weatherZones.size(),
+                buildings.size(),
+                deadShipSnapshots
         );
     }
 
@@ -1267,68 +1270,225 @@ public class BattleWorld {
 
     // ── Dumper 公开访问器（对标 Rust BattleWorld read API）─────────────
 
-    public GameClock currentClock() { return currentClock; }
-    public GameConstantsProvider constants() { return constants; }
-    public String arenaId() { return arenaId; }
-    public String mapName() { return mapName; }
-    public long mapArenaId() { return mapArenaId; }
-    public int gameMode() { return gameMode; }
-    public String matchGroup() { return matchGroup; }
-    public Integer winningTeam() { return winningTeam; }
-    public String finishType() { return finishType; }
-    public String matchResult() { return matchResult; }
-    public Float maxDuration() { return maxDuration; }
-    public Float playedDuration() { return playedDuration; }
-    public Float extraDuration() { return extraDuration; }
-    public Float battleStartClock() { return battleStartClock; }
-    public Float battleResultClock() { return battleResultClock; }
-    public Float battleEndClock() { return battleEndClock; }
-    public boolean matchFinished() { return matchFinished; }
-    public int finishTypeId() { return finishTypeId; }
-    public String battleResultsJson() { return battleResultsJson; }
-    public List<com.wows.replay.ingest.report.DamageStatEntry> selfDamageStats() { return selfDamageStats; }
-    public Float timeLeft() { return timeLeft; }
+    public GameClock currentClock() {
+        return currentClock;
+    }
 
-    public Map<Integer, EntityState> entities() { return entities; }
-    public Map<Long, PlayerInfo> players() { return players; }
-    public Map<Integer, PlayerLink> entityToPlayer() { return entityToPlayer; }
-    public Map<Integer, Integer> vehicleToOwner() { return vehicleToOwner; }
-    public Map<Long, com.wows.replay.decode.PlayerStateData> arenaPlayers() { return arenaPlayers; }
+    public GameConstantsProvider constants() {
+        return constants;
+    }
 
-    public List<TeamScore> teamScores() { return teamScores; }
-    public List<KillRecord> killLog() { return killLog; }
-    public List<DamageEvent> damageEvents() { return damageEvents; }
-    public Map<Integer, List<DamageEvent>> damageByAggressor() { return damageByAggressor; }
-    public List<ChatEvent> chatLog() { return chatLog; }
-    public List<ConsumableEvent> consumableLog() { return consumableLog; }
-    public List<CapturePointState> capturePoints() { return capturePoints; }
-    public Map<Integer, BuffZoneState> buffZones() { return buffZones; }
-    public List<WeatherZoneState> weatherZones() { return weatherZones; }
-    public List<BuildingState> buildings() { return buildings; }
-    public List<DeadShipRecord> deadShips() { return deadShips; }
-    public List<CapturedBuff> capturedBuffs() { return capturedBuffs; }
+    public String arenaId() {
+        return arenaId;
+    }
 
-    public List<ArtillerySalvo> firedSalvos() { return firedSalvos; }
-    public List<TorpedoRecord> torpedoes() { return torpedoes; }
-    public Map<Long, TorpedoRecord> activeTorpedoes() { return activeTorpedoes; }
+    public String mapName() {
+        return mapName;
+    }
+
+    public long mapArenaId() {
+        return mapArenaId;
+    }
+
+    public int gameMode() {
+        return gameMode;
+    }
+
+    public String matchGroup() {
+        return matchGroup;
+    }
+
+    public Integer winningTeam() {
+        return winningTeam;
+    }
+
+    public String finishType() {
+        return finishType;
+    }
+
+    public String matchResult() {
+        return matchResult;
+    }
+
+    public Float maxDuration() {
+        return maxDuration;
+    }
+
+    public Float playedDuration() {
+        return playedDuration;
+    }
+
+    public Float extraDuration() {
+        return extraDuration;
+    }
+
+    public Float battleStartClock() {
+        return battleStartClock;
+    }
+
+    public Float battleResultClock() {
+        return battleResultClock;
+    }
+
+    public Float battleEndClock() {
+        return battleEndClock;
+    }
+
+    public boolean matchFinished() {
+        return matchFinished;
+    }
+
+    public int finishTypeId() {
+        return finishTypeId;
+    }
+
+    public String battleResultsJson() {
+        return battleResultsJson;
+    }
+
+    public List<com.wows.replay.ingest.report.DamageStatEntry> selfDamageStats() {
+        return selfDamageStats;
+    }
+
+    public Float timeLeft() {
+        return timeLeft;
+    }
+
+    public Map<Integer, EntityState> entities() {
+        return entities;
+    }
+
+    public Map<Long, PlayerInfo> players() {
+        return players;
+    }
+
+    public Map<Integer, PlayerLink> entityToPlayer() {
+        return entityToPlayer;
+    }
+
+    public Map<Integer, Integer> vehicleToOwner() {
+        return vehicleToOwner;
+    }
+
+    public Map<Long, com.wows.replay.decode.PlayerStateData> arenaPlayers() {
+        return arenaPlayers;
+    }
+
+    public List<TeamScore> teamScores() {
+        return teamScores;
+    }
+
+    public List<KillRecord> killLog() {
+        return killLog;
+    }
+
+    public List<DamageEvent> damageEvents() {
+        return damageEvents;
+    }
+
+    public Map<Integer, List<DamageEvent>> damageByAggressor() {
+        return damageByAggressor;
+    }
+
+    public List<ChatEvent> chatLog() {
+        return chatLog;
+    }
+
+    public List<ConsumableEvent> consumableLog() {
+        return consumableLog;
+    }
+
+    public List<CapturePointState> capturePoints() {
+        return capturePoints;
+    }
+
+    public Map<Integer, BuffZoneState> buffZones() {
+        return buffZones;
+    }
+
+    public List<WeatherZoneState> weatherZones() {
+        return weatherZones;
+    }
+
+    public List<BuildingState> buildings() {
+        return buildings;
+    }
+
+    public List<DeadShipRecord> deadShips() {
+        return deadShips;
+    }
+
+    public List<CapturedBuff> capturedBuffs() {
+        return capturedBuffs;
+    }
+
+    public List<ArtillerySalvo> firedSalvos() {
+        return firedSalvos;
+    }
+
+    public List<TorpedoRecord> torpedoes() {
+        return torpedoes;
+    }
+
+    public Map<Long, TorpedoRecord> activeTorpedoes() {
+        return activeTorpedoes;
+    }
 
     private static long torpedoKey(int ownerId, int shotId) {
         return ((long) ownerId << 32) | (shotId & 0xFFFFFFFFL);
     }
-    public List<ShotHitRecord> shotHits() { return shotHits; }
-    public List<PlaneRecord> planeEvents() { return planeEvents; }
-    public Map<Long, PlaneState> activePlanes() { return activePlanes; }
-    public Map<Long, WardState> activeWards() { return activeWards; }
-    public List<VoiceLineEvent> voiceLineLog() { return voiceLineLog; }
-    public List<RibbonEvent> ribbonLog() { return ribbonLog; }
 
-    public Set<String> entityTypes() { return entityTypes; }
-    public Map<Integer, EntityState> smokeScreens() { return smokeScreens; }
-    public Integer battleStageId() { return battleStageId; }
-    public long teamWinScore() { return teamWinScore; }
-    public long holdReward() { return holdReward; }
-    public float holdPeriod() { return holdPeriod; }
-    public List<Integer> holdCpIndices() { return holdCpIndices; }
+    public List<ShotHitRecord> shotHits() {
+        return shotHits;
+    }
+
+    public List<PlaneRecord> planeEvents() {
+        return planeEvents;
+    }
+
+    public Map<Long, PlaneState> activePlanes() {
+        return activePlanes;
+    }
+
+    public Map<Long, WardState> activeWards() {
+        return activeWards;
+    }
+
+    public List<VoiceLineEvent> voiceLineLog() {
+        return voiceLineLog;
+    }
+
+    public List<RibbonEvent> ribbonLog() {
+        return ribbonLog;
+    }
+
+    public Set<String> entityTypes() {
+        return entityTypes;
+    }
+
+    public Map<Integer, EntityState> smokeScreens() {
+        return smokeScreens;
+    }
+
+    public Integer battleStageId() {
+        return battleStageId;
+    }
+
+    public long teamWinScore() {
+        return teamWinScore;
+    }
+
+    public long holdReward() {
+        return holdReward;
+    }
+
+    public float holdPeriod() {
+        return holdPeriod;
+    }
+
+    public List<Integer> holdCpIndices() {
+        return holdCpIndices;
+    }
 
     /**
      * 存活实体按 kind 统计，镜像 Rust {@code entity_kinds()}：只数携带
@@ -1337,12 +1497,12 @@ public class BattleWorld {
      */
     public int entityKinds() {
         return (int) entities.values().stream()
-            .filter(es -> es.kind != null)
-            .filter(es -> switch (es.kind) {
-                case "Vehicle", "Building", "SmokeScreen" -> true;
-                default -> false;
-            })
-            .count();
+                .filter(es -> es.kind != null)
+                .filter(es -> switch (es.kind) {
+                    case "Vehicle", "Building", "SmokeScreen" -> true;
+                    default -> false;
+                })
+                .count();
     }
 
     EntityState getOrCreateEntity(int eid, String type) {
@@ -1489,37 +1649,70 @@ public class BattleWorld {
 
     // ── Inner types ────────────────────────────────────────────────────
 
-    public record PlayerLink(long metaId, String username) {}
+    public record PlayerLink(long metaId, String username) {
+    }
 
     public static class PlayerInfo {
         public String username;
         public int entityId;
         public int teamId = -1;
         public int relation;
-        public PlayerInfo(String u, int e, int r) { username = u; entityId = e; relation = r; }
+
+        public PlayerInfo(String u, int e, int r) {
+            username = u;
+            entityId = e;
+            relation = r;
+        }
     }
 
-    public record MetaPlayer(long metaId, String name, int relation, long shipId) {}
+    /**
+     * meta 花名册条目：从 {@code ReplayMeta.vehicles[]} 预抽取，arena 名册到达后
+     * 回填 {@code accountId}（accountDBID）与 {@code entityId}。
+     */
+    public static class MetaPlayer {
+        public final long metaId;   // 战斗内 meta id（= meta.vehicles[].id，同 arena 玩家 id 字段）
+        public final String name;
+        public final int relation;  // 0=自己, 1=同队, 2=敌方
+        public final long shipId;   // shipParamsId (GameParamId)
+        /** 账号 ID（accountDBID），arena 名册匹配后填充。 */
+        public long accountId;
+        /** 战斗内实体 id（Avatar/Vehicle entity_id），arena 名册匹配后填充。 */
+        public int entityId;
+
+        public MetaPlayer(long metaId, String name, int relation, long shipId) {
+            this.metaId = metaId;
+            this.name = name;
+            this.relation = relation;
+            this.shipId = shipId;
+        }
+    }
 
     // ── Resource types ─────────────────────────────────────────────────
 
-    public record TeamScore(int teamIndex, long score) {}
+    public record TeamScore(int teamIndex, long score) {
+    }
 
     public record KillRecord(float clock, int killerEid, int victimEid,
-                              long killerDbId, String killerName,
-                              long victimDbId, String victimName, int cause) {}
+                             long killerDbId, String killerName,
+                             long victimDbId, String victimName, int cause) {
+    }
 
-    public record DamageEvent(float clock, int aggressorId, int victimId, float amount) {}
+    public record DamageEvent(float clock, int aggressorId, int victimId, float amount) {
+    }
 
     public record ChatEvent(float clock, int entityId, long dbId,
-                             String senderName, String channel, String message) {}
+                            String senderName, String channel, String message) {
+    }
 
     public record ConsumableEvent(float clock, int entityId, long dbId,
-                                   String username, long consumableId, float duration) {}
+                                  String username, long consumableId, float duration) {
+    }
 
-    public record DeadShipRecord(float clock, int victimId, float x, float z) {}
+    public record DeadShipRecord(float clock, int victimId, float x, float z) {
+    }
 
-    public record CapturedBuff(int entityId, long paramsId, int capturedBy, float clock) {}
+    public record CapturedBuff(int entityId, long paramsId, int capturedBy, float clock) {
+    }
 
     public static class CapturePointState {
         /** 对应 InteractiveZone 实体 id（componentsState 更新定位用），-1 表示未知。 */
@@ -1536,51 +1729,61 @@ public class BattleWorld {
     }
 
     public record BuffZoneState(int entityId, float x, float z, float radius,
-                                 int teamId, boolean isActive, Long dropParamsId) {}
+                                int teamId, boolean isActive, Long dropParamsId) {
+    }
 
     public record WeatherZoneState(String name, float x, float z, float radius,
-                                    long paramsId, Integer entityId) {}
+                                   long paramsId, Integer entityId) {
+    }
 
     public record BuildingState(int entityId, float x, float z, int teamId,
-                                 long paramsId, boolean isAlive) {}
+                                long paramsId, boolean isAlive) {
+    }
 
     // ── Extended resource types (Phase 4) ──────────────────────────────
 
     /** Artillery salvo wrapped with clock for minimap output. */
-    public record ArtillerySalvo(float clock, com.wows.replay.decode.DecodedPayload.ArtillerySalvo salvo, int avatarId) {}
+    public record ArtillerySalvo(float clock, com.wows.replay.decode.DecodedPayload.ArtillerySalvo salvo, int avatarId) {
+    }
 
     /** Torpedo record with optional maneuver data. */
     public record TorpedoRecord(float clock, com.wows.replay.decode.DecodedPayload.TorpedoData data,
-                                 boolean hasManeuver, float targetYaw, float speedCoef) {
+                                boolean hasManeuver, float targetYaw, float speedCoef) {
         public TorpedoRecord(float clock, com.wows.replay.decode.DecodedPayload.TorpedoData data) {
             this(clock, data, false, 0f, 0f);
         }
+
         public TorpedoRecord withManeuver(float yaw, float coef) {
             return new TorpedoRecord(clock, data, true, yaw, coef);
         }
     }
 
     public record ShotHitRecord(float clock, com.wows.replay.model.AvatarId avatarId,
-                                 com.wows.replay.decode.DecodedPayload.ShotHitEntry hit,
-                                 com.wows.replay.model.Vec3 victimPosition) {}
+                                com.wows.replay.decode.DecodedPayload.ShotHitEntry hit,
+                                com.wows.replay.model.Vec3 victimPosition) {
+    }
 
     public record PlaneState(long planeId, int ownerEntityId, int teamId,
-                              com.wows.replay.model.GameParamId paramsId,
-                              float x, float z, float addedAt, float lastUpdateAt) {
+                             com.wows.replay.model.GameParamId paramsId,
+                             float x, float z, float addedAt, float lastUpdateAt) {
         public PlaneState withPosition(float nx, float nz, float t) {
             return new PlaneState(planeId, ownerEntityId, teamId, paramsId, nx, nz, addedAt, t);
         }
     }
 
-    public record PlaneRecord(float clock, String action, long planeId, PlaneState state) {}
+    public record PlaneRecord(float clock, String action, long planeId, PlaneState state) {
+    }
 
     public record WardState(long wardId, com.wows.replay.model.EntityId entityId,
-                             com.wows.replay.model.EntityId ownerId,
-                             com.wows.replay.model.Vec3 position,
-                             float radius, float addedAt) {}
+                            com.wows.replay.model.EntityId ownerId,
+                            com.wows.replay.model.Vec3 position,
+                            float radius, float addedAt) {
+    }
 
     public record VoiceLineEvent(float clock, com.wows.replay.model.AccountId senderId,
-                                  boolean isGlobal, String message) {}
+                                 boolean isGlobal, String message) {
+    }
 
-    public record RibbonEvent(float clock, int ribbonId) {}
+    public record RibbonEvent(float clock, int ribbonId) {
+    }
 }
