@@ -1,7 +1,7 @@
 package com.wows.replay.dumper;
 
-import com.wows.replay.JsonMapper;
 import com.wows.replay.JsonConstantsProvider;
+import com.wows.replay.JsonMapper;
 import com.wows.replay.ReplayFile;
 import com.wows.replay.data.BattleResultsResolver;
 import com.wows.replay.decode.PacketDecoder;
@@ -15,7 +15,7 @@ import com.wows.replay.packet.Parser;
 import com.wows.replay.spi.EntitySpecProvider;
 import com.wows.replay.spi.GameConstantsProvider;
 import lombok.extern.slf4j.Slf4j;
-
+import org.w3c.dom.Document;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -24,14 +24,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.util.*;
 
 /**
  * replay-dumper 管线（对标 Rust {@code replay-dumper} crate 的 Single 模式，
@@ -53,7 +46,7 @@ public final class ReplayDumper {
         boolean selfDamageStats,
         boolean vehicleEvents,
         boolean battleResults,
-        /** minimap 字段 brotli 压缩等级 0-11，null 表示不压缩。 */
+        /* minimap 字段 brotli 压缩等级 0-11，null 表示不压缩。 */
         Integer compressLevel
     ) {
         public static final Options DEFAULT = new Options(false, 7, false, false, false, null);
@@ -160,7 +153,7 @@ public final class ReplayDumper {
         if (options.minimap()) {
             var mm = new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract();
             if (options.compressLevel() != null) {
-                int level = Math.min(11, Math.max(0, options.compressLevel()));
+                int level = Math.clamp(options.compressLevel(), 0, 11);
                 out.put("frames", compressMinimapField(mm.frames(), level));
                 out.put("firing_events", compressMinimapField(mm.firingEvents(), level));
                 out.put("damage_events", compressMinimapField(mm.damageEvents(), level));
@@ -247,7 +240,10 @@ public final class ReplayDumper {
         var players = new ArrayList<Map<String, Object>>();
         for (var p : report.players()) {
             var pm = new LinkedHashMap<String, Object>();
+
+            pm.put("id", p.metaId());
             pm.put("db_id", p.dbId());
+            pm.put("entity_id", p.entityId());
             pm.put("username", p.username());
             pm.put("team_id", p.teamId());
             pm.put("relation", p.relation());
@@ -275,8 +271,8 @@ public final class ReplayDumper {
     }
 
     /**
-     * playersPublicInfo 关联：优先 db_id，其次 username 兜底
-     * （15.6 战报 account id 与竞技场 dbID 命名空间不同，见 ReplayDumper 调试）。
+     * playersPublicInfo 关联：优先 db_id（账号 ID = accountDBID，与战报 key 同空间），
+     * 其次 username 兜底。
      */
     private static JsonNode lookupPlayerInfo(JsonNode resolvedPlayers, long dbId, String username) {
         if (resolvedPlayers == null || !resolvedPlayers.isObject()) return null;
@@ -287,7 +283,7 @@ public final class ReplayDumper {
                 JsonNode v = prop.getValue();
                 if (v.isObject()) {
                     for (var f : v.properties()) {
-                        if (f.getValue().isTextual() && username.equals(f.getValue().textValue())) {
+                        if (f.getValue().isString() && username.equals(f.getValue().stringValue())) {
                             return v;
                         }
                     }
@@ -304,7 +300,7 @@ public final class ReplayDumper {
         for (var e : world.consumableLog()) {
             var data = new LinkedHashMap<String, Object>();
             data.put("entity_id", e.entityId());
-            data.put("db_id", e.dbId());
+            data.put("db_id", world.accountIdOf(e.metaId()));
             data.put("username", e.username());
             data.put("consumable", e.consumableId());
             data.put("activated_at", e.clock());
@@ -314,11 +310,11 @@ public final class ReplayDumper {
 
         for (var k : world.killLog()) {
             var killer = new LinkedHashMap<String, Object>();
-            killer.put("db_id", k.killerDbId());
+            killer.put("db_id", world.accountIdOf(k.killerMetaId()));
             killer.put("entity_id", k.killerEid());
             killer.put("username", k.killerName());
             var victim = new LinkedHashMap<String, Object>();
-            victim.put("db_id", k.victimDbId());
+            victim.put("db_id", world.accountIdOf(k.victimMetaId()));
             victim.put("entity_id", k.victimEid());
             victim.put("username", k.victimName());
             var data = new LinkedHashMap<String, Object>();
@@ -331,7 +327,7 @@ public final class ReplayDumper {
         for (var c : world.chatLog()) {
             var data = new LinkedHashMap<String, Object>();
             data.put("entity_id", c.entityId());
-            data.put("db_id", c.dbId());
+            data.put("db_id", world.accountIdOf(c.metaId()));
             data.put("username", c.senderName());
             data.put("channel", c.channel());
             data.put("message", c.message());

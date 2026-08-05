@@ -82,14 +82,15 @@ public final class BattleReportBuilder {
         // 4. 构建 Player 列表
         List<Player> players = new ArrayList<>();
         for (var entry : world.players().entrySet()) {
-            long dbId = entry.getKey();
+            long metaId = entry.getKey();
+            long dbId = world.accountIdOf(metaId);
             var info = entry.getValue();
             boolean isSelf = info.relation == 0;
             var vehicle = buildVehicleEntity(info.entityId, dbId, isSelf,
                 damageByEntity, authoritativeSelfDamage, deathByVictim, fragsByKiller,
                 parsedBattleResults);
-            players.add(new Player(dbId, info.username, info.teamId, info.relation,
-                isBot(dbId, info.entityId), vehicle));
+            players.add(new Player(metaId, dbId, info.entityId, info.username, info.teamId, info.relation,
+                isBot(metaId, info.entityId), vehicle));
         }
 
         // 5. frags 关联到 Player（用战舰实体 id 反查）
@@ -143,7 +144,7 @@ public final class BattleReportBuilder {
 
         // 10. 快照其余字段
         var gameChat = world.chatLog().stream()
-            .map(c -> new GameMessage(c.clock(), c.dbId(), c.senderName(), c.channel(), c.message()))
+            .map(c -> new GameMessage(c.clock(), world.accountIdOf(c.metaId()), c.senderName(), c.channel(), c.message()))
             .toList();
         var capturePoints = world.capturePoints().stream()
             .map(this::toCapturePoint)
@@ -250,8 +251,8 @@ public final class BattleReportBuilder {
             new Vec3(es.x, es.y, es.z), es.heading);
     }
 
-    private boolean isBot(long dbId, int entityId) {
-        var arena = world.arenaPlayers().get(dbId);
+    private boolean isBot(long metaId, int entityId) {
+        var arena = world.arenaPlayers().get(metaId);
         if (arena != null) return arena.isBot();
         var es = world.entities().get(entityId);
         return es != null && es.isBot;

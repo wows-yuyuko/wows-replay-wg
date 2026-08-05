@@ -315,24 +315,23 @@ public class BattleWorld {
         killLog.add(new KillRecord(elapsed, killerEid, victimEid,
                 kl != null ? kl.metaId() : 0, kl != null ? kl.username() : "",
                 vl != null ? vl.metaId() : 0, vl != null ? vl.username() : "",
-                sd.cause()));
-        var es = entities.get(sd.victim().value());
+                sd.cause()));        var es = entities.get(sd.victim().value());
         if (es != null) es.isAlive = false;
         deadShips.add(new DeadShipRecord(elapsed, sd.victim().value(),
                 es != null ? es.x : 0, es != null ? es.z : 0));
     }
 
     private void handleChat(DecodedPayload.ChatMessagePayload chat, float elapsed) {
-        // 发送者是 args[0] 的账号 ID（与 meta/arena 的 id 字段一致），
+        // 发送者是 args[0] 的账号 ID（与 meta/arena 的 id 字段同空间 = 战斗内 meta id），
         // 不能用接收方 entity_id（即 replay 主视角 Avatar）来归属消息。
-        long senderDbId = Integer.toUnsignedLong(chat.senderId().value());
+        long senderMetaId = Integer.toUnsignedLong(chat.senderId().value());
         // System messages carry sender_id 0 and are dropped (mirrors Rust).
-        if (senderDbId == 0) return;
-        var pl = players.get(senderDbId);
+        if (senderMetaId == 0) return;
+        var pl = players.get(senderMetaId);
         chatLog.add(new ChatEvent(elapsed, chat.entityId().value(),
-                senderDbId,
-                pl != null ? pl.username : "account " + senderDbId,
-                chat.audience(), chat.message()));
+            senderMetaId,
+            pl != null ? pl.username : "account " + senderMetaId,
+            chat.audience(), chat.message()));
     }
 
     private void handleConsumable(DecodedPayload.ConsumablePayload cons, float elapsed) {
@@ -519,9 +518,11 @@ public class BattleWorld {
         if (existing != null) {
             existing.entityId = entityId;
             existing.teamId = (int) psd.teamId();
+            existing.accountId = psd.dbId();
         } else {
             var pi = new PlayerInfo(psd.username(), entityId, 0); // relation unknown for bots
             pi.teamId = (int) psd.teamId();
+            pi.accountId = psd.dbId();
             players.put(metaId, pi);
         }
         dbToEntity.put(metaId, entityId);
@@ -533,7 +534,7 @@ public class BattleWorld {
         es.health = psd.maxHealth(); // seed full HP from arena state
         es.teamId = (int) psd.teamId();
         es.isBot = isBot;
-        es.dbId = metaId;
+        es.metaId = metaId;
         es.playerName = psd.username();
 
         // Match meta player by metaShipId → get relation
@@ -593,12 +594,14 @@ public class BattleWorld {
             case "Avatar" -> {
                 extractHealth(props, eid);
                 extractTeam(props, eid);
-                // Link to player by db_id if present
-                if (props.get("accountDBID") instanceof ArgValue.IntVal(long value)) {
-                    es.dbId = value;
-                    es.playerName = players.containsKey(es.dbId) ? players.get(es.dbId).username : "";
-                    entityToPlayer.putIfAbsent(eid, new PlayerLink(es.dbId, es.playerName));
-                    var pi = players.get(es.dbId);
+                // Link to player by meta id if present。注意：15.x 的 accountDBID prop 是账号空间，
+                // 与 players 表（按 meta id 索引）不同，只有值恰好是已知 meta id 才关联（兜底，通常不命中）。
+                if (props.get("accountDBID") instanceof ArgValue.IntVal(long value)
+                    && players.containsKey(value)) {
+                    es.metaId = value;
+                    es.playerName = players.get(value).username;
+                    entityToPlayer.putIfAbsent(eid, new PlayerLink(value, es.playerName));
+                    var pi = players.get(value);
                     if (pi != null) pi.entityId = eid;
                 }
             }
@@ -750,20 +753,20 @@ public class BattleWorld {
                         bp.componentData() != null ? bp.componentData().length : 0);
             }
 
-            // Try to link to player by db_id
+            // Try to link to player by meta id（prop 值需恰为已知 meta id 才关联）
             for (String key : props.keySet()) {
                 if (key.toLowerCase().contains("dbid") || key.toLowerCase().contains("account")
                     || key.toLowerCase().contains("playerid")) {
                     if (props.get(key) instanceof ArgValue.IntVal(long value)) {
-                        var es = getOrCreateEntity(eid, null);
-                        es.dbId = value;
                         // Find player name from meta
                         for (var mp : metaPlayers) {
-                            if (mp.metaId == es.dbId) {
+                            if (mp.metaId == value) {
+                                var es = getOrCreateEntity(eid, null);
+                                es.metaId = value;
                                 es.playerName = mp.name;
                                 es.relation = mp.relation;
-                                entityToPlayer.put(eid, new PlayerLink(es.dbId, mp.name));
-                                var pi = players.get(es.dbId);
+                                entityToPlayer.put(eid, new PlayerLink(value, mp.name));
+                                var pi = players.get(value);
                                 if (pi != null) pi.entityId = eid;
                                 mp.entityId = eid;
                                 break;
@@ -792,7 +795,7 @@ public class BattleWorld {
                     var pi = players.get(mp.metaId);
                     if (pi != null) pi.entityId = eid;
                     if (es != null) {
-                        es.dbId = mp.metaId;
+                        es.metaId = mp.metaId;
                         es.playerName = mp.name;
                         es.relation = 0;
                     }
@@ -1196,7 +1199,7 @@ public class BattleWorld {
             double damage = damageByAggressor.getOrDefault(vehicleEid, List.of())
                     .stream().mapToDouble(DamageEvent::amount).sum();
             playerSnapshots.add(new BattleSnapshot.Player(
-                    e.getKey(), pi.username, pi.entityId, pi.teamId, pi.relation,
+                    accountIdOf(e.getKey()), pi.username, pi.entityId, pi.teamId, pi.relation,
                     es != null && es.isBot, dead, damage));
         }
         playerSnapshots.sort(Comparator.comparingLong(BattleSnapshot.Player::dbId));
@@ -1206,7 +1209,7 @@ public class BattleWorld {
                         k.victimEid(), k.victimName(), k.cause()))
                 .toList();
         var chatSnapshots = chatLog.stream()
-                .map(c -> new BattleSnapshot.Chat(c.clock(), c.dbId(), c.senderName(), c.channel(), c.message()))
+                .map(c -> new BattleSnapshot.Chat(c.clock(), accountIdOf(c.metaId()), c.senderName(), c.channel(), c.message()))
                 .toList();
         var cpSnapshots = capturePoints.stream()
                 .map(cp -> new BattleSnapshot.CapturePoint(cp.index, cp.teamId, cp.invaderTeam,
@@ -1360,6 +1363,17 @@ public class BattleWorld {
 
     public Map<Long, PlayerInfo> players() {
         return players;
+    }
+
+    /**
+     * 战斗内 meta id → 账号 ID（accountDBID）。
+     * 未知时回退为 meta id 本身（保证输出非 0，且与传入值同空间一致）。
+     */
+    public long accountIdOf(long metaId) {
+        var pi = players.get(metaId);
+        if (pi != null && pi.accountId != 0) return pi.accountId;
+        var arena = arenaPlayers.get(metaId);
+        return arena != null && arena.dbId() != 0 ? arena.dbId() : metaId;
     }
 
     public Map<Integer, PlayerLink> entityToPlayer() {

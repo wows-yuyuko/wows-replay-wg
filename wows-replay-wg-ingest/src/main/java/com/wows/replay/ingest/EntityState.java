@@ -10,7 +10,7 @@ import java.util.*;
  *
  * <p>Unified representation of an entity across the ingest layer. Uses sentinel
  * values for missing data ({@code -1f} for health, {@code NaN} for heading,
- * {@code -1} for teamId, {@code null} for dbId/playerName).</p>
+ * {@code -1} for teamId, {@code null} for metaId/playerName).</p>
  */
 public final class EntityState {
 
@@ -31,7 +31,8 @@ public final class EntityState {
     public GameParamId vehicleId;
     /** Vehicle → Avatar owner entity id */
     public EntityId ownerEntityId;
-    public Long dbId;
+    /** 战斗内 meta id（= players 表 key；注意不是账号 ID） */
+    public Long metaId;
     public String playerName;
     /** 船长参数 id（EntityCreate 时从 crewModifiersCompactParams.paramsId 解析，之后永不刷新）。 */
     public Long captainParamsId;

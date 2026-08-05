@@ -6,6 +6,8 @@ public class PlayerInfo {
     public int entityId;
     public int teamId = -1;
     public int relation;
+    /** 账号 ID（accountDBID），arena 名册到达后填充；0 表示未知。 */
+    public long accountId;
 
     public PlayerInfo(String u, int e, int r) {
         username = u;
