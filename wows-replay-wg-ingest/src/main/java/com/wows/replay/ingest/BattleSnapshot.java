@@ -2,7 +2,6 @@ package com.wows.replay.ingest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.List;
 
@@ -13,12 +12,6 @@ import java.util.List;
  * {@code BattleReport}：一个 owned 的、可序列化的终局状态快照，与实时可变状态
  * {@link BattleWorld} 解耦。字段集对齐 Rust report.rs 的 getter。</p>
  */
-@JsonPropertyOrder({"version", "map_name", "arena_id", "game_mode", "game_type", "match_group",
-    "winning_team", "finish_type", "match_result", "max_duration", "played_duration",
-    "extra_duration", "battle_start_clock", "players", "kills", "chat", "damage_events",
-    "consumables", "ribbons", "voice_lines", "salvos", "torpedoes", "shot_hits",
-    "plane_events", "active_wards", "capture_points", "buff_zones", "weather_zones",
-    "buildings", "dead_ships"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record BattleSnapshot(
 

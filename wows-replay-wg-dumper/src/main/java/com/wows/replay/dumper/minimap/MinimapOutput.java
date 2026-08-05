@@ -2,7 +2,6 @@ package com.wows.replay.dumper.minimap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.List;
 
@@ -13,8 +12,6 @@ import java.util.List;
  * <p>仅覆盖 Single 路径（单回放 ECS）：逐时钟边界事件流 + step 抽稀帧 + 终局状态。
  * 多视角合并（Full/Fast）与顶层 JSON 装配（pipeline）暂不实现。</p>
  */
-@JsonPropertyOrder({"arena_id", "frames", "firing_events", "damage_events", "shot_hits",
-    "dead_ships", "battle_stage", "winning_team", "finish_type", "scoring_rules", "captured_buffs"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MinimapOutput(
     /** 第一个通过校验的 arena id。 */

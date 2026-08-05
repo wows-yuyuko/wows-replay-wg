@@ -2,7 +2,6 @@ package com.wows.replay.ingest.report;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.wows.replay.model.EntityId;
 import com.wows.replay.model.Recognized;
 import com.wows.replay.model.Version;
@@ -18,11 +17,6 @@ import java.util.Map;
  *
  * @see BattleReportBuilder
  */
-@JsonPropertyOrder({"arena_id", "self_player", "version", "map_name", "game_mode", "game_type",
-    "match_group", "players", "game_chat", "battle_results", "frags", "match_result",
-    "finish_type", "capture_points", "buff_zones", "captured_buffs", "team_scores",
-    "buildings", "local_weather_zones", "battle_start_clock", "self_damage_stats",
-    "active_consumables", "max_duration", "played_duration", "extra_duration"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record BattleReport(
 
