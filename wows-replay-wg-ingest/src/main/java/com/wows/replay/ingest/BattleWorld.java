@@ -620,8 +620,7 @@ public class BattleWorld {
                 buildings.add(new BuildingState(eid, bx, bz, teamId, paramsId, alive));
             }
             case "SmokeScreen" -> {
-                float r = getFloatProp(props, "radius");
-                es.smokeRadius = r;
+                es.smokeRadius = getFloatProp(props, "radius");
                 smokeScreens.put(eid, es);
             }
             case "WeatherZone", "LocalWeatherZone" -> {
@@ -1100,10 +1099,10 @@ public class BattleWorld {
                 while (es.atbaTargets.size() <= idx) es.atbaTargets.add(0L);
                 es.atbaTargets.set(idx, longOfArg(se.value()));
                 handled = true;
-            } else if (u instanceof NestedUpdate.SetRange sr) {
-                while (es.atbaTargets.size() <= sr.stop()) es.atbaTargets.add(0L);
-                for (int i = 0; i < sr.values().size() && sr.start() + i <= sr.stop(); i++) {
-                    es.atbaTargets.set(sr.start() + i, longOfArg(sr.values().get(i)));
+            } else if (u instanceof NestedUpdate.SetRange(int start, int stop, List<ArgValue> values)) {
+                while (es.atbaTargets.size() <= stop) es.atbaTargets.add(0L);
+                for (int i = 0; i < values.size() && start + i <= stop; i++) {
+                    es.atbaTargets.set(start + i, longOfArg(values.get(i)));
                 }
                 handled = true;
             }
