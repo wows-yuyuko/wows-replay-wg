@@ -92,7 +92,7 @@ public final class BattleReportBuilder {
                 isBot(dbId, info.entityId), vehicle));
         }
 
-        // 5. frags 关联到 Player（用车辆实体 id 反查）
+        // 5. frags 关联到 Player（用战舰实体 id 反查）
         Map<Player, List<DeathInfo>> frags = new LinkedHashMap<>();
         for (var p : players) {
             var veh = p.vehicleEntity();
@@ -196,10 +196,10 @@ public final class BattleReportBuilder {
         EntityState es = world.entities().get(vehicleEid);
         if (es == null) {
             // §7.3：真实战斗（已摄入实体）中 self 玩家的 VehicleEntity 必须存在，
-            // 找不到说明车辆实体未摄入成功；空世界（合成/未处理）则容错返回 null。
+            // 找不到说明战舰实体未摄入成功；空世界（合成/未处理）则容错返回 null。
             if (isSelf && !world.entities().isEmpty()) {
                 throw new IllegalStateException(
-                    "self player 的车辆实体未找到: playerEntityId=" + playerEntityId + ", vehicleEid=" + vehicleEid);
+                    "self player 的战舰实体未找到: playerEntityId=" + playerEntityId + ", vehicleEid=" + vehicleEid);
             }
             return null;
         }
@@ -236,7 +236,7 @@ public final class BattleReportBuilder {
             shipConfig);
     }
 
-    /** 反查 vehicleToOwner 得到玩家车辆的实体 id；玩家船复用 Avatar id 时就是它自己。 */
+    /** 反查 vehicleToOwner 得到玩家战舰的实体 id；玩家船复用 Avatar id 时就是它自己。 */
     private int resolveVehicleEid(int playerEntityId) {
         for (var e : world.vehicleToOwner().entrySet()) {
             if (e.getValue() == playerEntityId) return e.getKey();

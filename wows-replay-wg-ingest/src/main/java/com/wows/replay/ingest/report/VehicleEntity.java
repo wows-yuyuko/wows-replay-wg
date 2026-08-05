@@ -10,7 +10,7 @@ import tools.jackson.databind.JsonNode;
 import java.util.List;
 
 /**
- * 车辆实体（对标 Rust {@code VehicleEntity}，report.rs §5.3）。
+ * 战舰实体（对标 Rust {@code VehicleEntity}，report.rs §5.3）。
  */
 public record VehicleEntity(
     @JsonProperty("id") EntityId id,

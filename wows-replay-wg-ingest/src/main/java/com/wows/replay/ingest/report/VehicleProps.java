@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.model.Vec3;
 
 /**
- * 车辆属性（对标 Rust {@code VehicleProps}，report.rs §2.3）。
- * 实体最后一次已知的车辆状态快照。
+ * 战舰属性（对标 Rust {@code VehicleProps}，report.rs §2.3）。
+ * 实体最后一次已知的战舰状态快照。
  */
 public record VehicleProps(
     @JsonProperty("health") float health,

@@ -129,7 +129,7 @@ public final class PlayerStateData {
         // Extract known fields by name
         // 15.x：accountDBID（key 0）才是真正的账号 ID（db_id）；
         // id 字段（key 11）是战斗内 meta id（meta_ship_id），与 meta.vehicles[].id 同空间，
-        // 用来把 meta 车辆映射到战斗内玩家（m.id() == player.meta_ship_id()）。
+        // 用来把 meta 战舰映射到战斗内玩家（m.id() == player.meta_ship_id()）。
         psd.dbId        = getLong(rawValues, keyMap, KEY_ACCOUNT_DBID);
         psd.metaShipId  = getLong(rawValues, keyMap, KEY_ID);
         psd.username    = getString(rawValues, keyMap, KEY_NAME);

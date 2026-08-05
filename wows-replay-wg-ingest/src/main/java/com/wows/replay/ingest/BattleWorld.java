@@ -1190,8 +1190,8 @@ public class BattleWorld {
             var pi = e.getValue();
             var es = entities.get(pi.entityId);
             boolean dead = es != null && !es.isAlive;
-            // 伤害按 aggressor 实体 id（Vehicle）记账，玩家查询需反查其车辆实体，
-            // 否则独立车辆实体与 Avatar 分离时伤害会漏算（对齐 BattleReportBuilder）。
+            // 伤害按 aggressor 实体 id（Vehicle）记账，玩家查询需反查其战舰实体，
+            // 否则独立战舰实体与 Avatar 分离时伤害会漏算（对齐 BattleReportBuilder）。
             int vehicleEid = resolveVehicleEid(pi.entityId);
             double damage = damageByAggressor.getOrDefault(vehicleEid, List.of())
                     .stream().mapToDouble(d -> d.amount()).sum();
@@ -1260,7 +1260,7 @@ public class BattleWorld {
         );
     }
 
-    /** 反查 vehicleToOwner 得到玩家车辆实体 id；玩家船复用 Avatar id 时就是它自己。 */
+    /** 反查 vehicleToOwner 得到玩家战舰实体 id；玩家船复用 Avatar id 时就是它自己。 */
     public int resolveVehicleEid(int playerEntityId) {
         for (var e : vehicleToOwner.entrySet()) {
             if (e.getValue() == playerEntityId) return e.getKey();
