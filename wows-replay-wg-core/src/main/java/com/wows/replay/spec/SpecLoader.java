@@ -276,7 +276,12 @@ public final class SpecLoader {
             return ArgType.Primitive.BLOB;
         }
 
-        return switch (text) {
+        // getTextContent() 会拼接所有后代文本（如 "USER_TYPE\nBLOB\nZippedBlobConverter.converter"、
+        // "UINT8 true"）；类型关键字总是第一个 token，对齐 Rust parse_type 的
+        // arg.first_child().text().trim()（否则 USER_TYPE/带 AllowNone 的多行类型全落 default→BLOB）。
+        var kw = text.split("\\s+")[0];
+
+        return switch (kw) {
             case "UINT8"     -> ArgType.Primitive.UINT8;
             case "UINT16"    -> ArgType.Primitive.UINT16;
             case "UINT32"    -> ArgType.Primitive.UINT32;
@@ -346,9 +351,9 @@ public final class SpecLoader {
                         props.add(new ArgType.FixedDictProperty(propName, propType));
                     }
                     yield new ArgType.FixedDict(allowNone, props);
-                } else if (aliases.containsKey(text)) {
-                    var resolved = aliases.get(text);
-                    yield new ArgType.NamedType(text, resolved);
+                } else if (aliases.containsKey(kw)) {
+                    var resolved = aliases.get(kw);
+                    yield new ArgType.NamedType(kw, resolved);
                 } else {
                     log.warn("无法识别的 def 类型 '{}'，回退为 BLOB（可能错位后续字段）", text);
                     yield ArgType.Primitive.BLOB;

@@ -976,15 +976,15 @@ public class BattleWorld {
         String prop = pu.property();
         int eid = pu.entityId().value();
         switch (prop) {
-            case "state" -> ingestStatePropertyUpdate(pu.path(), u, elapsed);
+            case "state" -> ingestStatePropertyUpdate(eid, pu.path(), u, elapsed);
             case "componentsState" -> ingestComponentsStateUpdate(eid, pu.path(), u);
             case "points" -> log.debug("SmokeScreen points update: entity={} path={} update={}", eid, pu.path(), u);
             default -> log.debug("PropertyUpdate: entity={} property={} path={} update={}", eid, prop, pu.path(), u);
         }
     }
 
-    /** 按解码后的 path/action 直接应用 BattleLogic.state 的子字段更新。 */
-    private void ingestStatePropertyUpdate(List<String> path, NestedUpdate u, float elapsed) {
+    /** 按解码后的 path/action 直接应用 state 的子字段更新（BattleLogic 与 Vehicle.state 共用）。 */
+    private void ingestStatePropertyUpdate(int eid, List<String> path, NestedUpdate u, float elapsed) {
         var keys = new ArrayList<String>();
         var indexes = new ArrayList<Integer>();
         for (var seg : path) {
@@ -1073,6 +1073,56 @@ public class BattleWorld {
             }
         }
 
+        // ── Vehicle.state 子字段（识别并应用，不再当未识别丢弃）────────────────
+        // state.battery.energy = v（主炮能量，FloatVal）
+        if (keys.size() == 1 && keys.getFirst().equals("battery")
+            && u instanceof NestedUpdate.SetKey(String key, ArgValue value) && key.equals("energy")
+            && value instanceof ArgValue.FloatVal(double energy)) {
+            getOrCreateEntity(eid, null).batteryEnergy = (float) energy;
+            handled = true;
+        }
+        // state.atba.atbaTargets = [..]（全量数组 SetKey）
+        if (keys.size() == 1 && keys.getFirst().equals("atba")
+            && u instanceof NestedUpdate.SetKey(String key, ArgValue value) && key.equals("atbaTargets")
+            && value instanceof ArgValue.ArrayVal(List<ArgValue> targets)) {
+            var es = getOrCreateEntity(eid, null);
+            es.atbaTargets = new ArrayList<>(targets.size());
+            for (ArgValue t : targets) es.atbaTargets.add(longOfArg(t));
+            handled = true;
+        }
+        // state.atba.atbaTargets[N] = v（数组元素 SetElement / SetRange）
+        if (keys.size() == 2 && keys.getFirst().equals("atba") && keys.get(1).equals("atbaTargets")
+            && !indexes.isEmpty()) {
+            var es = getOrCreateEntity(eid, null);
+            if (es.atbaTargets == null) es.atbaTargets = new ArrayList<>();
+            if (u instanceof NestedUpdate.SetElement se) {
+                int idx = indexes.getLast();
+                while (es.atbaTargets.size() <= idx) es.atbaTargets.add(0L);
+                es.atbaTargets.set(idx, longOfArg(se.value()));
+                handled = true;
+            } else if (u instanceof NestedUpdate.SetRange sr) {
+                while (es.atbaTargets.size() <= sr.stop()) es.atbaTargets.add(0L);
+                for (int i = 0; i < sr.values().size() && sr.start() + i <= sr.stop(); i++) {
+                    es.atbaTargets.set(sr.start() + i, longOfArg(sr.values().get(i)));
+                }
+                handled = true;
+            }
+        }
+        // state.decals.shotDecals[N] = {id, decal}（命中弹痕，外观数据仅计数）
+        if (keys.size() == 2 && keys.getFirst().equals("decals") && keys.get(1).equals("shotDecals")) {
+            var es = getOrCreateEntity(eid, null);
+            if (u instanceof NestedUpdate.SetElement se) {
+                es.shotDecals = Math.max(es.shotDecals, indexes.getLast() + 1);
+            } else if (u instanceof NestedUpdate.SetRange sr) {
+                es.shotDecals = Math.max(es.shotDecals, sr.stop() + 1);
+            }
+            handled = true;
+        }
+        // state.weather.globalWeather = {item}（全局天气切换事件，未建模，识别即止）
+        if (keys.size() == 2 && keys.getFirst().equals("weather") && keys.get(1).equals("globalWeather")) {
+            handled = true;
+        }
+
         if (!handled) {
             log.debug("state 更新未识别: path={} update={}", path, u);
         }
@@ -1096,9 +1146,10 @@ public class BattleWorld {
             switch (key) {
                 case "hasInvaders" -> target.hasInvaders = longOfArg(value) != 0;
                 case "invaderTeam" -> target.invaderTeam = longOfArg(value);
-                case "progress" -> target.progress = progressOfArg(value);
-                case "bothInside" -> target.bothInside = longOfArg(value) != 0;
-                case "isEnabled" -> target.isEnabled = longOfArg(value) != 0;
+                case "progress"    -> target.progress = progressOfArg(value);
+                case "bothInside"  -> target.bothInside = longOfArg(value) != 0;
+                case "isEnabled"   -> target.isEnabled = longOfArg(value) != 0;
+                case "captureSpeed" -> target.captureSpeed = floatFromArg(value);
                 default -> log.debug("componentsState captureLogic 更新未处理: key={} value={}", key, value);
             }
         } else {

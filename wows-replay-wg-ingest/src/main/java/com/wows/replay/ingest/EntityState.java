@@ -60,6 +60,14 @@ public final class EntityState {
     /** Number of shots fired */
     public long shotsFired;
 
+    // ── Vehicle.state 嵌套更新（NestedPropertyUpdate 0x23 应用）──────────
+    /** 主炮能量（state.battery.energy，FloatVal ~300） */
+    public float batteryEnergy;
+    /** 反潜弹幕目标实体 id 列表（state.atba.atbaTargets[N]） */
+    public List<Long> atbaTargets;
+    /** 命中弹痕数量（state.decals.shotDecals，外观数据仅计数） */
+    public int shotDecals;
+
     public EntityState(EntityId id) {
         this.id = id;
     }

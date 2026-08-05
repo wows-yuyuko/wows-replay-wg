@@ -8,6 +8,8 @@ public class CapturePointState {
     public long teamId = -1;
     public long invaderTeam = -1;
     public float progress;
+    /** 占领速度倍率（componentsState.captureLogic.captureSpeed）。 */
+    public float captureSpeed;
     public boolean hasInvaders;
     public boolean bothInside;
     public boolean isEnabled = true;
