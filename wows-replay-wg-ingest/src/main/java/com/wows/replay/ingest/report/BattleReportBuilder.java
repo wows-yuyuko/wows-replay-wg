@@ -52,7 +52,7 @@ public final class BattleReportBuilder {
         // 1. 伤害汇总
         Map<EntityId, Double> damageByEntity = new LinkedHashMap<>();
         for (var e : world.damageByAggressor().entrySet()) {
-            double total = e.getValue().stream().mapToDouble(d -> d.amount()).sum();
+            double total = e.getValue().stream().mapToDouble(BattleWorld.DamageEvent::amount).sum();
             damageByEntity.put(new EntityId(e.getKey()), total);
         }
         Optional<Double> authoritativeSelfDamage = world.selfDamageStats().isEmpty()

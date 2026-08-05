@@ -105,15 +105,15 @@ public class BattleWorld {
     final List<Integer> holdCpIndices = new ArrayList<>();
 
     // ── Player mapping ─────────────────────────────────────────────────
-    /** entity_id → (db_id, username) */
+    /** entity_id → (meta_id, username) */
     final Map<Integer, PlayerLink> entityToPlayer = new LinkedHashMap<>();
-    /** db_id → PlayerInfo */
+    /** meta_id → PlayerInfo（战斗内 meta id，与 meta.vehicles[].id 同空间） */
     final Map<Long, PlayerInfo>    players         = new LinkedHashMap<>();
-    /** db_id → 竞技场名册原始状态（dumper 输出 initial_state 用） */
+    /** meta_id → 竞技场名册原始状态（dumper 输出 initial_state 用） */
     final Map<Long, com.wows.replay.decode.PlayerStateData> arenaPlayers = new LinkedHashMap<>();
     /** Vehicle entity_id → Avatar entity_id (owner) */
     final Map<Integer, Integer>    vehicleToOwner  = new LinkedHashMap<>();
-    /** db_id → entity_id (from arena state) */
+    /** meta_id → entity_id (from arena state) */
     final Map<Long, Integer>       dbToEntity      = new LinkedHashMap<>();
 
     int cellPlayerCreateCount;
@@ -142,10 +142,11 @@ public class BattleWorld {
         var vehicles = meta.vehicles();
         if (vehicles != null) {
             for (var v : vehicles) {
-                long dbId = Integer.toUnsignedLong(v.id().value());
+                // v.id() 是战斗内 meta id（= PlayerStateData.metaShipId()），不是账号 ID
+                long metaId = Integer.toUnsignedLong(v.id().value());
                 String name = v.name();
-                metaPlayers.add(new MetaPlayer(dbId, name, v.relation(), v.shipId().value()));
-                players.put(dbId, new PlayerInfo(name, 0, v.relation()));
+                metaPlayers.add(new MetaPlayer(metaId, name, v.relation(), v.shipId().value()));
+                players.put(metaId, new PlayerInfo(name, 0, v.relation()));
             }
         }
         log.info("BattleWorld: {} meta players, version={}", metaPlayers.size(), version);
@@ -312,8 +313,8 @@ public class BattleWorld {
         var kl = entityToPlayer.get(killerEid);
         var vl = entityToPlayer.get(victimEid);
         killLog.add(new KillRecord(elapsed, killerEid, victimEid,
-            kl != null ? kl.dbId : 0, kl != null ? kl.username : "",
-            vl != null ? vl.dbId : 0, vl != null ? vl.username : "",
+            kl != null ? kl.metaId : 0, kl != null ? kl.username : "",
+            vl != null ? vl.metaId : 0, vl != null ? vl.username : "",
             sd.cause()));
         var es = entities.get(sd.victim().value());
         if (es != null) es.isAlive = false;
@@ -337,7 +338,7 @@ public class BattleWorld {
     private void handleConsumable(DecodedPayload.ConsumablePayload cons, float elapsed) {
         var pl = entityToPlayer.get(cons.entity().value());
         consumableLog.add(new ConsumableEvent(elapsed, cons.entity().value(),
-            pl != null ? pl.dbId : 0, pl != null ? pl.username : "",
+            pl != null ? pl.metaId : 0, pl != null ? pl.username : "",
             cons.consumableId(), cons.duration()));
     }
 
@@ -506,24 +507,24 @@ public class BattleWorld {
 
     private void ingestOneArenaPlayer(PlayerStateData psd, boolean isBot) {
         int entityId = psd.entityId();
-        long dbId = psd.dbId();
-        if (entityId <= 0 || dbId <= 0) return;
+        long metaId = psd.metaShipId();
+        if (entityId <= 0 || metaId <= 0) return;
 
-        // Map entity → player
-        entityToPlayer.put(entityId, new PlayerLink(dbId, psd.username()));
+        // Map entity → player (players 表按战斗内 meta id 索引，与 meta.vehicles[].id 同空间)
+        entityToPlayer.put(entityId, new PlayerLink(metaId, psd.username()));
 
         // Update or create player info
-        var existing = players.get(dbId);
+        var existing = players.get(metaId);
         if (existing != null) {
             existing.entityId = entityId;
             existing.teamId = (int) psd.teamId();
         } else {
             var pi = new PlayerInfo(psd.username(), entityId, 0); // relation unknown for bots
             pi.teamId = (int) psd.teamId();
-            players.put(dbId, pi);
+            players.put(metaId, pi);
         }
-        dbToEntity.put(dbId, entityId);
-        arenaPlayers.put(dbId, psd);
+        dbToEntity.put(metaId, entityId);
+        arenaPlayers.put(metaId, psd);
 
         // Create entity components from arena state
         var es = getOrCreateEntity(entityId, "Avatar");
@@ -531,12 +532,12 @@ public class BattleWorld {
         es.health    = psd.maxHealth(); // seed full HP from arena state
         es.teamId    = (int) psd.teamId();
         es.isBot     = isBot;
-        es.dbId      = dbId;
+        es.dbId      = metaId;
         es.playerName = psd.username();
 
         // Match meta player by metaShipId → get relation
         for (var mp : metaPlayers) {
-            if (mp.dbId == dbId) {
+            if (mp.metaId == metaId) {
                 es.relation = mp.relation;
                 break;
             }
@@ -773,7 +774,7 @@ public class BattleWorld {
                         es.dbId = dbId;
                         // Find player name from meta
                         for (var mp : metaPlayers) {
-                            if (mp.dbId == dbId) {
+                            if (mp.metaId == dbId) {
                                 es.playerName = mp.name;
                                 es.relation = mp.relation;
                                 entityToPlayer.put(eid, new PlayerLink(dbId, mp.name));
@@ -801,11 +802,11 @@ public class BattleWorld {
             // Match to recording player (relation=0)
             for (var mp : metaPlayers) {
                 if (mp.relation == 0 && !entityToPlayer.containsKey(eid)) {
-                    entityToPlayer.put(eid, new PlayerLink(mp.dbId, mp.name));
-                    var pi = players.get(mp.dbId);
+                    entityToPlayer.put(eid, new PlayerLink(mp.metaId, mp.name));
+                    var pi = players.get(mp.metaId);
                     if (pi != null) pi.entityId = eid;
                     if (es != null) {
-                        es.dbId = mp.dbId;
+                        es.dbId = mp.metaId;
                         es.playerName = mp.name;
                         es.relation = 0;
                     }
@@ -831,7 +832,7 @@ public class BattleWorld {
                 getOrCreateEntity(eid, null).teamId = tid;
                 var pl = entityToPlayer.get(eid);
                 if (pl != null) {
-                    var pi = players.get(pl.dbId);
+                    var pi = players.get(pl.metaId);
                     if (pi != null) pi.teamId = tid;
                 }
             }
@@ -1376,40 +1377,40 @@ public class BattleWorld {
     private void extractHealth(Map<String, ArgValue> props, int eid) {
         var es = getOrCreateEntity(eid, null);
         ArgValue h = props.get("health");
-        if (h instanceof ArgValue.FloatVal fv) es.health = (float) fv.value();
-        else if (h instanceof ArgValue.IntVal iv) es.health = (float) iv.value();
+        if (h instanceof ArgValue.FloatVal(double value3)) es.health = (float) value3;
+        else if (h instanceof ArgValue.IntVal(long value)) es.health = (float) value;
 
         ArgValue mh = props.get("maxHealth");
-        if (mh instanceof ArgValue.FloatVal fv) es.maxHealth = (float) fv.value();
-        else if (mh instanceof ArgValue.IntVal iv) es.maxHealth = (float) iv.value();
+        if (mh instanceof ArgValue.FloatVal(double value2)) es.maxHealth = (float) value2;
+        else if (mh instanceof ArgValue.IntVal(long value)) es.maxHealth = (float) value;
 
         ArgValue alive = props.get("isAlive");
-        if (alive instanceof ArgValue.IntVal iv) es.isAlive = iv.value() != 0;
-        else if (alive instanceof ArgValue.BoolVal bv) es.isAlive = bv.value();
+        if (alive instanceof ArgValue.IntVal(long value1)) es.isAlive = value1 != 0;
+        else if (alive instanceof ArgValue.BoolVal(boolean value)) es.isAlive = value;
     }
 
     private void extractTeam(Map<String, ArgValue> props, int eid) {
         ArgValue t = props.get("teamId");
-        if (t instanceof ArgValue.IntVal iv) {
-            getOrCreateEntity(eid, null).teamId = (int) iv.value();
+        if (t instanceof ArgValue.IntVal(long value)) {
+            getOrCreateEntity(eid, null).teamId = (int) value;
         }
     }
 
     private void applyCpDict(CapturePointState s, Map<String, ArgValue> dict) {
         ArgValue v;
         v = dict.get("hasInvaders");
-        if (v instanceof ArgValue.IntVal iv) s.hasInvaders = iv.value() != 0;
+        if (v instanceof ArgValue.IntVal(long value4)) s.hasInvaders = value4 != 0;
         v = dict.get("invaderTeam");
-        if (v instanceof ArgValue.IntVal iv) s.invaderTeam = (int) iv.value();
+        if (v instanceof ArgValue.IntVal(long value3)) s.invaderTeam = (int) value3;
         v = dict.get("progress");
-        if (v instanceof ArgValue.FloatVal fv) s.progress = (float) fv.value();
-        else if (v instanceof ArgValue.ArrayVal av && av.elements().size() >= 2) {
-            s.progress = floatFromArg(av.elements().get(0));
+        if (v instanceof ArgValue.FloatVal(double value2)) s.progress = (float) value2;
+        else if (v instanceof ArgValue.ArrayVal(List<ArgValue> elements) && elements.size() >= 2) {
+            s.progress = floatFromArg(elements.get(0));
         }
         v = dict.get("bothInside");
-        if (v instanceof ArgValue.IntVal iv) s.bothInside = iv.value() != 0;
+        if (v instanceof ArgValue.IntVal(long value1)) s.bothInside = value1 != 0;
         v = dict.get("isEnabled");
-        if (v instanceof ArgValue.IntVal iv) s.isEnabled = iv.value() != 0;
+        if (v instanceof ArgValue.IntVal(long value)) s.isEnabled = value != 0;
     }
 
     // ── Static helpers ─────────────────────────────────────────────────
@@ -1457,7 +1458,7 @@ public class BattleWorld {
 
     static long getLongProp(Map<String, ArgValue> props, String key) {
         ArgValue v = props.get(key);
-        return v instanceof ArgValue.IntVal iv ? iv.value() : 0;
+        return v instanceof ArgValue.IntVal(long value) ? value : 0;
     }
 
     static float getFloatProp(Map<String, ArgValue> props, String key) {
@@ -1467,8 +1468,8 @@ public class BattleWorld {
 
     static boolean getBoolProp(Map<String, ArgValue> props, String key, boolean def) {
         ArgValue v = props.get(key);
-        if (v instanceof ArgValue.BoolVal bv) return bv.value();
-        if (v instanceof ArgValue.IntVal iv) return iv.value() != 0;
+        if (v instanceof ArgValue.BoolVal(boolean value1)) return value1;
+        if (v instanceof ArgValue.IntVal(long value)) return value != 0;
         return def;
     }
 
@@ -1488,7 +1489,7 @@ public class BattleWorld {
 
     // ── Inner types ────────────────────────────────────────────────────
 
-    public record PlayerLink(long dbId, String username) {}
+    public record PlayerLink(long metaId, String username) {}
 
     public static class PlayerInfo {
         public String username;
@@ -1498,7 +1499,7 @@ public class BattleWorld {
         public PlayerInfo(String u, int e, int r) { username = u; entityId = e; relation = r; }
     }
 
-    public record MetaPlayer(long dbId, String name, int relation, long shipId) {}
+    public record MetaPlayer(long metaId, String name, int relation, long shipId) {}
 
     // ── Resource types ─────────────────────────────────────────────────
 

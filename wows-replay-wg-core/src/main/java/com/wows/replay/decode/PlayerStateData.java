@@ -71,10 +71,10 @@ public final class PlayerStateData {
     private String  clan        = "";
     private long    clanId;
     private long    clanColor;
+    /** 账号 ID —— 玩家 dict 的 accountDBID 字段（key 0）。 */
     private long    dbId;
-    /** 原始 accountDBID 字段（key 0）——15.x 中与 id 字段（key 11）不同 */
-    private long    accountDbId;
     private String  realm;
+    /** 战斗内 meta id —— 玩家 dict 的 id 字段（key 11），与 meta.vehicles[].id 同空间。 */
     private long    metaShipId;
     private int     entityId;
     private long    teamId      = -1;
@@ -127,16 +127,16 @@ public final class PlayerStateData {
         psd.raw.putAll(rawValues);
 
         // Extract known fields by name
-        // 15.x：`id` 字段（key 11）才是与 meta/聊天一致的账号 ID；
-        // `accountDBID`（key 0）是另一套 ID（哈希值），不能用于玩家匹配。
-        psd.accountDbId = getLong(rawValues, keyMap, KEY_ACCOUNT_DBID);
-        psd.dbId        = getLong(rawValues, keyMap, KEY_ID);
+        // 15.x：accountDBID（key 0）才是真正的账号 ID（db_id）；
+        // id 字段（key 11）是战斗内 meta id（meta_ship_id），与 meta.vehicles[].id 同空间，
+        // 用来把 meta 车辆映射到战斗内玩家（m.id() == player.meta_ship_id()）。
+        psd.dbId        = getLong(rawValues, keyMap, KEY_ACCOUNT_DBID);
+        psd.metaShipId  = getLong(rawValues, keyMap, KEY_ID);
         psd.username    = getString(rawValues, keyMap, KEY_NAME);
         psd.clan        = getString(rawValues, keyMap, KEY_CLAN_TAG);
         psd.clanId      = getLong(rawValues, keyMap, KEY_CLAN_ID);
         psd.clanColor   = getLong(rawValues, keyMap, KEY_CLAN_COLOR);
         psd.realm       = getStringOrNull(rawValues, keyMap, KEY_REALM);
-        psd.metaShipId  = psd.accountDbId;
         psd.entityId    = (int) getLong(rawValues, keyMap, KEY_SHIP_ID);
         psd.teamId      = getLong(rawValues, keyMap, KEY_TEAM_ID);
         psd.maxHealth   = getLong(rawValues, keyMap, KEY_MAX_HEALTH);
@@ -456,11 +456,10 @@ public final class PlayerStateData {
     public String clan()           { return clan; }
     public long clanId()           { return clanId; }
     public long clanColor()        { return clanColor; }
-    /** 账号 ID（15.x 中取自 `id` 字段，与 meta/聊天一致）。 */
+    /** 账号 ID（取自 accountDBID，key 0）。 */
     public long dbId()             { return dbId; }
-    /** 原始 accountDBID 字段（key 0）——15.x 中为另一套 ID。 */
-    public long accountDbId()      { return accountDbId; }
     public String realm()          { return realm; }
+    /** 战斗内 meta id（取自 id 字段，key 11）——与 meta.vehicles[].id 同空间。 */
     public long metaShipId()       { return metaShipId; }
     public int entityId()          { return entityId; }
     public long teamId()           { return teamId; }
@@ -491,6 +490,7 @@ public final class PlayerStateData {
         return out;
     }
 
+    /** 账号 ID（AccountId，取自 accountDBID）。 */
     public AccountId accountId()   { return new AccountId((int) dbId); }
     public EntityId shipEntityId() { return new EntityId(entityId); }
 

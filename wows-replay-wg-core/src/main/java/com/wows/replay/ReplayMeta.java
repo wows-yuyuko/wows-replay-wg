@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wows.replay.model.AccountId;
 import com.wows.replay.model.GameParamId;
+import com.wows.replay.model.MetaId;
 
 import java.util.List;
 import java.util.Map;
@@ -88,12 +89,17 @@ public record ReplayMeta(
 ) {
     /**
      * 元数据中的车辆信息。
+     *
+     * <p>{@code id} 是竞技场玩家状态 {@code id} 字段（KEY_ID / meta_ship_id）的同空间值，
+     * 用来把 meta 车辆映射到战斗内玩家（{@code m.id() == player.meta_ship_id()}），
+     * <strong>不是</strong>账号 ID。真正的账号 ID 见 {@code playerID} 与
+     * {@code PlayerStateData.dbId()}（accountDBID）。</p>
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record VehicleInfoMeta(
         @JsonProperty("shipId") GameParamId shipId,
         @JsonProperty("relation") int relation,
-        @JsonProperty("id") AccountId id,
+        @JsonProperty("id") MetaId id,
         @JsonProperty("name") String name
     ) {}
 }
