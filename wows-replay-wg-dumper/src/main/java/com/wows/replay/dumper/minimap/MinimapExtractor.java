@@ -2,7 +2,9 @@ package com.wows.replay.dumper.minimap;
 
 import com.wows.replay.ReplayFile;
 import com.wows.replay.decode.PacketDecoder;
+import com.wows.replay.ingest.ArtillerySalvo;
 import com.wows.replay.ingest.BattleWorld;
+import com.wows.replay.ingest.ShotHitRecord;
 import com.wows.replay.packet.NamedArgs;
 import com.wows.replay.packet.Parser;
 import com.wows.replay.spi.EntitySpecProvider;
@@ -147,7 +149,7 @@ public final class MinimapExtractor {
 
     // ── 事件装配 ──────────────────────────────────────────────────────
 
-    private static MinimapOutput.ShotEntry toShotEntry(BattleWorld.ArtillerySalvo s) {
+    private static MinimapOutput.ShotEntry toShotEntry(ArtillerySalvo s) {
         var salvo = s.salvo();
         var shots = salvo.shots().stream()
             .map(sh -> new MinimapOutput.ShotDetail(sh.shotId(), sh.origin(), sh.pitch(), sh.speed(), sh.target(),
@@ -158,7 +160,7 @@ public final class MinimapExtractor {
     }
 
     /** 命中事件：victim_id（接收 receiveShotKills 的实体）+ fired_at（关联齐射）+ victim_position（hit 到达瞬间快照）。 */
-    private static MinimapOutput.ShotHitEntry toShotHitEntry(BattleWorld.ShotHitRecord r,
+    private static MinimapOutput.ShotHitEntry toShotHitEntry(ShotHitRecord r,
                                                              java.util.Map<Long, Float> firedAtByShot,
                                                              BattleWorld world) {
         var hit = r.hit();

@@ -3,6 +3,7 @@ package com.wows.replay.ingest.report;
 import com.wows.replay.JsonMapper;
 import com.wows.replay.ReplayMeta;
 import com.wows.replay.ingest.BattleWorld;
+import com.wows.replay.ingest.DamageEvent;
 import com.wows.replay.ingest.EntityState;
 import com.wows.replay.model.EntityId;
 import com.wows.replay.model.GameParamId;
@@ -52,7 +53,7 @@ public final class BattleReportBuilder {
         // 1. 伤害汇总
         Map<EntityId, Double> damageByEntity = new LinkedHashMap<>();
         for (var e : world.damageByAggressor().entrySet()) {
-            double total = e.getValue().stream().mapToDouble(BattleWorld.DamageEvent::amount).sum();
+            double total = e.getValue().stream().mapToDouble(DamageEvent::amount).sum();
             damageByEntity.put(new EntityId(e.getKey()), total);
         }
         Optional<Double> authoritativeSelfDamage = world.selfDamageStats().isEmpty()
@@ -256,7 +257,7 @@ public final class BattleReportBuilder {
         return es != null && es.isBot;
     }
 
-    private CapturePointState toCapturePoint(BattleWorld.CapturePointState cp) {
+    private CapturePointState toCapturePoint(com.wows.replay.ingest.CapturePointState cp) {
         float x = cp.position != null && cp.position.length >= 2 ? cp.position[0] : 0f;
         float z = cp.position != null && cp.position.length >= 2 ? cp.position[1] : 0f;
         return new CapturePointState(cp.index, cp.teamId, cp.invaderTeam,

@@ -313,8 +313,8 @@ public class BattleWorld {
         var kl = entityToPlayer.get(killerEid);
         var vl = entityToPlayer.get(victimEid);
         killLog.add(new KillRecord(elapsed, killerEid, victimEid,
-                kl != null ? kl.metaId : 0, kl != null ? kl.username : "",
-                vl != null ? vl.metaId : 0, vl != null ? vl.username : "",
+                kl != null ? kl.metaId() : 0, kl != null ? kl.username() : "",
+                vl != null ? vl.metaId() : 0, vl != null ? vl.username() : "",
                 sd.cause()));
         var es = entities.get(sd.victim().value());
         if (es != null) es.isAlive = false;
@@ -338,7 +338,7 @@ public class BattleWorld {
     private void handleConsumable(DecodedPayload.ConsumablePayload cons, float elapsed) {
         var pl = entityToPlayer.get(cons.entity().value());
         consumableLog.add(new ConsumableEvent(elapsed, cons.entity().value(),
-                pl != null ? pl.metaId : 0, pl != null ? pl.username : "",
+                pl != null ? pl.metaId() : 0, pl != null ? pl.username() : "",
                 cons.consumableId(), cons.duration()));
     }
 
@@ -412,7 +412,7 @@ public class BattleWorld {
     private void handleTorpedoDirection(DecodedPayload.TorpedoDirectionPayload tdp) {
         // Update matching torpedo's maneuver flag
         for (var t : torpedoes) {
-            if (t.data.shotId() == tdp.shotId() && t.data.ownerId().value() == tdp.ownerId().value()) {
+            if (t.data().shotId() == tdp.shotId() && t.data().ownerId().value() == tdp.ownerId().value()) {
                 torpedoes.set(torpedoes.indexOf(t), t.withManeuver(tdp.targetYaw(), tdp.speedCoef()));
                 break;
             }
@@ -825,7 +825,7 @@ public class BattleWorld {
                 getOrCreateEntity(eid, null).teamId = tid;
                 var pl = entityToPlayer.get(eid);
                 if (pl != null) {
-                    var pi = players.get(pl.metaId);
+                    var pi = players.get(pl.metaId());
                     if (pi != null) pi.teamId = tid;
                 }
             }
@@ -1194,7 +1194,7 @@ public class BattleWorld {
             // 否则独立车辆实体与 Avatar 分离时伤害会漏算（对齐 BattleReportBuilder）。
             int vehicleEid = resolveVehicleEid(pi.entityId);
             double damage = damageByAggressor.getOrDefault(vehicleEid, List.of())
-                    .stream().mapToDouble(d -> d.amount).sum();
+                    .stream().mapToDouble(d -> d.amount()).sum();
             playerSnapshots.add(new BattleSnapshot.Player(
                     e.getKey(), pi.username, pi.entityId, pi.teamId, pi.relation,
                     es != null && es.isBot, dead, damage));
@@ -1645,145 +1645,5 @@ public class BattleWorld {
             case ArgValue.StrVal sv -> sv.value();
             case null, default -> "";
         };
-    }
-
-    // ── Inner types ────────────────────────────────────────────────────
-
-    public record PlayerLink(long metaId, String username) {
-    }
-
-    public static class PlayerInfo {
-        public String username;
-        public int entityId;
-        public int teamId = -1;
-        public int relation;
-
-        public PlayerInfo(String u, int e, int r) {
-            username = u;
-            entityId = e;
-            relation = r;
-        }
-    }
-
-    /**
-     * meta 花名册条目：从 {@code ReplayMeta.vehicles[]} 预抽取，arena 名册到达后
-     * 回填 {@code accountId}（accountDBID）与 {@code entityId}。
-     */
-    public static class MetaPlayer {
-        public final long metaId;   // 战斗内 meta id（= meta.vehicles[].id，同 arena 玩家 id 字段）
-        public final String name;
-        public final int relation;  // 0=自己, 1=同队, 2=敌方
-        public final long shipId;   // shipParamsId (GameParamId)
-        /** 账号 ID（accountDBID），arena 名册匹配后填充。 */
-        public long accountId;
-        /** 战斗内实体 id（Avatar/Vehicle entity_id），arena 名册匹配后填充。 */
-        public int entityId;
-
-        public MetaPlayer(long metaId, String name, int relation, long shipId) {
-            this.metaId = metaId;
-            this.name = name;
-            this.relation = relation;
-            this.shipId = shipId;
-        }
-    }
-
-    // ── Resource types ─────────────────────────────────────────────────
-
-    public record TeamScore(int teamIndex, long score) {
-    }
-
-    public record KillRecord(float clock, int killerEid, int victimEid,
-                             long killerDbId, String killerName,
-                             long victimDbId, String victimName, int cause) {
-    }
-
-    public record DamageEvent(float clock, int aggressorId, int victimId, float amount) {
-    }
-
-    public record ChatEvent(float clock, int entityId, long dbId,
-                            String senderName, String channel, String message) {
-    }
-
-    public record ConsumableEvent(float clock, int entityId, long dbId,
-                                  String username, long consumableId, float duration) {
-    }
-
-    public record DeadShipRecord(float clock, int victimId, float x, float z) {
-    }
-
-    public record CapturedBuff(int entityId, long paramsId, int capturedBy, float clock) {
-    }
-
-    public static class CapturePointState {
-        /** 对应 InteractiveZone 实体 id（componentsState 更新定位用），-1 表示未知。 */
-        public int entityId = -1;
-        public int index;
-        public long teamId = -1;
-        public long invaderTeam = -1;
-        public float progress;
-        public boolean hasInvaders;
-        public boolean bothInside;
-        public boolean isEnabled = true;
-        public float[] position;
-        public float radius;
-    }
-
-    public record BuffZoneState(int entityId, float x, float z, float radius,
-                                int teamId, boolean isActive, Long dropParamsId) {
-    }
-
-    public record WeatherZoneState(String name, float x, float z, float radius,
-                                   long paramsId, Integer entityId) {
-    }
-
-    public record BuildingState(int entityId, float x, float z, int teamId,
-                                long paramsId, boolean isAlive) {
-    }
-
-    // ── Extended resource types (Phase 4) ──────────────────────────────
-
-    /** Artillery salvo wrapped with clock for minimap output. */
-    public record ArtillerySalvo(float clock, com.wows.replay.decode.DecodedPayload.ArtillerySalvo salvo, int avatarId) {
-    }
-
-    /** Torpedo record with optional maneuver data. */
-    public record TorpedoRecord(float clock, com.wows.replay.decode.DecodedPayload.TorpedoData data,
-                                boolean hasManeuver, float targetYaw, float speedCoef) {
-        public TorpedoRecord(float clock, com.wows.replay.decode.DecodedPayload.TorpedoData data) {
-            this(clock, data, false, 0f, 0f);
-        }
-
-        public TorpedoRecord withManeuver(float yaw, float coef) {
-            return new TorpedoRecord(clock, data, true, yaw, coef);
-        }
-    }
-
-    public record ShotHitRecord(float clock, com.wows.replay.model.AvatarId avatarId,
-                                com.wows.replay.decode.DecodedPayload.ShotHitEntry hit,
-                                com.wows.replay.model.Vec3 victimPosition) {
-    }
-
-    public record PlaneState(long planeId, int ownerEntityId, int teamId,
-                             com.wows.replay.model.GameParamId paramsId,
-                             float x, float z, float addedAt, float lastUpdateAt) {
-        public PlaneState withPosition(float nx, float nz, float t) {
-            return new PlaneState(planeId, ownerEntityId, teamId, paramsId, nx, nz, addedAt, t);
-        }
-    }
-
-    public record PlaneRecord(float clock, String action, long planeId, PlaneState state) {
-    }
-
-    public record WardState(long wardId, com.wows.replay.model.EntityId entityId,
-                            com.wows.replay.model.EntityId ownerId,
-                            com.wows.replay.model.Vec3 position,
-                            float radius, float addedAt) {
-    }
-
-    public record VoiceLineEvent(float clock, com.wows.replay.model.AccountId senderId,
-                                 boolean isGlobal, String message) {
-    }
-
-    public record RibbonEvent(float clock, int ribbonId) {
     }
 }

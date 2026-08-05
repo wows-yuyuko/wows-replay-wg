@@ -14,7 +14,7 @@ public record DeathInfo(
     /**
      * 从击杀记录构造，注意 30 秒偏移（TIME_UNTIL_GAME_START=30s）。
      */
-    public static DeathInfo from(com.wows.replay.ingest.BattleWorld.KillRecord kill) {
+    public static DeathInfo from(com.wows.replay.ingest.KillRecord kill) {
         return new DeathInfo(
             Math.max(0f, kill.clock() - 30.0f),
             new EntityId(kill.killerEid()),
