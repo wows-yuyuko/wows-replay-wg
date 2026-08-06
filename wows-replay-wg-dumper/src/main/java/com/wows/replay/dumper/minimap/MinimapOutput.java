@@ -55,9 +55,9 @@ public record MinimapOutput(
         @JsonProperty("time_left") Float timeLeft
     ) {}
 
-    /** 归一化坐标船位（x/y ∈ [-1.5, 1.5]，heading 度）。 */
+    /** 归一化坐标船位（x/y ∈ [-1.5, 1.5]，heading 度）；玩家身份用全局一致 metaId。 */
     public record MinimapEntity(
-        @JsonProperty("entity_id") int entityId,
+        @JsonProperty("meta_id") long metaId,
         @JsonProperty("x") float x,
         @JsonProperty("y") float y,
         @JsonProperty("heading") float heading,
@@ -70,7 +70,7 @@ public record MinimapOutput(
 
     public record PlaneEntry(
         @JsonProperty("plane_id") long planeId,
-        @JsonProperty("owner_entity_id") int ownerEntityId,
+        @JsonProperty("owner_meta_id") long ownerMetaId,
         @JsonProperty("team_id") int teamId,
         @JsonProperty("params_id") long paramsId,
         @JsonProperty("x") float x,
@@ -79,7 +79,7 @@ public record MinimapOutput(
 
     public record TorpedoEntry(
         @JsonProperty("shot_id") int shotId,
-        @JsonProperty("owner_id") long ownerId,
+        @JsonProperty("owner_meta_id") long ownerMetaId,
         @JsonProperty("params_id") long paramsId,
         @JsonProperty("salvo_id") int salvoId,
         @JsonProperty("origin") com.wows.replay.model.Vec3 origin,
@@ -110,7 +110,7 @@ public record MinimapOutput(
     public record WardEntry(
         @JsonProperty("ward_id") long wardId,
         @JsonProperty("entity_id") int entityId,
-        @JsonProperty("owner_id") int ownerId,
+        @JsonProperty("owner_meta_id") long ownerMetaId,
         @JsonProperty("x") float x,
         @JsonProperty("y") float y,
         @JsonProperty("z") float z,
@@ -160,8 +160,8 @@ public record MinimapOutput(
 
     public record DamageEntry(
         @JsonProperty("clock") float clock,
-        @JsonProperty("aggressor") int aggressor,
-        @JsonProperty("victim") int victim,
+        @JsonProperty("aggressor_meta_id") long aggressorMetaId,
+        @JsonProperty("victim_meta_id") long victimMetaId,
         @JsonProperty("amount") float amount
     ) {}
 
@@ -180,8 +180,8 @@ public record MinimapOutput(
 
     public record ShotEntry(
         @JsonProperty("clock") float clock,
-        @JsonProperty("avatar_id") int avatarId,
-        @JsonProperty("owner_id") long ownerId,
+        @JsonProperty("avatar_meta_id") long avatarMetaId,
+        @JsonProperty("owner_meta_id") long ownerMetaId,
         @JsonProperty("params_id") long paramsId,
         @JsonProperty("salvo_id") int salvoId,
         @JsonProperty("fired_at") float firedAt,
@@ -190,8 +190,8 @@ public record MinimapOutput(
 
     public record ShotHitEntry(
         @JsonProperty("clock") float clock,
-        @JsonProperty("owner_id") long ownerId,
-        @JsonProperty("victim_id") int victimId,
+        @JsonProperty("owner_meta_id") long ownerMetaId,
+        @JsonProperty("victim_meta_id") long victimMetaId,
         @JsonProperty("shot_id") int shotId,
         @JsonProperty("hit_type") int hitType,
         @JsonProperty("position") com.wows.replay.model.Vec3 position,
@@ -200,10 +200,10 @@ public record MinimapOutput(
         @JsonProperty("victim_position") com.wows.replay.model.Vec3 victimPosition
     ) {}
 
-    /** 沉船；alt 视角无坐标时 x/z 可为 null。 */
+    /** 沉船；alt 视角无坐标时 x/z 可为 null。玩家身份用全局一致 metaId。 */
     public record DeadShip(
         @JsonProperty("clock") float clock,
-        @JsonProperty("victim_id") int victimId,
+        @JsonProperty("victim_meta_id") long victimMetaId,
         @JsonProperty("x") Float x,
         @JsonProperty("z") Float z
     ) {}
@@ -211,7 +211,7 @@ public record MinimapOutput(
     public record CapturedBuff(
         @JsonProperty("entity_id") int entityId,
         @JsonProperty("params_id") long paramsId,
-        @JsonProperty("captured_by") int capturedBy,
+        @JsonProperty("captured_by_meta_id") long capturedByMetaId,
         @JsonProperty("clock") float clock
     ) {}
 }

@@ -6,6 +6,7 @@ import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.ingest.ArtillerySalvo;
 import com.wows.replay.ingest.BattleWorld;
 import com.wows.replay.ingest.ShotHitRecord;
+import com.wows.replay.ingest.mapped.ReplayMapper;
 import com.wows.replay.packet.NamedArgs;
 import com.wows.replay.packet.Parser;
 import com.wows.replay.spi.EntitySpecProvider;
@@ -74,18 +75,20 @@ public final class MinimapExtractor {
             // 时钟边界：冲刷事件流 + step 抽帧（docs §4.1）
             float clock = world.currentClock().seconds();
             if (clock != lastClock) {
-                // 1. damage：damageEvents 条数 diff，只推新事件
+                // 1. damage：damageEvents 条数 diff，只推新事件（玩家身份归一为 metaId）
                 var dmg = world.damageEvents();
                 for (int i = lastDamageCount; i < dmg.size(); i++) {
                     var d = dmg.get(i);
-                    damageEvents.add(new MinimapOutput.DamageEntry(d.clock(), d.aggressorId(), d.victimId(), d.amount()));
+                    damageEvents.add(new MinimapOutput.DamageEntry(d.clock(),
+                        ReplayMapper.metaIdOf(world, d.aggressorId()),
+                        ReplayMapper.metaIdOf(world, d.victimId()), d.amount()));
                 }
                 lastDamageCount = dmg.size();
 
-                // 2. firing：(avatar_id, salvo_id) 去重，新齐射才输出
+                // 2. firing：(avatar_id, salvo_id) 去重，新齐射才输出（玩家身份归一为 metaId）
                 for (var s : world.firedSalvos()) {
                     long key = ((long) s.avatarId() << 32) | (s.salvo().salvoId() & 0xFFFFFFFFL);
-                    if (seenSalvos.add(key)) firingEvents.add(toShotEntry(s));
+                    if (seenSalvos.add(key)) firingEvents.add(toShotEntry(s, world));
                 }
 
                 // 2b. shot_id → fired_at 映射（shot_hits 关联起源齐射；用 (owner,shot) 组合 key
@@ -127,13 +130,15 @@ public final class MinimapExtractor {
         return new MinimapOutput(
             arenaId, frames, firingEvents, damageEvents, shotHits,
             world.deadShips().stream()
-                .map(ds -> new MinimapOutput.DeadShip(ds.clock(), ds.victimId(), ds.x(), ds.z()))
+                .map(ds -> new MinimapOutput.DeadShip(ds.clock(),
+                    ReplayMapper.metaIdOf(world, ds.victimId()), ds.x(), ds.z()))
                 .toList(),
             battleStageName(world.battleStageId()), world.winningTeam(), finishType,
             new MinimapOutput.ScoringRules(world.teamWinScore(), world.holdReward(),
                 world.holdPeriod(), world.holdCpIndices()),
             world.capturedBuffs().stream()
-                .map(cb -> new MinimapOutput.CapturedBuff(cb.entityId(), cb.paramsId(), cb.capturedBy(), cb.clock()))
+                .map(cb -> new MinimapOutput.CapturedBuff(cb.entityId(), cb.paramsId(),
+                    ReplayMapper.metaIdOf(world, cb.capturedBy()), cb.clock()))
                 .toList());
     }
 
@@ -148,13 +153,15 @@ public final class MinimapExtractor {
 
     // ── 事件装配 ──────────────────────────────────────────────────────
 
-    private static MinimapOutput.ShotEntry toShotEntry(ArtillerySalvo s) {
+    private static MinimapOutput.ShotEntry toShotEntry(ArtillerySalvo s, BattleWorld world) {
         var salvo = s.salvo();
         var shots = salvo.shots().stream()
             .map(sh -> new MinimapOutput.ShotDetail(sh.shotId(), sh.origin(), sh.pitch(), sh.speed(), sh.target(),
                 sh.gunBarrelId(), sh.serverTimeLeft(), sh.shooterHeight(), sh.hitDistance()))
             .toList();
-        return new MinimapOutput.ShotEntry(s.clock(), s.avatarId(), salvo.ownerId().value(),
+        return new MinimapOutput.ShotEntry(s.clock(),
+            ReplayMapper.metaIdOf(world, s.avatarId()),
+            ReplayMapper.metaIdOf(world, salvo.ownerId().value()),
             salvo.paramsId().value(), salvo.salvoId(), s.clock(), shots);
     }
 
@@ -163,15 +170,17 @@ public final class MinimapExtractor {
                                                              java.util.Map<Long, Float> firedAtByShot,
                                                              BattleWorld world) {
         var hit = r.hit();
-        int victimId = r.avatarId().value();
+        int victimEid = r.avatarId().value();
         Float firedAt = firedAtByShot.get(((long) hit.ownerId().value() << 32) | (hit.shotId() & 0xFFFFFFFFL));
         var victimPos = r.victimPosition();
         if (victimPos == null) {
-            var es = world.entities().get(victimId);
+            var es = world.entities().get(victimEid);
             victimPos = es != null ? new com.wows.replay.model.Vec3(es.x, es.y, es.z) : null;
         }
-        return new MinimapOutput.ShotHitEntry(r.clock(), hit.ownerId().value(), victimId, hit.shotId(),
-            hit.hitType().raw(), hit.position(), hit.terminalBallistics(), firedAt, victimPos);
+        return new MinimapOutput.ShotHitEntry(r.clock(),
+            ReplayMapper.metaIdOf(world, hit.ownerId().value()),
+            ReplayMapper.metaIdOf(world, victimEid),
+            hit.shotId(), hit.hitType().raw(), hit.position(), hit.terminalBallistics(), firedAt, victimPos);
     }
 
     // ── 帧快照（docs §4.2）────────────────────────────────────────────
@@ -179,23 +188,23 @@ public final class MinimapExtractor {
     private static MinimapOutput.MinimapFrame snapshot(BattleWorld world, float clock) {
         var entities = new ArrayList<MinimapOutput.MinimapEntity>();
         for (var es : world.entities().values()) {
-            // 只有收到过 minimap 更新（有归一化坐标）的实体才输出
+            // 只有收到过 minimap 更新（有归一化坐标）的实体才输出；玩家身份归一为 metaId
             if (Float.isNaN(es.minimapX) || Float.isNaN(es.minimapZ)) continue;
             float heading = Float.isNaN(es.minimapHeading) ? 0f : es.minimapHeading;
-            entities.add(new MinimapOutput.MinimapEntity(es.id.value(), es.minimapX, es.minimapZ,
-                heading, es.visible, es.teamId, es.health, es.maxHealth, es.isAlive));
+            entities.add(new MinimapOutput.MinimapEntity(ReplayMapper.metaIdOf(world, es.id.value()),
+                es.minimapX, es.minimapZ, heading, es.visible, es.teamId, es.health, es.maxHealth, es.isAlive));
         }
 
         var planes = world.activePlanes().values().stream()
-            .map(p -> new MinimapOutput.PlaneEntry(p.planeId(), p.ownerEntityId(), p.teamId(),
-                p.paramsId().value(), p.x(), p.z()))
+            .map(p -> new MinimapOutput.PlaneEntry(p.planeId(), ReplayMapper.metaIdOf(world, p.ownerEntityId()),
+                p.teamId(), p.paramsId().value(), p.x(), p.z()))
             .toList();
 
         var torpedoes = world.activeTorpedoes().values().stream()
             .map(t -> {
                 var d = t.data();
-                return new MinimapOutput.TorpedoEntry(d.shotId(), d.ownerId().value(), d.paramsId().value(),
-                    d.salvoId(), d.origin(), d.direction(), d.armed(), t.clock(), t.clock(),
+                return new MinimapOutput.TorpedoEntry(d.shotId(), ReplayMapper.metaIdOf(world, d.ownerId().value()),
+                    d.paramsId().value(), d.salvoId(), d.origin(), d.direction(), d.armed(), t.clock(), t.clock(),
                     t.hasManeuver(), false);
             })
             .toList();
@@ -212,7 +221,8 @@ public final class MinimapExtractor {
         var wards = world.activeWards().values().stream()
             .map(w -> {
                 var p = w.position();
-                return new MinimapOutput.WardEntry(w.wardId(), w.entityId().value(), w.ownerId().value(),
+                return new MinimapOutput.WardEntry(w.wardId(), w.entityId().value(),
+                    ReplayMapper.metaIdOf(world, w.ownerId().value()),
                     p != null ? p.x() : 0f, p != null ? p.y() : 0f, p != null ? p.z() : 0f, w.radius());
             })
             .toList();

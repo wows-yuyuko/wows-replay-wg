@@ -135,8 +135,10 @@ public final class ReplayMapper {
     /**
      * entity → metaId：Avatar/玩家实体直查 {@code entityToPlayer}；未命中走
      * {@code vehicleToOwner}（Vehicle 船 → Avatar）再查。未知返回 0。
+     *
+     * <p>供 dumper（minimap 输出）等消费方复用同一解析链。</p>
      */
-    static long metaIdOf(BattleWorld world, int eid) {
+    public static long metaIdOf(BattleWorld world, int eid) {
         var link = world.entityToPlayer().get(eid);
         if (link != null) return link.metaId();
         Integer owner = world.vehicleToOwner().get(eid);
