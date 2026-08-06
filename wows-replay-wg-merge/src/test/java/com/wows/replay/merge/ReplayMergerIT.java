@@ -79,28 +79,29 @@ class ReplayMergerIT {
         var merged = merger.merge(List.of(p1, p2));
 
         assertEquals(2, merged.replayCount());
-        assertEquals(singlePlayers, merged.players().size(), "玩家取主视角");
-        assertEquals(singleKills, merged.killLog().size(), "击杀取主视角");
-        assertEquals(singleChat, merged.chatLog().size(), "聊天去重");
-        assertEquals(singleConsumables, merged.consumableLog().size(), "消耗品去重");
+        assertEquals(singlePlayers, merged.replay().players().size(), "玩家取主视角");
+        assertEquals(singleKills, merged.replay().killLog().size(), "击杀取主视角");
+        assertEquals(singleChat, merged.replay().chatLog().size(), "聊天去重");
+        assertEquals(singleConsumables, merged.replay().consumableLog().size(), "消耗品去重");
 
-        // 伤害：单视角内可能存在 (clock,aggr,victim,amount) 完全相同的并发条目（真实数据如此），
-        // 两视角合并后应等于单视角内的去重条数，而非单视角原始条数。
+        // 伤害：单视角内可能存在 (clock,aggrMetaId,victimMetaId,amount) 完全相同的并发条目（真实数据如此），
+        // 两视角合并后应等于单视角归一数据内的去重条数，而非单视角原始条数。
+        var p1Norm = com.wows.replay.ingest.mapped.ReplayMapper.map(p1.world(), p1.report());
         java.util.Set<String> seen = new java.util.HashSet<>();
-        int uniqueDamage = (int) p1.world().damageEvents().stream()
-            .filter(d -> seen.add(d.clock() + "|" + d.aggressorId() + "|" + d.victimId() + "|" + d.amount()))
+        int uniqueDamage = (int) p1Norm.damageEvents().stream()
+            .filter(d -> seen.add(d.clock() + "|" + d.aggressorMetaId() + "|" + d.victimMetaId() + "|" + d.amount()))
             .count();
-        assertEquals(uniqueDamage, merged.damageEvents().size(), "伤害去重到单视角内唯一条数");
+        assertEquals(uniqueDamage, merged.replay().damageEvents().size(), "伤害去重到单视角内唯一条数");
         assertTrue(uniqueDamage <= singleDamage, "单视角内存在重复伤害元组");
 
         assertEquals(0, merged.dedupStats().get("players"), "玩家取主视角，不计去重");
         assertEquals(0, merged.dedupStats().get("kills"), "击杀取主视角，不计去重");
         assertEquals(singleChat, merged.dedupStats().get("chat"));
-        assertEquals(2 * singleDamage - merged.damageEvents().size(), merged.dedupStats().get("damage"));
+        assertEquals(2 * singleDamage - merged.replay().damageEvents().size(), merged.dedupStats().get("damage"));
         assertEquals(singleConsumables, merged.dedupStats().get("consumables"));
 
-        for (int i = 1; i < merged.killLog().size(); i++) {
-            assertTrue(merged.killLog().get(i - 1).clock() <= merged.killLog().get(i).clock(),
+        for (int i = 1; i < merged.replay().killLog().size(); i++) {
+            assertTrue(merged.replay().killLog().get(i - 1).clock() <= merged.replay().killLog().get(i).clock(),
                 "kill_log 应按 clock 升序");
         }
 
@@ -127,33 +128,34 @@ class ReplayMergerIT {
         var merged = merger.merge(parsed);
 
         assertEquals(files.size(), merged.replayCount(), "参与合并的回放份数");
-        assertEquals(single.report().players().size(), merged.players().size(), "玩家取主视角（名册完整）");
-        assertEquals(single.world().killLog().size(), merged.killLog().size(), "击杀取主视角");
-        assertEquals(single.world().teamScores().size(), merged.teamScores().size(), "队伍比分取主视角");
+        assertEquals(single.report().players().size(), merged.replay().players().size(), "玩家取主视角（名册完整）");
+        assertEquals(single.world().killLog().size(), merged.replay().killLog().size(), "击杀取主视角");
+        assertEquals(single.world().teamScores().size(), merged.replay().teamScores().size(), "队伍比分取主视角");
 
         // 聊天/消耗品是视角特有事件（各玩家只见己方频道/自身消耗品）：
         // 跨视角并集应 ≥ 任一单视角，且 ≤ 全视角总和（去重生效）。
-        assertTrue(merged.chatLog().size() >= maxChat,
-            "聊天并集应 ≥ 单视角最大条数: merged=" + merged.chatLog().size() + ", max=" + maxChat);
-        assertTrue(merged.chatLog().size() <= totalChat, "聊天并集不应超过全视角总和");
-        assertTrue(merged.consumableLog().size() >= maxConsumables,
-            "消耗品并集应 ≥ 单视角最大条数: merged=" + merged.consumableLog().size() + ", max=" + maxConsumables);
-        assertTrue(merged.consumableLog().size() <= totalConsumables, "消耗品并集不应超过全视角总和");
+        assertTrue(merged.replay().chatLog().size() >= maxChat,
+            "聊天并集应 ≥ 单视角最大条数: merged=" + merged.replay().chatLog().size() + ", max=" + maxChat);
+        assertTrue(merged.replay().chatLog().size() <= totalChat, "聊天并集不应超过全视角总和");
+        assertTrue(merged.replay().consumableLog().size() >= maxConsumables,
+            "消耗品并集应 ≥ 单视角最大条数: merged=" + merged.replay().consumableLog().size() + ", max=" + maxConsumables);
+        assertTrue(merged.replay().consumableLog().size() <= totalConsumables, "消耗品并集不应超过全视角总和");
 
         // 伤害是视角特有事件（只在能看见受害者的视角触发）：并集应 ≥ 任一单视角
-        assertTrue(merged.damageEvents().size() >= maxDamage,
-            "伤害并集应 ≥ 单视角最大条数: merged=" + merged.damageEvents().size() + ", max=" + maxDamage);
+        assertTrue(merged.replay().damageEvents().size() >= maxDamage,
+            "伤害并集应 ≥ 单视角最大条数: merged=" + merged.replay().damageEvents().size() + ", max=" + maxDamage);
 
-        for (int i = 1; i < merged.killLog().size(); i++) {
-            assertTrue(merged.killLog().get(i - 1).clock() <= merged.killLog().get(i).clock(),
+        for (int i = 1; i < merged.replay().killLog().size(); i++) {
+            assertTrue(merged.replay().killLog().get(i - 1).clock() <= merged.replay().killLog().get(i).clock(),
                 "kill_log 应按 clock 升序");
         }
 
         assertNotNull(JsonMapper.toJson(merged), "MergedResult 应可序列化为 JSON");
 
         log.info("合并结果: {} 视角 → {} players, {} kills, {} chat, {} damage, {} consumables",
-            merged.replayCount(), merged.players().size(), merged.killLog().size(),
-            merged.chatLog().size(), merged.damageEvents().size(), merged.consumableLog().size());
+            merged.replayCount(), merged.replay().players().size(), merged.replay().killLog().size(),
+            merged.replay().chatLog().size(), merged.replay().damageEvents().size(),
+            merged.replay().consumableLog().size());
     }
 
     @Test

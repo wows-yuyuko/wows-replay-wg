@@ -8,6 +8,8 @@ import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.dumper.minimap.MinimapExtractor;
 import com.wows.replay.dumper.minimap.MinimapOutput;
 import com.wows.replay.ingest.BattleWorld;
+import com.wows.replay.ingest.mapped.NormalizedReplay;
+import com.wows.replay.ingest.mapped.ReplayMapper;
 import com.wows.replay.ingest.report.BattleReport;
 import com.wows.replay.ingest.report.BattleReportBuilder;
 import com.wows.replay.packet.Packet;
@@ -125,8 +127,10 @@ public final class ReplayDumper {
         out.put("match_group", report.matchGroup());
         out.put("match_result", report.matchResult());
         out.put("finish_type", report.finishType());
+        // 映射层：实体 id → 全局一致 metaId，事件流输出只带 metaId
+        NormalizedReplay normalized = ReplayMapper.map(world, report);
         out.put("players", buildPlayers(report, resolvedPrivate));
-        out.put("game_events", buildGameEvents(world));
+        out.put("game_events", buildGameEvents(normalized));
         out.put("capture_points", report.capturePoints());
         out.put("buff_zones", report.buffZones());
         out.put("captured_buffs", report.capturedBuffs());
@@ -230,16 +234,18 @@ public final class ReplayDumper {
         return merged;
     }
 
-    /** players 装配（对标 Rust pipeline.rs player_json）：玩家字段 + vehicle{ship_id/modernizations/consumables/exteriors/private_results_info}。 */
+    /**
+     * players 装配（对标 Rust pipeline.rs player_json）：玩家字段（metaId + accountId，去掉
+     * 视角相关 entity_id）+ vehicle{ship_id/modernizations/consumables/exteriors/private_results_info}。
+     */
     static List<Map<String, Object>> buildPlayers(BattleReport report,
                                                   Map<String, JsonNode> resolvedPrivate) {
         var players = new ArrayList<Map<String, Object>>();
         for (var p : report.players()) {
             var pm = new LinkedHashMap<String, Object>();
 
-            pm.put("id", p.metaId());
-            pm.put("db_id", p.dbId());
-            pm.put("entity_id", p.entityId());
+            pm.put("meta_id", p.metaId());
+            pm.put("account_id", p.dbId());
             pm.put("username", p.username());
             pm.put("team_id", p.teamId());
             pm.put("relation", p.relation());
@@ -262,14 +268,13 @@ public final class ReplayDumper {
         return players;
     }
 
-    /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat 按 clock 排序。 */
-    static List<Map<String, Object>> buildGameEvents(BattleWorld world) {
+    /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat 按 clock 排序，玩家身份只用 metaId。 */
+    static List<Map<String, Object>> buildGameEvents(NormalizedReplay replay) {
         var events = new ArrayList<Map<String, Object>>();
 
-        for (var e : world.consumableLog()) {
+        for (var e : replay.consumableLog()) {
             var data = new LinkedHashMap<String, Object>();
-            data.put("entity_id", e.entityId());
-            data.put("db_id", world.accountIdOf(e.metaId()));
+            data.put("meta_id", e.metaId());
             data.put("username", e.username());
             data.put("consumable", e.consumableId());
             data.put("activated_at", e.clock());
@@ -277,14 +282,12 @@ public final class ReplayDumper {
             events.add(event("consumable", e.clock(), data));
         }
 
-        for (var k : world.killLog()) {
+        for (var k : replay.killLog()) {
             var killer = new LinkedHashMap<String, Object>();
-            killer.put("db_id", world.accountIdOf(k.killerMetaId()));
-            killer.put("entity_id", k.killerEid());
+            killer.put("meta_id", k.killerMetaId());
             killer.put("username", k.killerName());
             var victim = new LinkedHashMap<String, Object>();
-            victim.put("db_id", world.accountIdOf(k.victimMetaId()));
-            victim.put("entity_id", k.victimEid());
+            victim.put("meta_id", k.victimMetaId());
             victim.put("username", k.victimName());
             var data = new LinkedHashMap<String, Object>();
             data.put("killer", killer);
@@ -293,11 +296,10 @@ public final class ReplayDumper {
             events.add(event("kill", k.clock(), data));
         }
 
-        for (var c : world.chatLog()) {
+        for (var c : replay.chatLog()) {
             var data = new LinkedHashMap<String, Object>();
-            data.put("entity_id", c.entityId());
-            data.put("db_id", world.accountIdOf(c.metaId()));
-            data.put("username", c.senderName());
+            data.put("meta_id", c.metaId());
+            data.put("username", c.username());
             data.put("channel", c.channel());
             data.put("message", c.message());
             events.add(event("chat", c.clock(), data));

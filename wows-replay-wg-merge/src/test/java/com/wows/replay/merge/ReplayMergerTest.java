@@ -1,13 +1,11 @@
 package com.wows.replay.merge;
 
-import com.wows.replay.ReplayMeta;
-import com.wows.replay.decode.DecodedPayload;
-import com.wows.replay.ingest.BattleWorld;
-import com.wows.replay.ingest.report.BattleReport;
-import com.wows.replay.ingest.report.Player;
-import com.wows.replay.model.AccountId;
-import com.wows.replay.model.EntityId;
-import com.wows.replay.model.GameClock;
+import com.wows.replay.ingest.mapped.NormalizedChat;
+import com.wows.replay.ingest.mapped.NormalizedConsumable;
+import com.wows.replay.ingest.mapped.NormalizedDamage;
+import com.wows.replay.ingest.mapped.NormalizedKill;
+import com.wows.replay.ingest.mapped.NormalizedPlayer;
+import com.wows.replay.ingest.mapped.NormalizedReplay;
 import com.wows.replay.model.Version;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,37 +15,37 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 结果级合并去重单元测试（合成数据，不依赖回放文件）。
+ * 结果级合并去重单元测试（构造已归一的 {@link NormalizedReplay} 视角数据，不依赖回放文件）。
  */
 class ReplayMergerTest {
 
     private static final Version VERSION = new Version(15, 6, 0, 0);
 
-    private static final ReplayMeta META = new ReplayMeta(
-        null, 0, null, "15.6.0.0", 0, null, 0, null, null, 0,
-        null, null, null, null, List.of(), 0, null, null, null, 0, 2, null, null, 0);
-
     @Test
     @DisplayName("广播状态取主视角，其余事件流跨视角去重")
     void mergeDeduplicates() {
-        var parsedA = new ParsedReplay(null, parseWorld("A"), report(1, VERSION,
-            player(1, 101, "Alice"), player(2, 102, "Bob")));
-        var parsedB = new ParsedReplay(null, parseWorld("B"), report(1, VERSION,
-            player(1, 101, "Alice"), player(3, 103, "Carol")));
+        var a = view(1, VERSION,
+            List.of(player(1, 101, "Alice"), player(2, 102, "Bob")),
+            List.of(kill(5, 1, 2, "Bob"), kill(9, 1, 3, "Carol")),
+            List.of(chat(2, 1, "Alice", "hello")),
+            List.of(damage(5, 1, 2, 500f)),
+            List.of(consumable(3, 1, "Alice", 50)));
+        var b = view(1, VERSION,
+            List.of(player(1, 101, "Alice"), player(3, 103, "Carol")),
+            List.of(kill(5, 1, 2, "Bob"), kill(9, 2, 4, "Dora")),
+            List.of(chat(2, 1, "Alice", "hello"), chat(4, 2, "Bob", "hi")),
+            List.of(damage(5, 1, 2, 500f), damage(9, 1, 2, 300f)),
+            List.of(consumable(3, 1, "Alice", 50), consumable(7, 2, "Bob", 60)));
 
-        var merged = new ReplayMerger(null, null).merge(List.of(parsedA, parsedB));
+        var merged = new ReplayMerger(null, null).mergeNormalized(List.of(a, b));
 
         assertEquals(2, merged.replayCount());
-        // 广播状态取主视角 A：玩家 [Alice, Bob]、击杀 [victim10@5, victim20@9]
-        assertEquals(2, merged.players().size(), "玩家取主视角");
-        assertEquals(2, merged.killLog().size(), "击杀取主视角");
-
-        // 其余事件流跨视角并集 + 去重：
-        // A: 聊天 hello, 伤害(1→10@5,500), 消耗品(1,50)
-        // B: 聊天 hello(重复)+hi, 伤害(1→10@5 重复)+(1→10@9,300), 消耗品(1,50 重复)+(2,60)
-        assertEquals(2, merged.chatLog().size(), "聊天按 clock+sender+message 去重");
-        assertEquals(2, merged.damageEvents().size(), "伤害按 aggressor+victim+clock+amount 去重");
-        assertEquals(2, merged.consumableLog().size(), "消耗品按 clock+entity+consumable 去重");
+        // 广播状态取主视角 A：玩家 [Alice, Bob]、击杀 [victim2@5, victim3@9]
+        assertEquals(2, merged.replay().players().size(), "玩家取主视角");
+        assertEquals(2, merged.replay().killLog().size(), "击杀取主视角");
+        assertEquals(2, merged.replay().chatLog().size(), "聊天按 clock+metaId+message 去重");
+        assertEquals(2, merged.replay().damageEvents().size(), "伤害按 metaId+clock+amount 去重");
+        assertEquals(2, merged.replay().consumableLog().size(), "消耗品按 clock+metaId+consumable 去重");
 
         assertEquals(0, merged.dedupStats().get("players"), "广播状态不计去重");
         assertEquals(0, merged.dedupStats().get("kills"), "广播状态不计去重");
@@ -56,8 +54,8 @@ class ReplayMergerTest {
         assertEquals(1, merged.dedupStats().get("consumables"));
 
         // 时间线按 clock 升序
-        for (int i = 1; i < merged.killLog().size(); i++) {
-            assertTrue(merged.killLog().get(i - 1).clock() <= merged.killLog().get(i).clock(),
+        for (int i = 1; i < merged.replay().killLog().size(); i++) {
+            assertTrue(merged.replay().killLog().get(i - 1).clock() <= merged.replay().killLog().get(i).clock(),
                 "kill_log 应按 clock 升序");
         }
     }
@@ -65,78 +63,55 @@ class ReplayMergerTest {
     @Test
     @DisplayName("版本不一致 → MergeException")
     void versionMismatchThrows() {
-        var parsedA = new ParsedReplay(null, parseWorld("A"), report(1, VERSION));
-        var parsedB = new ParsedReplay(null, parseWorld("B"), report(1, new Version(16, 0, 0, 0)));
-        assertThrows(MergeException.class, () -> new ReplayMerger(null, null).merge(List.of(parsedA, parsedB)),
+        var a = view(1, VERSION, List.of(), List.of(), List.of(), List.of(), List.of());
+        var b = view(1, new Version(16, 0, 0, 0), List.of(), List.of(), List.of(), List.of(), List.of());
+        assertThrows(MergeException.class, () -> new ReplayMerger(null, null).mergeNormalized(List.of(a, b)),
             "不同版本的 replay 不能合并");
     }
 
     @Test
     @DisplayName("竞技场不一致 → MergeException")
     void arenaMismatchThrows() {
-        var parsedA = new ParsedReplay(null, parseWorld("A"), report(1, VERSION));
-        var parsedB = new ParsedReplay(null, parseWorld("B"), report(2, VERSION));
-        assertThrows(MergeException.class, () -> new ReplayMerger(null, null).merge(List.of(parsedA, parsedB)),
+        var a = view(1, VERSION, List.of(), List.of(), List.of(), List.of(), List.of());
+        var b = view(2, VERSION, List.of(), List.of(), List.of(), List.of(), List.of());
+        assertThrows(MergeException.class, () -> new ReplayMerger(null, null).mergeNormalized(List.of(a, b)),
             "不同场次的 replay 不能合并");
     }
 
-    // ── 合成数据辅助 ────────────────────────────────────────────────────
+    // ── 构造辅助 ────────────────────────────────────────────────────────
 
-    /** 构建视角 A/B 的 BattleWorld（重叠事件制造重复，两个视角的事件并集 = 完整数据）。 */
-    private static BattleWorld parseWorld(String tag) {
-        var w = new BattleWorld(META, VERSION);
-        if ("A".equals(tag)) {
-            w.process(new DecodedPayload.ShipDestroyedPayload(new EntityId(1), new EntityId(10), 1), new GameClock(5f));
-            w.process(new DecodedPayload.ShipDestroyedPayload(new EntityId(1), new EntityId(20), 1), new GameClock(9f));
-            w.process(new DecodedPayload.ChatMessagePayload(new EntityId(9), new AccountId(100), "team", "hello", null), new GameClock(2f));
-            w.process(new DecodedPayload.DamageReceivedPayload(new EntityId(10),
-                List.of(new DecodedPayload.DamageReceivedEntry(new EntityId(1), 500f))), new GameClock(5f));
-            w.process(new DecodedPayload.ConsumablePayload(new EntityId(1), 50, 10f, null), new GameClock(3f));
-        } else {
-            w.process(new DecodedPayload.ShipDestroyedPayload(new EntityId(1), new EntityId(10), 1), new GameClock(5f));
-            w.process(new DecodedPayload.ShipDestroyedPayload(new EntityId(1), new EntityId(30), 1), new GameClock(9f));
-            w.process(new DecodedPayload.ChatMessagePayload(new EntityId(9), new AccountId(100), "team", "hello", null), new GameClock(2f));
-            w.process(new DecodedPayload.ChatMessagePayload(new EntityId(9), new AccountId(200), "team", "hi", null), new GameClock(4f));
-            w.process(new DecodedPayload.DamageReceivedPayload(new EntityId(10),
-                List.of(new DecodedPayload.DamageReceivedEntry(new EntityId(1), 500f))), new GameClock(5f));
-            w.process(new DecodedPayload.DamageReceivedPayload(new EntityId(10),
-                List.of(new DecodedPayload.DamageReceivedEntry(new EntityId(1), 300f))), new GameClock(9f));
-            w.process(new DecodedPayload.ConsumablePayload(new EntityId(1), 50, 10f, null), new GameClock(3f));
-            w.process(new DecodedPayload.ConsumablePayload(new EntityId(2), 60, 8f, null), new GameClock(7f));
-        }
-        return w;
+    private static NormalizedReplay view(long arenaId, Version version,
+                                         List<NormalizedPlayer> players,
+                                         List<NormalizedKill> kills,
+                                         List<NormalizedChat> chats,
+                                         List<NormalizedDamage> damages,
+                                         List<NormalizedConsumable> consumables) {
+        return new NormalizedReplay(
+            arenaId, version, null, null, null, null, null, null, null,
+            null, null, null, null,
+            players, kills, damages, chats, consumables,
+            List.of(), List.of(), List.of(), List.of(), List.of(),
+            List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+            List.of());
     }
 
-    private static Player player(long metaId, long dbId, String name) {
-        return new Player(metaId, dbId, 0, name, 1, 1, false, null);
+    private static NormalizedPlayer player(long metaId, long accountId, String name) {
+        return new NormalizedPlayer(metaId, accountId, name, 1, 1, false);
     }
 
-    private static BattleReport report(long arenaId, Version version, Player... players) {
-        return new BattleReport(
-            arenaId,                    // arena_id
-            null,                       // self_player
-            version,                    // version
-            null,                       // map_name
-            null,                       // game_mode
-            null,                       // game_type
-            null,                       // match_group
-            List.of(players),           // players
-            List.of(),                  // game_chat
-            null,                       // battle_results
-            java.util.Map.of(),         // frags
-            null,                       // match_result
-            null,                       // finish_type
-            List.of(),                  // capture_points
-            java.util.Map.of(),         // buff_zones
-            List.of(),                  // captured_buffs
-            List.of(),                  // team_scores
-            List.of(),                  // buildings
-            List.of(),                  // local_weather_zones
-            null,                       // battle_start_clock
-            List.of(),                  // self_damage_stats
-            java.util.Map.of(),         // active_consumables
-            0L,                         // max_duration
-            null,                       // played_duration
-            null);                      // extra_duration
+    private static NormalizedKill kill(float clock, long killerMetaId, long victimMetaId, String victimName) {
+        return new NormalizedKill(clock, killerMetaId, "Killer", victimMetaId, victimName, 1);
+    }
+
+    private static NormalizedChat chat(float clock, long metaId, String username, String message) {
+        return new NormalizedChat(clock, metaId, username, "team", message);
+    }
+
+    private static NormalizedDamage damage(float clock, long aggressorMetaId, long victimMetaId, float amount) {
+        return new NormalizedDamage(clock, aggressorMetaId, victimMetaId, amount);
+    }
+
+    private static NormalizedConsumable consumable(float clock, long metaId, String username, long id) {
+        return new NormalizedConsumable(clock, metaId, username, id, 10f);
     }
 }

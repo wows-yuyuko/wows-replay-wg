@@ -8,6 +8,10 @@ package com.wows.replay.merge;
  * safe_clock 同步步进喂进同一个 {@code BattleWorld}，主视角拥有广播型状态，alt 只贡献
  * "其他玩家战舰"的更新。实现见 docs/replay-parser-call-chain.md §10。</p>
  *
+ * <p><b>id 归一</b>：流式收尾同样复用映射层 {@link ReplayMapper#map}，把最终 world
+ * 归一为 {@link NormalizedReplay}（实体 id → 全局一致 metaId），保证全局输出与单视角/结果级
+ * 合并一致：只有 metaId（accountId 保留在玩家信息）。</p>
+ *
  * <p>批处理驱动与流式驱动共享同一份 ingest 代码，区别只在喂包的节奏（docs §1）。</p>
  */
 public interface MergedSession {
