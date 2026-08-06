@@ -1,6 +1,7 @@
 package com.wows.replay.ingest;
 
 import com.wows.replay.ReplayMeta;
+import com.wows.replay.constant.GameConstants;
 import com.wows.replay.decode.DecodedPayload;
 import com.wows.replay.decode.PlayerStateData;
 import com.wows.replay.decode.PropertyDecoder;
@@ -35,6 +36,8 @@ public class BattleWorld {
     private final List<MetaPlayer> metaPlayers;
     /** 游戏常量查询（消耗品/战斗阶段/模式名），无注入时兜底为空实现（§12.4.3）。 */
     private final GameConstantsProvider constants;
+    /** 统一常量布局管理器（id→名称，优先本类规范表，外部 provider 兜底，见 GameConstants）。 */
+    private final GameConstants gameConstants;
     /** 当前推进时钟（§12.4.4），由 process() 按规则更新。 */
     private GameClock currentClock = GameClock.ZERO;
 
@@ -133,6 +136,7 @@ public class BattleWorld {
         this.meta = meta;
         this.version = version;
         this.constants = constants != null ? constants : GameConstantsProvider.empty();
+        this.gameConstants = new GameConstants(this.constants);
         this.metaPlayers = new ArrayList<>();
         this.gameMode = meta.gameMode();
         this.matchGroup = meta.matchGroup();
@@ -462,7 +466,7 @@ public class BattleWorld {
         for (var e : dsp.entries()) {
             selfDamageStats.add(new com.wows.replay.ingest.report.DamageStatEntry(
                     e.weaponId(),
-                    com.wows.replay.ingest.report.DamageStatCategory.fromRaw(e.categoryId()),
+                    com.wows.replay.ingest.report.DamageStatCategory.fromRaw(e.categoryId(), gameConstants, version),
                     e.count(), e.total()));
         }
     }
@@ -859,7 +863,7 @@ public class BattleWorld {
                         }
                     }
                     if (d.get("finishReason") instanceof ArgValue.IntVal(long value) && value > 0) {
-                        finishType = finishTypeName((int) value);
+                        finishType = gameConstants.finishTypeName((int) value, version);
                         finishTypeId = (int) value;
                     }
                 }
@@ -1331,6 +1335,16 @@ public class BattleWorld {
         return constants;
     }
 
+    /** 回放版本（常量布局按版本解析）。 */
+    public Version version() {
+        return version;
+    }
+
+    /** 统一常量布局管理器（id→名称），见 {@link GameConstants}。 */
+    public GameConstants gameConstants() {
+        return gameConstants;
+    }
+
     public String arenaId() {
         return arenaId;
     }
@@ -1643,25 +1657,6 @@ public class BattleWorld {
 
     /** 位置 z，null 安全（无位置视为 0）。 */
     static float posZ(Vec3 p) { return p != null ? p.z() : 0f; }
-
-    /** Resolve a FINISH_TYPE id from battle.xml to a display name. */
-    static String finishTypeName(int id) {
-        return switch (id) {
-            case 0 -> "Unknown";
-            case 1 -> "Extermination";
-            case 2 -> "BaseCaptured";
-            case 3 -> "Timeout";
-            case 4 -> "Failure";
-            case 5 -> "Technical";
-            case 8 -> "Score";
-            case 9 -> "ScoreOnTimeout";
-            case 10 -> "PveMainTaskSucceeded";
-            case 11 -> "PveMainTaskFailed";
-            case 12 -> "ScoreZero";
-            case 13 -> "ScoreExcess";
-            default -> "FinishType(" + id + ")";
-        };
-    }
 
     static int intFromArg(ArgValue v) {
         return switch (v) {

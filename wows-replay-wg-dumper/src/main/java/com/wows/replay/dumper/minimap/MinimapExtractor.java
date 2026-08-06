@@ -1,6 +1,7 @@
 package com.wows.replay.dumper.minimap;
 
 import com.wows.replay.ReplayFile;
+import com.wows.replay.constant.GameConstants;
 import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.ingest.ArtillerySalvo;
 import com.wows.replay.ingest.BattleWorld;
@@ -29,6 +30,7 @@ public final class MinimapExtractor {
 
     private final EntitySpecProvider specProvider;
     private final GameConstantsProvider constants;
+    private final GameConstants gameConstants;
     private final ReplayFile replay;
     private final int step;
 
@@ -40,6 +42,7 @@ public final class MinimapExtractor {
                             ReplayFile replay, int step) {
         this.specProvider = specProvider;
         this.constants = constants;
+        this.gameConstants = new GameConstants(constants);
         this.replay = replay;
         this.step = Math.max(1, step);
     }
@@ -134,17 +137,13 @@ public final class MinimapExtractor {
                 .toList());
     }
 
-    /** 战斗阶段 id → 阶段名（对齐 Rust BattleStage Debug，0=Waiting..4=Ended）。 */
-    private static String battleStageName(Integer id) {
+    /**
+     * 战斗阶段 id → 阶段名（对齐 Rust BattleStage Debug，0=Waiting..4=Ended）。
+     * 委托统一布局管理器 {@link GameConstants#battleStageName}，null 安全。
+     */
+    private String battleStageName(Integer id) {
         if (id == null) return null;
-        return switch (id) {
-            case 0 -> "Waiting";
-            case 1 -> "Battle";
-            case 2 -> "Results";
-            case 3 -> "Finishing";
-            case 4 -> "Ended";
-            default -> "Stage(" + id + ")";
-        };
+        return gameConstants.battleStageName(id, replay.version());
     }
 
     // ── 事件装配 ──────────────────────────────────────────────────────

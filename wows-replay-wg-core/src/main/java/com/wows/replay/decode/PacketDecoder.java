@@ -1,5 +1,6 @@
 package com.wows.replay.decode;
 
+import com.wows.replay.constant.GameConstants;
 import com.wows.replay.model.*;
 import com.wows.replay.packet.*;
 import com.wows.replay.pickle.PickleReader;
@@ -24,9 +25,12 @@ import java.util.Map;
 public class PacketDecoder {
 
     private final Version version;
+    /** 统一常量布局管理器（VoiceLine id→名称等），见 {@link GameConstants}。 */
+    private final GameConstants gameConstants;
 
     public PacketDecoder(Version version) {
         this.version = version;
+        this.gameConstants = GameConstants.empty();
     }
 
     /**
@@ -159,67 +163,15 @@ public class PacketDecoder {
                 var buf = ByteBuffer.wrap(blob).order(ByteOrder.LITTLE_ENDIAN);
                 int line = buf.getShort() & 0xFFFF;
                 isGlobal = (buf.get() & 0xFF) == 1;
-                voiceLine = voiceLineName(line, buf);
+                voiceLine = gameConstants.voiceLineName(line, version, buf);
             }
         } else {
             isGlobal = intFromArg(args.get(0)) == 1;
             senderId = (int) Integer.toUnsignedLong(intFromArg(args.get(1)));
             int line = intFromArg(args.get(2));
-            voiceLine = voiceLineNameOld(line, intFromArg(args.get(3)), longFromArg(args.get(4)));
+            voiceLine = gameConstants.voiceLineName(line, version, intFromArg(args.get(3)), longFromArg(args.get(4)));
         }
         return new DecodedPayload.VoiceLinePayload(new AccountId(senderId), isGlobal, voiceLine);
-    }
-
-    private static String voiceLineName(int line, ByteBuffer buf) {
-        return switch (line) {
-            case 1 -> "AttentionToSquare(" + buf.getShort() + "," + buf.getShort() + ")";
-            case 2 -> "QuickTactic(" + buf.getShort() + "," + buf.getLong() + ")";
-            case 3 -> "RequestingSupport";
-            case 5 -> "Wilco";
-            case 6 -> "Negative";
-            case 7 -> "WellDone";
-            case 8 -> "FairWinds";
-            case 9 -> "Curses";
-            case 10 -> "DefendTheBase";
-            case 11 -> "ProvideAntiAircraft";
-            case 12 -> {
-                buf.getShort();
-                long id = buf.getLong();
-                yield "Retreat" + (id != 0 ? "(" + id + ")" : "");
-            }
-            case 13 -> "IntelRequired";
-            case 14 -> "SetSmokeScreen";
-            case 15 -> "UsingRadar";
-            case 16 -> "UsingHydroSearch";
-            case 17 -> "FollowMe";
-            case 18 -> "MapPointAttention(" + buf.getFloat() + "," + buf.getFloat() + ")";
-            case 19 -> "UsingSubmarineLocator";
-            default -> "UnknownVoiceLine(" + line + ")";
-        };
-    }
-
-    private static String voiceLineNameOld(int line, int a, long b) {
-        return switch (line) {
-            case 1 -> "AttentionToSquare(" + a + "," + b + ")";
-            case 2 -> "QuickTactic(" + a + "," + b + ")";
-            case 3 -> "RequestingSupport";
-            case 5 -> "Wilco";
-            case 6 -> "Negative";
-            case 7 -> "WellDone";
-            case 8 -> "FairWinds";
-            case 9 -> "Curses";
-            case 10 -> "DefendTheBase";
-            case 11 -> "ProvideAntiAircraft";
-            case 12 -> "Retreat" + (b != 0 ? "(" + b + ")" : "");
-            case 13 -> "IntelRequired";
-            case 14 -> "SetSmokeScreen";
-            case 15 -> "UsingRadar";
-            case 16 -> "UsingHydroSearch";
-            case 17 -> "FollowMe";
-            case 18 -> "MapPointAttention(" + a + "," + b + ")";
-            case 19 -> "UsingSubmarineLocator";
-            default -> "UnknownVoiceLine(" + line + ")";
-        };
     }
 
     // ── Arena State ────────────────────────────────────────────────────

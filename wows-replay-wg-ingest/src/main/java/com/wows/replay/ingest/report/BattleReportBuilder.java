@@ -175,7 +175,7 @@ public final class BattleReportBuilder {
         }
 
         Recognized<FinishType> finishType = world.finishTypeId() != 0
-            ? FinishType.fromRaw(world.finishTypeId()) : null;
+            ? FinishType.fromRaw(world.finishTypeId(), world.gameConstants(), world.version()) : null;
 
         return new BattleReport(
             arenaId, selfPlayer, version, mapName, gameMode, gameType, matchGroup,

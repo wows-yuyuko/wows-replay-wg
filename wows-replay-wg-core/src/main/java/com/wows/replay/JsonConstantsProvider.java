@@ -18,6 +18,8 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     private final Map<Integer, String> deathReasons;
     private final Map<Integer, String> cameraModes;
     private final Map<Integer, String> battleStages;
+    private final Map<Integer, String> finishTypes;
+    private final Map<Integer, String> damageStatCategories;
     private final Map<Integer, String> consumableStates;
 
     /** 从字节数组加载。 */
@@ -29,6 +31,9 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
         this.deathReasons = buildDeathReasonMap();
         this.cameraModes = buildReverseLookup("CAMERA_MODE");
         this.battleStages = buildReverseLookup("BATTLE_STAGES");
+        // FINISH_TYPE / DAMAGE_STATS：name→id，反向查找成 id→name（供 GameConstants 对未知 id 兜底）。
+        this.finishTypes = buildReverseLookup("FINISH_TYPE");
+        this.damageStatCategories = buildReverseLookup("DAMAGE_STATS");
     }
 
     /** 从文件路径加载。 */
@@ -41,8 +46,12 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     @Override public Optional<String> deathReasonName(int id) { return Optional.ofNullable(deathReasons.get(id)); }
     @Override public Optional<String> cameraModeName(int id) { return Optional.ofNullable(cameraModes.get(id)); }
     @Override public Optional<String> battleStageName(int id, Version version) { return Optional.ofNullable(battleStages.get(id)); }
+    @Override public Optional<String> finishTypeName(int id, Version version) { return Optional.ofNullable(finishTypes.get(id)); }
+    @Override public Optional<String> damageStatCategoryName(int id, Version version) { return Optional.ofNullable(damageStatCategories.get(id)); }
     @Override public Map<Integer, String> consumableIds() { return Collections.unmodifiableMap(consumableStates); }
     @Override public Map<Integer, String> battleStages(Version version) { return Collections.unmodifiableMap(battleStages); }
+    @Override public Map<Integer, String> finishTypeNames(Version version) { return Collections.unmodifiableMap(finishTypes); }
+    @Override public Map<Integer, String> damageStatCategories(Version version) { return Collections.unmodifiableMap(damageStatCategories); }
 
     /** 获取顶级节点，返回 null 表示该版本无此字段。 */
     public JsonNode section(String name) { return root.get(name); }

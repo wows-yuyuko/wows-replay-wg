@@ -1,10 +1,16 @@
 package com.wows.replay.ingest.report;
 
+import com.wows.replay.constant.GameConstants;
 import com.wows.replay.model.Recognized;
+import com.wows.replay.model.Version;
 
 /**
  * 结束类型枚举（对标 Rust {@code FinishType}，battle.xml FINISH_TYPE）。
- * 与 BattleWorld.finishTypeName(int) 的映射保持一致。
+ *
+ * <p>枚举常量集是固定的<b>类型契约</b>（战报 {@code finish_type} 的序列化形态）；
+ * id→常量 的解析不做本地硬编码布局，而是委托 {@link GameConstants#finishTypeName}
+ * （统一布局管理器：规范表 → 外部 provider → 原始回退），按名称匹配枚举常量。
+ * 无法匹配（未知/新增 id）→ {@link Recognized.Unknown}。</p>
  */
 public enum FinishType {
     Unknown,
@@ -20,22 +26,21 @@ public enum FinishType {
     ScoreZero,
     ScoreExcess;
 
-    /** 从 finishType 原始 int 解析。 */
-    public static Recognized<FinishType> fromRaw(int id) {
-        return switch (id) {
-            case 0 -> new Recognized.Unknown<>(0);
-            case 1 -> new Recognized.Known<>(Extermination);
-            case 2 -> new Recognized.Known<>(BaseCaptured);
-            case 3 -> new Recognized.Known<>(Timeout);
-            case 4 -> new Recognized.Known<>(Failure);
-            case 5 -> new Recognized.Known<>(Technical);
-            case 8 -> new Recognized.Known<>(Score);
-            case 9 -> new Recognized.Known<>(ScoreOnTimeout);
-            case 10 -> new Recognized.Known<>(PveMainTaskSucceeded);
-            case 11 -> new Recognized.Known<>(PveMainTaskFailed);
-            case 12 -> new Recognized.Known<>(ScoreZero);
-            case 13 -> new Recognized.Known<>(ScoreExcess);
-            default -> new Recognized.Unknown<>(id);
-        };
+    /**
+     * 从 finishType 原始 int 解析。
+     *
+     * <p>用 {@code gc.finishTypeName(id, version)} 取得规范名，再与枚举常量名精确匹配；
+     * 匹配失败（含 provider 兜底名 / {@code "FinishType(id)"} 回退串）→ Unknown，保留原始 id。</p>
+     *
+     * @param id      原始 FINISH_TYPE id（BattleLogic {@code battleResult.finishReason}）
+     * @param gc      统一常量布局管理器
+     * @param version 回放版本
+     */
+    public static Recognized<FinishType> fromRaw(int id, GameConstants gc, Version version) {
+        String name = gc.finishTypeName(id, version);
+        for (var c : values()) {
+            if (c.name().equals(name)) return new Recognized.Known<>(c);
+        }
+        return new Recognized.Unknown<>(id);
     }
 }
