@@ -99,17 +99,14 @@ public final class ReplayDumper {
 
     private Map<String, Object> assemble(ReplayFile replay, BattleWorld world,
                                          BattleReport report, Options options) {
-        // 战报常量解析（对标 pipeline.rs）：解析 battle_results 供 results_info/private_results_info 富化
+        // 战报常量解析（对标 pipeline.rs）：解析 battle_results 供 private_results_info 富化
         var constantsTree = loadConstants();
         JsonNode resolvedResults = null;
-        JsonNode resolvedPlayers = null;
         Map<String, JsonNode> resolvedPrivate = new LinkedHashMap<>();
         if (report.battleResults() != null) {
             try {
                 JsonNode raw = JsonMapper.readTree(report.battleResults());
                 resolvedResults = constantsTree != null ? BattleResultsResolver.resolve(raw, constantsTree) : raw;
-                JsonNode publicInfo = resolvedResults.get("playersPublicInfo");
-                resolvedPlayers = publicInfo != null && publicInfo.isObject() ? publicInfo : null;
                 resolvedPrivate = resolvePrivatePlayers(resolvedResults, constantsTree, report.selfPlayer().dbId());
             } catch (Exception e) {
                 log.warn("battle_results 解析失败: {}", e.toString());
@@ -128,7 +125,7 @@ public final class ReplayDumper {
         out.put("match_group", report.matchGroup());
         out.put("match_result", report.matchResult());
         out.put("finish_type", report.finishType());
-        out.put("players", buildPlayers(report, resolvedPlayers, resolvedPrivate));
+        out.put("players", buildPlayers(report, resolvedPrivate));
         out.put("game_events", buildGameEvents(world));
         out.put("capture_points", report.capturePoints());
         out.put("buff_zones", report.buffZones());
@@ -233,9 +230,8 @@ public final class ReplayDumper {
         return merged;
     }
 
-    /** players 装配（对标 Rust pipeline.rs player_json）：玩家字段 + vehicle{ship_id/modernizations/consumables/exteriors/results_info/private_results_info}。 */
+    /** players 装配（对标 Rust pipeline.rs player_json）：玩家字段 + vehicle{ship_id/modernizations/consumables/exteriors/private_results_info}。 */
     static List<Map<String, Object>> buildPlayers(BattleReport report,
-                                                  JsonNode resolvedPlayers,
                                                   Map<String, JsonNode> resolvedPrivate) {
         var players = new ArrayList<Map<String, Object>>();
         for (var p : report.players()) {
@@ -256,10 +252,6 @@ public final class ReplayDumper {
                 v.put("modernizations", sc.modernization());
                 v.put("consumables", sc.consumables());
                 v.put("exteriors", sc.exteriors());
-                JsonNode info = lookupPlayerInfo(resolvedPlayers, p.dbId(), p.username());
-                if (info != null) {
-                    v.put("results_info", info);
-                }
                 if (resolvedPrivate != null && resolvedPrivate.get(String.valueOf(p.dbId())) != null) {
                     v.put("private_results_info", resolvedPrivate.get(String.valueOf(p.dbId())));
                 }
@@ -268,29 +260,6 @@ public final class ReplayDumper {
             players.add(pm);
         }
         return players;
-    }
-
-    /**
-     * playersPublicInfo 关联：优先 db_id（账号 ID = accountDBID，与战报 key 同空间），
-     * 其次 username 兜底。
-     */
-    private static JsonNode lookupPlayerInfo(JsonNode resolvedPlayers, long dbId, String username) {
-        if (resolvedPlayers == null || !resolvedPlayers.isObject()) return null;
-        JsonNode info = resolvedPlayers.get(String.valueOf(dbId));
-        if (info != null) return info;
-        if (username != null) {
-            for (var prop : resolvedPlayers.properties()) {
-                JsonNode v = prop.getValue();
-                if (v.isObject()) {
-                    for (var f : v.properties()) {
-                        if (f.getValue().isString() && username.equals(f.getValue().stringValue())) {
-                            return v;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat 按 clock 排序。 */
