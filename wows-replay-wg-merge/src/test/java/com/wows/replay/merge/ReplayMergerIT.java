@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * 结果级合并集成测试：同一份 15.6.0 真实回放解析成"两个视角"后合并——
- * 广播/视角事件应完全去重回单视角数量，玩家并集去重，可序列化。
+ * 广播状态（玩家/击杀/比分/占领点等）取主视角，事件流去重回单视角数量，可序列化。
  */
 @Slf4j
 class ReplayMergerIT {
@@ -56,7 +56,7 @@ class ReplayMergerIT {
     }
 
     @Test
-    @DisplayName("同一回放两视角合并：各事件流去重回单视角数量，玩家并集去重")
+    @DisplayName("同一回放两视角合并：广播状态取主视角，事件流去重回单视角数量")
     void mergeSameBattleTwice() {
         var p1 = merger.parse(replay);
         var p2 = merger.parse(replay);
@@ -72,8 +72,8 @@ class ReplayMergerIT {
         var merged = merger.merge(List.of(p1, p2));
 
         assertEquals(2, merged.replayCount());
-        assertEquals(singlePlayers, merged.players().size(), "玩家并集去重");
-        assertEquals(singleKills, merged.killLog().size(), "击杀去重");
+        assertEquals(singlePlayers, merged.players().size(), "玩家取主视角");
+        assertEquals(singleKills, merged.killLog().size(), "击杀取主视角");
         assertEquals(singleChat, merged.chatLog().size(), "聊天去重");
         assertEquals(singleConsumables, merged.consumableLog().size(), "消耗品去重");
 
@@ -86,8 +86,8 @@ class ReplayMergerIT {
         assertEquals(uniqueDamage, merged.damageEvents().size(), "伤害去重到单视角内唯一条数");
         assertTrue(uniqueDamage <= singleDamage, "单视角内存在重复伤害元组");
 
-        assertEquals(singlePlayers, merged.dedupStats().get("players"));
-        assertEquals(singleKills, merged.dedupStats().get("kills"));
+        assertEquals(0, merged.dedupStats().get("players"), "玩家取主视角，不计去重");
+        assertEquals(0, merged.dedupStats().get("kills"), "击杀取主视角，不计去重");
         assertEquals(singleChat, merged.dedupStats().get("chat"));
         assertEquals(2 * singleDamage - merged.damageEvents().size(), merged.dedupStats().get("damage"));
         assertEquals(singleConsumables, merged.dedupStats().get("consumables"));

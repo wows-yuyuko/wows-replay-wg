@@ -21,14 +21,15 @@ import java.util.Set;
  * 同场次多视角回放的结果级合并去重器（docs/replay-parser-call-chain.md §10 的结果级部分）。
  *
  * <p>流程：每份 replay 各自走完整管线（{@link Parser} → {@link PacketDecoder} →
- * {@link BattleWorld} → {@link BattleReportBuilder}）解析成 {@link ParsedReplay}，
- * 再跨视角<b>并集 + 按事件身份去重</b>。广播事件（击杀/聊天/比分/占领点）与视角特有事件
- * （伤害/齐射/鱼雷/命中）都出现在多个视角里，合并后各保留一份。</p>
+ * {@link BattleWorld} → {@link BattleReportBuilder}）解析成 {@link ParsedReplay}，再跨视角合并。
+ * <b>广播状态直接取主视角</b>（各视角一致，主视角为权威，不做并集/去重）：玩家、击杀、
+ * 队伍比分、控制点、buff 掉落区、天气区域。其余事件流（聊天/伤害/消耗品/齐射/鱼雷/命中/
+ * 语音/沉船/已捕获 Buff/勋带/建筑）<b>跨视角并集 + 按事件身份去重</b>。</p>
  *
- * <p>去重键（文档化）：击杀=victimEid；聊天=clock+sender+channel+message；伤害=
- * aggressor+victim+clock+amount（docs §10.5 gather_damage_events，+amount 防同视角并发误并）；
- * 消耗品=clock+entity+consumable；齐射=avatar+salvoId；鱼雷=owner+shotId；命中=shotId；
- * 语音=clock+sender+message；沉船=victimId（首条）；玩家=metaId 并集。</p>
+ * <p>去重键（文档化）：聊天=clock+sender+channel+message；伤害=aggressor+victim+clock+amount
+ * （docs §10.5 gather_damage_events，+amount 防同视角并发误并）；消耗品=clock+entity+consumable；
+ * 齐射=avatar+salvoId；鱼雷=owner+shotId；命中=shotId；语音=clock+sender+message；
+ * 沉船=victimId（首条）；已捕获 Buff=clock+entity+capturedBy；勋带=clock+ribbonId；建筑=entityId。</p>
  *
  * <p>校验：所有回放必须同版本（{@link MergeException#versionMismatch}）且同竞技场
  * （{@link MergeException#arenaMismatch}），否则无法合并。</p>
@@ -93,10 +94,10 @@ public final class ReplayMerger {
     }
 
     /**
-     * 核心：结果级合并 + 去重。
+     * 核心：结果级合并。
      *
-     * <p>{@code replays.get(0)} 为主视角（拥有广播型顶层状态：胜负/结束方式/战报 JSON），
-     * 其余为 alt 视角（只贡献事件流与玩家集合）。</p>
+     * <p>{@code replays.get(0)} 为主视角：广播状态（玩家/击杀/比分/控制点/buff 区/天气区）与
+     * 顶层元数据（胜负/结束方式/战报 JSON）直接取主视角；其余事件流跨视角并集 + 去重。</p>
      *
      * @param replays 同场次回放，非空；第 0 项为主视角
      * @throws MergeException 版本或竞技场不一致
@@ -110,23 +111,15 @@ public final class ReplayMerger {
 
         var dedup = new LinkedHashMap<String, Integer>();
 
-        // ── players：按 meta id 并集去重 ──
-        var playersById = new LinkedHashMap<Long, com.wows.replay.ingest.report.Player>();
-        for (var r : replays) {
-            for (var p : r.report().players()) playersById.putIfAbsent(p.metaId(), p);
-        }
-        dedup.put("players", totalPlayers(replays) - playersById.size());
+        // ── 广播状态：直接取主视角（各视角一致，主视角为权威）──
+        // 玩家（广播名册，主视角已含全部）、击杀（广播事件）、队伍比分、控制点、
+        // buff 掉落区、天气区域 —— 不做并集/去重。
+        var players = primary.report().players();
+        dedup.put("players", 0);
+        var killLog = new ArrayList<>(primary.world().killLog());
+        dedup.put("kills", 0);
 
         // ── 事件流（跨视角并集 + 去重）──
-        var killLog = new ArrayList<KillRecord>();
-        var killByVictim = new LinkedHashMap<Integer, KillRecord>();
-        for (var r : replays) {
-            for (var k : r.world().killLog()) {
-                if (killByVictim.putIfAbsent(k.victimEid(), k) == null) killLog.add(k);
-            }
-        }
-        dedup.put("kills", total(replays, w -> w.killLog().size()) - killLog.size());
-
         var chatLog = new ArrayList<ChatEvent>();
         var chatSeen = new HashSet<String>();
         for (var r : replays) {
@@ -192,10 +185,15 @@ public final class ReplayMerger {
         }
         dedup.put("voiceLines", total(replays, w -> w.voiceLineLog().size()) - voiceLineLog.size());
 
-        // 勋带：各视角各自记录（本人视角的勋带），仅并集不去重
+        // 勋带：各视角各自记录（本人视角的勋带），跨视角按 (clock, ribbonId) 去重
         var ribbonLog = new ArrayList<RibbonEvent>();
-        for (var r : replays) ribbonLog.addAll(r.world().ribbonLog());
-        dedup.put("ribbons", 0);
+        var rbSeen = new HashSet<String>();
+        for (var r : replays) {
+            for (var rb : r.world().ribbonLog()) {
+                if (rbSeen.add(rb.clock() + "|" + rb.ribbonId())) ribbonLog.add(rb);
+            }
+        }
+        dedup.put("ribbons", total(replays, w -> w.ribbonLog().size()) - ribbonLog.size());
 
         var deadShips = new ArrayList<DeadShipRecord>();
         var deadByVictim = new LinkedHashMap<Integer, DeadShipRecord>();
@@ -206,24 +204,15 @@ public final class ReplayMerger {
         }
         dedup.put("deadShips", total(replays, w -> w.deadShips().size()) - deadShips.size());
 
-        // ── 状态集（并集，主视角优先）──
-        var teamScores = new ArrayList<TeamScore>();
-        var tsById = new LinkedHashMap<Integer, TeamScore>();
-        for (var r : replays) for (var t : r.world().teamScores()) tsById.putIfAbsent(t.teamIndex(), t);
-        teamScores.addAll(tsById.values());
-        dedup.put("teamScores", total(replays, w -> w.teamScores().size()) - teamScores.size());
+        // ── 广播状态：直接取主视角（队伍比分 / 控制点 / buff 掉落区 / 天气区域）──
+        var teamScores = new ArrayList<>(primary.world().teamScores());
+        dedup.put("teamScores", 0);
 
-        var capturePoints = new ArrayList<CapturePointState>();
-        var cpById = new LinkedHashMap<Integer, CapturePointState>();
-        for (var r : replays) for (var c : r.world().capturePoints()) cpById.putIfAbsent(c.index, c);
-        capturePoints.addAll(cpById.values());
-        dedup.put("capturePoints", total(replays, w -> w.capturePoints().size()) - capturePoints.size());
+        var capturePoints = new ArrayList<>(primary.world().capturePoints());
+        dedup.put("capturePoints", 0);
 
-        var buffZones = new ArrayList<BuffZoneState>();
-        var bzById = new LinkedHashMap<Integer, BuffZoneState>();
-        for (var r : replays) for (var b : r.world().buffZones().values()) bzById.putIfAbsent(b.entityId(), b);
-        buffZones.addAll(bzById.values());
-        dedup.put("buffZones", total(replays, w -> w.buffZones().size()) - buffZones.size());
+        var buffZones = new ArrayList<>(primary.world().buffZones().values());
+        dedup.put("buffZones", 0);
 
         var capturedBuffs = new ArrayList<CapturedBuff>();
         var cbSeen = new HashSet<String>();
@@ -234,17 +223,8 @@ public final class ReplayMerger {
         }
         dedup.put("capturedBuffs", total(replays, w -> w.capturedBuffs().size()) - capturedBuffs.size());
 
-        var weatherZones = new ArrayList<WeatherZoneState>();
-        var wzById = new LinkedHashMap<String, WeatherZoneState>();
-        for (var r : replays) {
-            for (var w : r.world().weatherZones()) {
-                String key = w.entityId() != null ? "e" + w.entityId()
-                    : "n" + w.name() + "|" + w.x() + "|" + w.z();
-                wzById.putIfAbsent(key, w);
-            }
-        }
-        weatherZones.addAll(wzById.values());
-        dedup.put("weatherZones", total(replays, w -> w.weatherZones().size()) - weatherZones.size());
+        var weatherZones = new ArrayList<>(primary.world().weatherZones());
+        dedup.put("weatherZones", 0);
 
         var buildings = new ArrayList<BuildingState>();
         var bdById = new LinkedHashMap<Integer, BuildingState>();
@@ -282,7 +262,7 @@ public final class ReplayMerger {
             primaryReport.battleStartClock(),
             primaryWorld.battleResultClock(),
             primaryWorld.battleEndClock(),
-            new ArrayList<>(playersById.values()),
+            new ArrayList<>(players),
             killLog, chatLog, damageEvents, consumableLog,
             salvos, torpedoes, shotHits, voiceLineLog, ribbonLog, deadShips,
             teamScores, capturePoints, buffZones, capturedBuffs, weatherZones, buildings,
@@ -311,12 +291,6 @@ public final class ReplayMerger {
     }
 
     // ── 统计 / 去重键辅助 ────────────────────────────────────────────────
-
-    private static int totalPlayers(List<ParsedReplay> replays) {
-        int n = 0;
-        for (var r : replays) n += r.report().players().size();
-        return n;
-    }
 
     private static int total(List<ParsedReplay> replays, java.util.function.ToIntFunction<BattleWorld> fn) {
         int n = 0;

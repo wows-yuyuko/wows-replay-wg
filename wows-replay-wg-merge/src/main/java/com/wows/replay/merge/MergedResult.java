@@ -31,9 +31,10 @@ import java.util.Map;
 /**
  * 同场次多视角合并结果（结果级合并的去重快照）。
  *
- * <p>由 {@link ReplayMerger} 产出：玩家按 meta id 并集去重；广播事件（击杀/聊天/比分/
- * 占领点等）与视角特有事件（伤害/齐射/鱼雷/命中）跨视角并集后按事件身份去重；顶层元数据
- * 与胜负以主视角为准。事件流按 clock 升序，供时间线消费方直接使用。</p>
+ * <p>由 {@link ReplayMerger} 产出：<b>广播状态直接取主视角</b>（玩家/击杀/队伍比分/控制点/
+ * buff 掉落区/天气区域，各视角一致以主视角为权威），其余事件流（聊天/伤害/消耗品/齐射/鱼雷/
+ * 命中/语音/沉船/已捕获 Buff/勋带/建筑）跨视角并集后按事件身份去重；顶层元数据与胜负以主视角
+ * 为准。事件流按 clock 升序，供时间线消费方直接使用。</p>
  *
  * @see ReplayMerger
  */
@@ -75,10 +76,10 @@ public record MergedResult(
     @JsonProperty("battle_result_clock") Float battleResultClock,
     @JsonProperty("battle_end_clock") Float battleEndClock,
 
-    /** 玩家并集（按 meta id 去重）。 */
+    /** 玩家（主视角广播名册，不做并集）。 */
     @JsonProperty("players") List<Player> players,
 
-    /** 击杀（按 victim 实体 id 去重，取首条）。 */
+    /** 击杀（主视角广播事件，不做并集）。 */
     @JsonProperty("kill_log") List<KillRecord> killLog,
 
     /** 聊天（按 clock+sender+channel+message 去重）。 */
@@ -102,28 +103,28 @@ public record MergedResult(
     /** 语音指令（按 clock+sender+message 去重）。 */
     @JsonProperty("voice_line_log") List<VoiceLineEvent> voiceLineLog,
 
-    /** 勋带（各视角各自记录，仅并集，不去重）。 */
+    /** 勋带（跨视角按 clock+ribbonId 去重）。 */
     @JsonProperty("ribbon_log") List<RibbonEvent> ribbonLog,
 
     /** 沉船（按 victim 去重，取首条）。 */
     @JsonProperty("dead_ships") List<DeadShipRecord> deadShips,
 
-    /** 队伍比分（按 teamIndex 并集）。 */
+    /** 队伍比分（主视角）。 */
     @JsonProperty("team_scores") List<TeamScore> teamScores,
 
-    /** 控制点（按 index 并集，主视角优先）。 */
+    /** 控制点（主视角）。 */
     @JsonProperty("capture_points") List<CapturePointState> capturePoints,
 
-    /** Buff 掉落区（按 entityId 并集）。 */
+    /** Buff 掉落区（主视角）。 */
     @JsonProperty("buff_zones") List<BuffZoneState> buffZones,
 
     /** 已捕获 Buff（按 entity+clock 去重）。 */
     @JsonProperty("captured_buffs") List<CapturedBuff> capturedBuffs,
 
-    /** 天气区域（按 entity/位置并集）。 */
+    /** 天气区域（主视角）。 */
     @JsonProperty("weather_zones") List<WeatherZoneState> weatherZones,
 
-    /** 建筑（按 entityId 并集）。 */
+    /** 建筑（按 entityId 去重）。 */
     @JsonProperty("buildings") List<BuildingState> buildings,
 
     /** 原始战报 JSON（主视角）。 */

@@ -28,7 +28,7 @@ class ReplayMergerTest {
         null, null, null, null, List.of(), 0, null, null, null, 0, 2, null, null, 0);
 
     @Test
-    @DisplayName("合并去重：跨视角重复的击杀/聊天/伤害/消耗品/玩家只保留一份，并集其余")
+    @DisplayName("广播状态取主视角，其余事件流跨视角去重")
     void mergeDeduplicates() {
         var parsedA = new ParsedReplay(null, parseWorld("A"), report(1, VERSION,
             player(1, 101, "Alice"), player(2, 102, "Bob")));
@@ -38,17 +38,19 @@ class ReplayMergerTest {
         var merged = new ReplayMerger(null, null).merge(List.of(parsedA, parsedB));
 
         assertEquals(2, merged.replayCount());
-        assertEquals(3, merged.players().size(), "玩家按 metaId 并集去重（Alice 只保留一份）");
+        // 广播状态取主视角 A：玩家 [Alice, Bob]、击杀 [victim10@5, victim20@9]
+        assertEquals(2, merged.players().size(), "玩家取主视角");
+        assertEquals(2, merged.killLog().size(), "击杀取主视角");
 
-        // A: 击杀 victim 10/20, 聊天 hello, 伤害(1→10@5), 消耗品(1,50)
-        // B: 击杀 victim 10(重复)/30, 聊天 hello(重复)+hi, 伤害(1→10@5 重复)+(1→10@9), 消耗品(1,50 重复)+(2,60)
-        assertEquals(3, merged.killLog().size(), "击杀按 victim 实体 id 去重");
+        // 其余事件流跨视角并集 + 去重：
+        // A: 聊天 hello, 伤害(1→10@5,500), 消耗品(1,50)
+        // B: 聊天 hello(重复)+hi, 伤害(1→10@5 重复)+(1→10@9,300), 消耗品(1,50 重复)+(2,60)
         assertEquals(2, merged.chatLog().size(), "聊天按 clock+sender+message 去重");
-        assertEquals(2, merged.damageEvents().size(), "伤害按 aggressor+victim+clock 去重");
+        assertEquals(2, merged.damageEvents().size(), "伤害按 aggressor+victim+clock+amount 去重");
         assertEquals(2, merged.consumableLog().size(), "消耗品按 clock+entity+consumable 去重");
 
-        assertEquals(1, merged.dedupStats().get("players"));
-        assertEquals(1, merged.dedupStats().get("kills"));
+        assertEquals(0, merged.dedupStats().get("players"), "广播状态不计去重");
+        assertEquals(0, merged.dedupStats().get("kills"), "广播状态不计去重");
         assertEquals(1, merged.dedupStats().get("chat"));
         assertEquals(1, merged.dedupStats().get("damage"));
         assertEquals(1, merged.dedupStats().get("consumables"));
