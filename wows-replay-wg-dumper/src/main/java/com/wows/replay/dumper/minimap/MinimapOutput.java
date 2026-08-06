@@ -55,7 +55,8 @@ public record MinimapOutput(
         @JsonProperty("time_left") Float timeLeft
     ) {}
 
-    /** 归一化坐标船位（x/y ∈ [-1.5, 1.5]，heading 度）；玩家身份用全局一致 metaId。 */
+    /** 归一化坐标船位（x/y ∈ [-1.5, 1.5]，heading 度）；玩家身份用全局一致 metaId。
+     *  {@code side}：敌我分类，0=自己, 1=友军, 2=敌方（单视角相对本视角录制者；合并时相对主视角）。 */
     public record MinimapEntity(
         @JsonProperty("meta_id") long metaId,
         @JsonProperty("x") float x,
@@ -65,7 +66,8 @@ public record MinimapOutput(
         @JsonProperty("team_id") int teamId,
         @JsonProperty("health") float health,
         @JsonProperty("max_health") float maxHealth,
-        @JsonProperty("is_alive") boolean isAlive
+        @JsonProperty("is_alive") boolean isAlive,
+        @JsonProperty("side") int side
     ) {}
 
     public record PlaneEntry(

@@ -191,10 +191,21 @@ public final class MinimapExtractor {
             // 只有收到过 minimap 更新（有归一化坐标）的实体才输出；玩家身份归一为 metaId
             if (Float.isNaN(es.minimapX) || Float.isNaN(es.minimapZ)) continue;
             float heading = Float.isNaN(es.minimapHeading) ? 0f : es.minimapHeading;
+            int side = es.relation >= 0 ? es.relation : 2;
             entities.add(new MinimapOutput.MinimapEntity(ReplayMapper.metaIdOf(world, es.id.value()),
-                es.minimapX, es.minimapZ, heading, es.visible, es.teamId, es.health, es.maxHealth, es.isAlive));
+                es.minimapX, es.minimapZ, heading, es.visible, es.teamId, es.health, es.maxHealth, es.isAlive, side));
         }
+        return frame(world, clock, entities);
+    }
 
+    /**
+     * 帧补充数据（planes/torpedoes/smoke/buildings/wards/buffZones/weather/teamScores/capturePoints/timeLeft
+     * 取自 {@code world}）。供单视角快照与 {@link MinimapMerger} 合并复用。
+     *
+     * @param entities 已装配好的船位（合并场景下为敌我并集）
+     */
+    public static MinimapOutput.MinimapFrame frame(BattleWorld world, float clock,
+                                                   List<MinimapOutput.MinimapEntity> entities) {
         var planes = world.activePlanes().values().stream()
             .map(p -> new MinimapOutput.PlaneEntry(p.planeId(), ReplayMapper.metaIdOf(world, p.ownerEntityId()),
                 p.teamId(), p.paramsId().value(), p.x(), p.z()))

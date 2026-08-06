@@ -19,5 +19,9 @@
             <groupId>com.wows</groupId>
             <artifactId>wows-replay-wg-ingest</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.wows</groupId>
+            <artifactId>wows-replay-wg-merge</artifactId>
+        </dependency>
     </dependencies>
 </project>
