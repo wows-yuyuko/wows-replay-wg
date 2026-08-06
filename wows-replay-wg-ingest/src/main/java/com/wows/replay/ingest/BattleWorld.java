@@ -1331,6 +1331,11 @@ public class BattleWorld {
         return currentClock;
     }
 
+    /** meta 花名册（从 ReplayMeta.vehicles[] 预种子，arena 名册到达后回填 accountId/entityId）。 */
+    public List<MetaPlayer> metaPlayers() {
+        return metaPlayers;
+    }
+
     public GameConstantsProvider constants() {
         return constants;
     }

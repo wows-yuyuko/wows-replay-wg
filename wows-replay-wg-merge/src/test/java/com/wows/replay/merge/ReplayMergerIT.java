@@ -2,6 +2,8 @@ package com.wows.replay.merge;
 
 import com.wows.replay.JsonMapper;
 import com.wows.replay.ReplayFile;
+import com.wows.replay.ingest.BattleWorld;
+import com.wows.replay.ingest.MetaPlayer;
 import com.wows.replay.model.Version;
 import com.wows.replay.spec.GameDataCache;
 import com.wows.replay.spi.EntitySpecProvider;
@@ -10,7 +12,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -105,14 +110,10 @@ class ReplayMergerIT {
     @Test
     @DisplayName("同场次双方全员 18 视角合并：玩家齐全，视角特有事件并集、广播事件去重")
     void mergeMultiViewAllPlayers() throws Exception {
-        var dir = resolve(MULTI_VIEW_DIR);
-        var files = java.nio.file.Files.list(dir)
-            .filter(p -> p.toString().endsWith(".wowsreplay"))
-            .sorted()
-            .toList();
+        var files = multiViewFiles();
         assertTrue(files.size() >= 2, "多视角回放不足: " + files.size());
 
-        var parsed = new java.util.ArrayList<ParsedReplay>();
+        var parsed = new ArrayList<ParsedReplay>();
         for (var f : files) parsed.add(merger.parse(ReplayFile.fromFile(f)));
         var single = parsed.get(0);
 
@@ -153,5 +154,55 @@ class ReplayMergerIT {
         log.info("合并结果: {} 视角 → {} players, {} kills, {} chat, {} damage, {} consumables",
             merged.replayCount(), merged.players().size(), merged.killLog().size(),
             merged.chatLog().size(), merged.damageEvents().size(), merged.consumableLog().size());
+    }
+
+    @Test
+    @DisplayName("各视角 metaPlayers 一致性：metaId/name/shipId/accountId 必须一致，relation 按视角语义、entityId 差异告警")
+    void metaPlayersConsistentAcrossViews() throws Exception {
+        var files = multiViewFiles();
+        var worlds = new ArrayList<BattleWorld>();
+        for (var f : files) worlds.add(merger.parse(ReplayFile.fromFile(f)).world());
+
+        var base = worlds.get(0).metaPlayers();
+        var baseById = new HashMap<Long, MetaPlayer>();
+        for (var mp : base) baseById.put(mp.metaId, mp);
+        log.info("基准视角 metaPlayers: {}", base.size());
+
+        int entityIdDiffs = 0;
+        for (int i = 1; i < worlds.size(); i++) {
+            var cur = worlds.get(i).metaPlayers();
+            assertEquals(base.size(), cur.size(), "视角 " + i + " metaPlayers 数量应与基准一致");
+
+            // 每视角恰一个 self（relation=0，录制者自身）
+            long selfCount = cur.stream().filter(mp -> mp.relation == 0).count();
+            assertEquals(1, selfCount, "视角 " + i + " 应恰有一个 relation=0（录制者）");
+
+            for (var mp : cur) {
+                var b = baseById.get(mp.metaId);
+                assertNotNull(b, "视角 " + i + " 不应有多余的 meta 玩家: metaId=" + mp.metaId);
+                assertEquals(b.name, mp.name, "视角 " + i + " metaId=" + mp.metaId + " name 应一致");
+                assertEquals(b.shipId, mp.shipId, "视角 " + i + " metaId=" + mp.metaId + " shipId 应一致");
+                assertEquals(b.accountId, mp.accountId, "视角 " + i + " metaId=" + mp.metaId + " accountId 应一致");
+                // relation 相对各视角录制者（跨队伍翻转是预期），仅对比同视角内部语义：
+                // self=0，同队=1，敌方=2
+                assertTrue(mp.relation >= 0 && mp.relation <= 2, "视角 " + i + " metaId=" + mp.metaId + " relation 越界");
+                if (mp.entityId != b.entityId) {
+                    // 真实数据中录制者自身实体 id 各视角相差 ±1（arena 回填差异），合并去重需注意
+                    entityIdDiffs++;
+                    if (entityIdDiffs <= 10) {
+                        log.warn("视角 {} metaId={} entityId 与基准不一致: {} vs {}（account 相同）",
+                            i, mp.metaId, b.entityId, mp.entityId);
+                    }
+                }
+            }
+        }
+        log.info("entityId 与基准不一致的条目总数: {}", entityIdDiffs);
+    }
+
+    private static List<Path> multiViewFiles() throws IOException {
+        return java.nio.file.Files.list(resolve(MULTI_VIEW_DIR))
+            .filter(p -> p.toString().endsWith(".wowsreplay"))
+            .sorted()
+            .toList();
     }
 }
