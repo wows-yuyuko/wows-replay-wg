@@ -25,6 +25,8 @@ class ReplayMergerIT {
     private static final String REPLAY_PATH =
             "temp/wg_15.6/20260730_013138_PASB720-Rhode-Island_56_AngelWings.wowsreplay";
     private static final String WOWS_DATA_PATH = "temp/wows-data";
+    /** 同场次双方全员多视角回放目录（bees_to_honey 一役，18 份）。 */
+    private static final String MULTI_VIEW_DIR = "temp/wg_15.6/热点";
 
     private static ReplayFile replay;
     private static ReplayMerger merger;
@@ -98,5 +100,58 @@ class ReplayMergerIT {
         }
 
         assertNotNull(JsonMapper.toJson(merged), "MergedResult 应可序列化为 JSON");
+    }
+
+    @Test
+    @DisplayName("同场次双方全员 18 视角合并：玩家齐全，视角特有事件并集、广播事件去重")
+    void mergeMultiViewAllPlayers() throws Exception {
+        var dir = resolve(MULTI_VIEW_DIR);
+        var files = java.nio.file.Files.list(dir)
+            .filter(p -> p.toString().endsWith(".wowsreplay"))
+            .sorted()
+            .toList();
+        assertTrue(files.size() >= 2, "多视角回放不足: " + files.size());
+
+        var parsed = new java.util.ArrayList<ParsedReplay>();
+        for (var f : files) parsed.add(merger.parse(ReplayFile.fromFile(f)));
+        var single = parsed.get(0);
+
+        // 各视角事件条数（用于对比并集是否带来增量）
+        int maxChat = parsed.stream().mapToInt(p -> p.world().chatLog().size()).max().orElse(0);
+        int maxDamage = parsed.stream().mapToInt(p -> p.world().damageEvents().size()).max().orElse(0);
+        int maxConsumables = parsed.stream().mapToInt(p -> p.world().consumableLog().size()).max().orElse(0);
+        int totalChat = parsed.stream().mapToInt(p -> p.world().chatLog().size()).sum();
+        int totalConsumables = parsed.stream().mapToInt(p -> p.world().consumableLog().size()).sum();
+
+        var merged = merger.merge(parsed);
+
+        assertEquals(files.size(), merged.replayCount(), "参与合并的回放份数");
+        assertEquals(single.report().players().size(), merged.players().size(), "玩家取主视角（名册完整）");
+        assertEquals(single.world().killLog().size(), merged.killLog().size(), "击杀取主视角");
+        assertEquals(single.world().teamScores().size(), merged.teamScores().size(), "队伍比分取主视角");
+
+        // 聊天/消耗品是视角特有事件（各玩家只见己方频道/自身消耗品）：
+        // 跨视角并集应 ≥ 任一单视角，且 ≤ 全视角总和（去重生效）。
+        assertTrue(merged.chatLog().size() >= maxChat,
+            "聊天并集应 ≥ 单视角最大条数: merged=" + merged.chatLog().size() + ", max=" + maxChat);
+        assertTrue(merged.chatLog().size() <= totalChat, "聊天并集不应超过全视角总和");
+        assertTrue(merged.consumableLog().size() >= maxConsumables,
+            "消耗品并集应 ≥ 单视角最大条数: merged=" + merged.consumableLog().size() + ", max=" + maxConsumables);
+        assertTrue(merged.consumableLog().size() <= totalConsumables, "消耗品并集不应超过全视角总和");
+
+        // 伤害是视角特有事件（只在能看见受害者的视角触发）：并集应 ≥ 任一单视角
+        assertTrue(merged.damageEvents().size() >= maxDamage,
+            "伤害并集应 ≥ 单视角最大条数: merged=" + merged.damageEvents().size() + ", max=" + maxDamage);
+
+        for (int i = 1; i < merged.killLog().size(); i++) {
+            assertTrue(merged.killLog().get(i - 1).clock() <= merged.killLog().get(i).clock(),
+                "kill_log 应按 clock 升序");
+        }
+
+        assertNotNull(JsonMapper.toJson(merged), "MergedResult 应可序列化为 JSON");
+
+        log.info("合并结果: {} 视角 → {} players, {} kills, {} chat, {} damage, {} consumables",
+            merged.replayCount(), merged.players().size(), merged.killLog().size(),
+            merged.chatLog().size(), merged.damageEvents().size(), merged.consumableLog().size());
     }
 }
