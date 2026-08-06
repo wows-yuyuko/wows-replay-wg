@@ -21,7 +21,7 @@ import java.util.Map;
  *       版本只<em>新增</em> id 时本表不含该 id → 落到下一步。</li>
  *   <li><b>{@link GameConstantsProvider}</b>（外部 per-version 数据，如 constants.json）：
  *       版本漂移 / 新增 id 的兜底名；未注入时使用 {@link GameConstantsProvider#empty()}。</li>
- *   <li><b>原始回退串</b>：{@code "Name(id)"}，保证永远可读、不抛异常。</li>
+ *   <li><b>原始回退串</b>：{@code "Name(id v<版本>)"}，附带回放版本号，保证永远可读、可追溯、不抛异常。</li>
  * </ol>
  *
  * <p><b>关于规范名与外部名不一致</b>：外部数据（constants.json）存的是<b>内部枚举标识</b>
@@ -54,6 +54,11 @@ public final class GameConstants {
         return new GameConstants(null);
     }
 
+    /** 版本号显示串（null 安全）：{@code major.minor.patch.build}，未知时为 {@code "?"}。 */
+    private static String ver(Version version) {
+        return version != null ? version.toString() : "?";
+    }
+
     // ── FINISH_TYPE ────────────────────────────────────────────────────
 
     /**
@@ -64,15 +69,15 @@ public final class GameConstants {
      * 采用 Rust {@code FinishType} 枚举变体名（PascalCase），保证与 Rust 战报输出一致。
      * 15.6.0 实测取值 0-13，其中 6、7 无定义。5.x 之后 PvE 主线任务新增 10/11。</p>
      *
-     * <p>查找链：本表 → {@code provider.finishTypeName} → {@code "FinishType(id)"}。</p>
+     * <p>查找链：本表 → {@code provider.finishTypeName} → {@code "FinishType(id v<版本>)"}。</p>
      *
      * @param id      原始 FINISH_TYPE id（BattleLogic {@code battleResult.finishReason}）
-     * @param version 回放版本（透传给 provider，供版本化外部数据查名）
+     * @param version 回放版本（透传给 provider，供版本化外部数据查名；未知 id 回退串会带上版本号）
      */
     public String finishTypeName(int id, Version version) {
         String known = FINISH_TYPE_NAMES.get(id);
         if (known != null) return known;
-        return provider.finishTypeName(id, version).orElse("FinishType(" + id + ")");
+        return provider.finishTypeName(id, version).orElse("FinishType(" + id + " v" + ver(version) + ")");
     }
 
     private static final Map<Integer, String> FINISH_TYPE_NAMES = Map.ofEntries(
@@ -99,15 +104,15 @@ public final class GameConstants {
      * 外部名与显示名仅大小写差异（WAITING/BATTLE/RESULTS/FINISHING/ENDED），
      * 本表取 Rust {@code BattleStage} Debug 形式。对应 BattleLogic {@code battleStage} 属性。</p>
      *
-     * <p>查找链：本表 → {@code provider.battleStageName(id, version)} → {@code "Stage(id)"}。</p>
+     * <p>查找链：本表 → {@code provider.battleStageName(id, version)} → {@code "Stage(id v<版本>)"}。</p>
      *
      * @param id      原始阶段 id（BattleLogic {@code battleStage} 属性）
-     * @param version 回放版本（provider 签名要求，阶段常量随版本变化）
+     * @param version 回放版本（provider 签名要求，阶段常量随版本变化；未知 id 回退串会带上版本号）
      */
     public String battleStageName(int id, Version version) {
         String known = BATTLE_STAGE_NAMES.get(id);
         if (known != null) return known;
-        return provider.battleStageName(id, version).orElse("Stage(" + id + ")");
+        return provider.battleStageName(id, version).orElse("Stage(" + id + " v" + ver(version) + ")");
     }
 
     private static final Map<Integer, String> BATTLE_STAGE_NAMES = Map.ofEntries(
@@ -126,15 +131,15 @@ public final class GameConstants {
      * <p>数据源：constants.json {@code "DAMAGE_STATS"}（DAMAGE_STATS_ENEMY=0, ALLY=1, SPOT=2, AGRO=3）。
      * 显示名 = {@code DamageStatCategory} 枚举常量名（服务端权威自我伤害统计的武器类别）。</p>
      *
-     * <p>查找链：本表 → {@code provider.damageStatCategoryName} → {@code "DamageStatCategory(id)"}。</p>
+     * <p>查找链：本表 → {@code provider.damageStatCategoryName} → {@code "DamageStatCategory(id v<版本>)"}。</p>
      *
      * @param id      原始类别 id
-     * @param version 回放版本（透传给 provider）
+     * @param version 回放版本（透传给 provider；未知 id 回退串会带上版本号）
      */
     public String damageStatCategoryName(int id, Version version) {
         String known = DAMAGE_STAT_CATEGORY_NAMES.get(id);
         if (known != null) return known;
-        return provider.damageStatCategoryName(id, version).orElse("DamageStatCategory(" + id + ")");
+        return provider.damageStatCategoryName(id, version).orElse("DamageStatCategory(" + id + " v" + ver(version) + ")");
     }
 
     private static final Map<Integer, String> DAMAGE_STAT_CATEGORY_NAMES = Map.ofEntries(
@@ -187,7 +192,7 @@ public final class GameConstants {
             case 17 -> "FollowMe";
             case 18 -> "MapPointAttention(" + buf.getFloat() + "," + buf.getFloat() + ")";
             case 19 -> "UsingSubmarineLocator";
-            default -> "UnknownVoiceLine(" + line + ")";
+            default -> "UnknownVoiceLine(" + line + " v" + ver(version) + ")";
         };
     }
 
@@ -223,7 +228,7 @@ public final class GameConstants {
             case 17 -> "FollowMe";
             case 18 -> "MapPointAttention(" + a + "," + b + ")";
             case 19 -> "UsingSubmarineLocator";
-            default -> "UnknownVoiceLine(" + line + ")";
+            default -> "UnknownVoiceLine(" + line + " v" + ver(version) + ")";
         };
     }
 }
