@@ -111,7 +111,7 @@ class BattleWorldIT {
         assertEquals(world.killLog.size(), snap.kills().size());
         assertEquals(world.chatLog.size(), snap.chat().size());
         assertEquals(1200f, snap.maxDuration(), 0.001f);
-        assertTrue(snap.playedDuration() != null && snap.playedDuration() > 0, "played_duration 应 > 0");
+        assertTrue(snap.playedDuration() > 0, "played_duration 应 > 0");
         assertTrue(snap.players().stream().allMatch(p -> p.dbId() > 0));
 
         var json = com.wows.replay.JsonMapper.toPrettyJson(snap);

@@ -78,7 +78,7 @@ public record BattleReport(
     @JsonProperty("local_weather_zones") List<LocalWeatherZone> localWeatherZones,
 
     /** 战斗开始时钟（正赛进入 Waiting 时）。 */
-    @JsonProperty("battle_start_clock") Float battleStartClock,
+    @JsonProperty("battle_start_clock") float battleStartClock,
 
     /** 自我玩家按武器伤害（全部类别）。 */
     @JsonProperty("self_damage_stats") List<DamageStatEntry> selfDamageStats,
@@ -90,8 +90,8 @@ public record BattleReport(
     @JsonProperty("max_duration") long maxDuration,
 
     /** 正赛时长。 */
-    @JsonProperty("played_duration") Float playedDuration,
+    @JsonProperty("played_duration") float playedDuration,
 
     /** 正赛结束后到最后一包的时间。 */
-    @JsonProperty("extra_duration") Float extraDuration
+    @JsonProperty("extra_duration") float extraDuration
 ) {}

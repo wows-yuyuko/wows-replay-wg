@@ -144,10 +144,9 @@ public final class MinimapExtractor {
 
     /**
      * 战斗阶段 id → 阶段名（对齐 Rust BattleStage Debug，0=Waiting..4=Ended）。
-     * 委托统一布局管理器 {@link GameConstants#battleStageName}，null 安全。
+     * 委托统一布局管理器 {@link GameConstants#battleStageName}。
      */
-    private String battleStageName(Integer id) {
-        if (id == null) return null;
+    private String battleStageName(int id) {
         return gameConstants.battleStageName(id, replay.version());
     }
 

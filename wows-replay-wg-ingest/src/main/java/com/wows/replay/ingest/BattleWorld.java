@@ -78,15 +78,16 @@ public class BattleWorld {
     long mapArenaId;
     int gameMode;
     String matchGroup;
-    Integer winningTeam;
+    /** 获胜队伍（0/1=队伍索引，-1=平局；0 亦为未知哨兵，配合 battleEndClock!=0 判"已结束"）。 */
+    int winningTeam;
     String finishType;
     String matchResult;
-    Float maxDuration;
-    Float playedDuration;
-    Float extraDuration;
-    Float battleStartClock;
-    Float battleResultClock;
-    Float battleEndClock;
+    float maxDuration;
+    float playedDuration;
+    float extraDuration;
+    float battleStartClock;
+    float battleResultClock;
+    float battleEndClock;
     /** 收到 BattleEnd 置 true（匹配 report.rs MatchState.match_finished）。 */
     boolean matchFinished;
     /** finishType 原始 int（battle.xml FINISH_TYPE id）。 */
@@ -96,9 +97,9 @@ public class BattleWorld {
     /** receiveDamageStat 累积（服务端权威的自我玩家按武器伤害）。 */
     final List<com.wows.replay.ingest.report.DamageStatEntry> selfDamageStats = new ArrayList<>();
     /** BattleLogic timeLeft 属性（秒），minimap frame 用 */
-    Float timeLeft;
+    float timeLeft;
     /** BattleLogic battleStage 属性 id（BATTLE_STAGES：0=Waiting,1=Battle,2=Results,3=Finishing,4=Ended） */
-    Integer battleStageId;
+    int battleStageId;
     /** 存活烟幕（EntityLeave 时移除），minimap frame 用 */
     final Map<Integer, EntityState> smokeScreens = new LinkedHashMap<>();
     // ── 计分规则（BattleLogic state.missions.hold，minimap scoring_rules 用）────
@@ -872,7 +873,7 @@ public class BattleWorld {
                 // BATTLE_STAGES: 0=Waiting, 1=Battle, 2=Results, 3=Finishing, 4=Ended.
                 if (val instanceof ArgValue.IntVal(long value)) {
                     battleStageId = (int) value;
-                    if (value == 0 && battleStartClock == null) {
+                    if (value == 0 && battleStartClock == 0f) {
                         battleStartClock = elapsed;
                     }
                 }
@@ -1197,16 +1198,18 @@ public class BattleWorld {
     public void finish() {
         // Played/extra duration, mirroring Rust report.rs: battle start (BattleStage
         // → Waiting) through match end (battleResult clock, else BattleEnd clock).
-        if (battleStartClock != null) {
-            Float matchEnd = battleResultClock != null ? battleResultClock : battleEndClock;
-            if (matchEnd != null) playedDuration = matchEnd - battleStartClock;
+        // 0 作为"未设置"哨兵（战斗开始/结束时钟实际都远大于 0）。
+        if (battleStartClock != 0f) {
+            float matchEnd = battleResultClock != 0f ? battleResultClock : battleEndClock;
+            if (matchEnd != 0f) playedDuration = matchEnd - battleStartClock;
         }
-        if (battleResultClock != null && battleEndClock != null && battleEndClock > battleResultClock) {
+        if (battleResultClock != 0f && battleEndClock != 0f && battleEndClock > battleResultClock) {
             extraDuration = battleEndClock - battleResultClock;
         }
 
         // Match result (Win/Loss/Draw) from winning team vs the recording player's team.
-        if (matchResult == null && winningTeam != null && battleEndClock != null) {
+        // battleEndClock != 0 作为"已结束"信号（winningTeam 在战斗结束包时必被设置）。
+        if (matchResult == null && battleEndClock != 0f) {
             int selfTeam = -1;
             for (var pi : players.values()) {
                 if (pi.relation == 0) {
@@ -1275,7 +1278,7 @@ public class BattleWorld {
                 .map(ds -> new BattleSnapshot.DeadShip(ds.clock(), ds.victimId(), ds.x(), ds.z()))
                 .toList();
 
-        Long arenaIdLong = null;
+        long arenaIdLong = 0;
         if (arenaId != null) {
             try {
                 arenaIdLong = Long.parseLong(arenaId);
@@ -1293,7 +1296,7 @@ public class BattleWorld {
                 winningTeam,
                 finishType,
                 matchResult,
-                maxDuration != null ? maxDuration : 0f,
+                maxDuration,
                 playedDuration,
                 extraDuration,
                 battleStartClock,
@@ -1370,7 +1373,7 @@ public class BattleWorld {
         return matchGroup;
     }
 
-    public Integer winningTeam() {
+    public int winningTeam() {
         return winningTeam;
     }
 
@@ -1382,27 +1385,27 @@ public class BattleWorld {
         return matchResult;
     }
 
-    public Float maxDuration() {
+    public float maxDuration() {
         return maxDuration;
     }
 
-    public Float playedDuration() {
+    public float playedDuration() {
         return playedDuration;
     }
 
-    public Float extraDuration() {
+    public float extraDuration() {
         return extraDuration;
     }
 
-    public Float battleStartClock() {
+    public float battleStartClock() {
         return battleStartClock;
     }
 
-    public Float battleResultClock() {
+    public float battleResultClock() {
         return battleResultClock;
     }
 
-    public Float battleEndClock() {
+    public float battleEndClock() {
         return battleEndClock;
     }
 
@@ -1422,7 +1425,7 @@ public class BattleWorld {
         return selfDamageStats;
     }
 
-    public Float timeLeft() {
+    public float timeLeft() {
         return timeLeft;
     }
 
@@ -1553,7 +1556,7 @@ public class BattleWorld {
         return smokeScreens;
     }
 
-    public Integer battleStageId() {
+    public int battleStageId() {
         return battleStageId;
     }
 

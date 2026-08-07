@@ -87,8 +87,8 @@ class ReplayMergerTest {
                                          List<NormalizedDamage> damages,
                                          List<NormalizedConsumable> consumables) {
         return new NormalizedReplay(
-            arenaId, version, null, null, null, null, null, null, null,
-            null, null, null, null,
+            arenaId, version, null, null, null, null, null, null, 0,
+            0f, 0f, 0f, null,
             players, kills, damages, chats, consumables,
             List.of(), List.of(), List.of(), List.of(), List.of(),
             List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),

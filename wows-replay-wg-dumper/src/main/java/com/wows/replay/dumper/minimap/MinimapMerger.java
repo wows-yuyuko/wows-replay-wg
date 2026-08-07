@@ -273,8 +273,7 @@ public final class MinimapMerger {
 
     // ── 终局状态（主视角）────────────────────────────────────────────────
 
-    private String battleStageName(Integer id, com.wows.replay.model.Version version) {
-        if (id == null) return null;
+    private String battleStageName(int id, com.wows.replay.model.Version version) {
         return new GameConstants(constants).battleStageName(id, version);
     }
 

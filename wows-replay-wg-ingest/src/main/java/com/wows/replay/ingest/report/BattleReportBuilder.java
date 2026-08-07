@@ -108,27 +108,25 @@ public final class BattleReportBuilder {
             .orElseThrow(() -> new IllegalStateException(
                 "could not resolve the recording (self) player: replay carries no roster RPC (pre-0.9 format)"));
 
-        // 7. 时钟与时长（§5.5）
-        Float matchEnd = world.battleResultClock() != null
+        // 7. 时钟与时长（§5.5）；0 作为"未设置"哨兵（战斗时钟实际都远大于 0）。
+        float matchEnd = world.battleResultClock() != 0f
             ? world.battleResultClock() : world.battleEndClock();
-        Float playedDuration = null;
-        if (world.battleStartClock() != null && matchEnd != null) {
+        float playedDuration = 0f;
+        if (world.battleStartClock() != 0f && matchEnd != 0f) {
             playedDuration = matchEnd - world.battleStartClock();
         }
-        Float extraDuration = null;
-        if (matchEnd != null && world.battleEndClock() != null && world.battleEndClock() > matchEnd) {
+        float extraDuration = 0f;
+        if (matchEnd != 0f && world.battleEndClock() != 0f && world.battleEndClock() > matchEnd) {
             extraDuration = world.battleEndClock() - matchEnd;
         }
 
         // 8. 胜负判定（§5.4）
         MatchResult matchResult = null;
         if (world.matchFinished()) {
-            Integer winning = world.winningTeam();
-            if (winning != null) {
-                if (winning == selfPlayer.teamId()) matchResult = MatchResult.WIN;
-                else if (winning >= 0) matchResult = MatchResult.LOSS;
-                else matchResult = MatchResult.DRAW;
-            }
+            int winning = world.winningTeam();
+            if (winning == selfPlayer.teamId()) matchResult = MatchResult.WIN;
+            else if (winning >= 0) matchResult = MatchResult.LOSS;
+            else matchResult = MatchResult.DRAW;
         }
 
         // 9. 元数据（§5.7）
@@ -138,8 +136,8 @@ public final class BattleReportBuilder {
         String gameMode = world.constants().gameModeName(meta.gameMode()).orElse(meta.scenario());
         Recognized<BattleType> gameType = BattleType.fromValue(meta.gameType(), version);
         String matchGroup = meta.matchGroup() != null ? meta.matchGroup() : "";
-        long maxDuration = world.maxDuration() != null
-            ? world.maxDuration().longValue() : meta.duration();
+        long maxDuration = world.maxDuration() != 0f
+            ? (long) world.maxDuration() : meta.duration();
         long arenaId = parseArenaId(world.arenaId());
 
         // 10. 快照其余字段

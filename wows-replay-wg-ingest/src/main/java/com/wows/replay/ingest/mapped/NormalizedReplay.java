@@ -44,10 +44,10 @@ public record NormalizedReplay(
     @JsonProperty("match_group") String matchGroup,
     @JsonProperty("match_result") MatchResult matchResult,
     @JsonProperty("finish_type") Recognized<FinishType> finishType,
-    @JsonProperty("winning_team") Integer winningTeam,
-    @JsonProperty("battle_start_clock") Float battleStartClock,
-    @JsonProperty("battle_result_clock") Float battleResultClock,
-    @JsonProperty("battle_end_clock") Float battleEndClock,
+    @JsonProperty("winning_team") int winningTeam,
+    @JsonProperty("battle_start_clock") float battleStartClock,
+    @JsonProperty("battle_result_clock") float battleResultClock,
+    @JsonProperty("battle_end_clock") float battleEndClock,
     @JsonProperty("battle_results") String battleResultsJson,
 
     // ── 玩家（metaId + accountId，accountId 保留在用户信息）──
