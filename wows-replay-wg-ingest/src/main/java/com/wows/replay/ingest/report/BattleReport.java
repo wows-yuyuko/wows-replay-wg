@@ -50,8 +50,8 @@ public record BattleReport(
     /** 原始战报 JSON。 */
     @JsonProperty("battle_results") String battleResults,
 
-    /** 击杀者 → 死亡记录（按击杀者排序，确定性）。 */
-    @JsonProperty("frags") Map<Player, List<DeathInfo>> frags,
+    /** key为metaId 击杀者 → 死亡记录（按击杀者排序，确定性）。 */
+    @JsonProperty("frags") Map<Long, List<DeathInfo>> frags,
 
     /** Win/Loss/Draw。 */
     @JsonProperty("match_result") MatchResult matchResult,

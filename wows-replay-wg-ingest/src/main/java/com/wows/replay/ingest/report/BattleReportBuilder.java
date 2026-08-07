@@ -86,12 +86,12 @@ public final class BattleReportBuilder {
         }
 
         // 5. frags 关联到 Player（用战舰实体 id 反查）
-        Map<Player, List<DeathInfo>> frags = new LinkedHashMap<>();
+        Map<Long, List<DeathInfo>> frags = new LinkedHashMap<>();
         for (var p : players) {
             var veh = p.vehicleEntity();
             if (veh != null) {
                 var f = fragsByKiller.get(veh.id());
-                if (f != null && !f.isEmpty()) frags.put(p, f);
+                if (f != null && !f.isEmpty()) frags.put(p.metaId(), f);
             }
         }
 
