@@ -109,7 +109,7 @@ public final class ReplayDumper {
             try {
                 JsonNode raw = JsonMapper.readTree(report.battleResults());
                 resolvedResults = constantsTree != null ? BattleResultsResolver.resolve(raw, constantsTree) : raw;
-                resolvedPrivate = resolvePrivatePlayers(resolvedResults, constantsTree, report.selfPlayer().dbId());
+                resolvedPrivate = BattleResultsResolver.resolvePrivatePlayers(resolvedResults, constantsTree, report.selfPlayer().dbId());
             } catch (Exception e) {
                 log.warn("battle_results 解析失败: {}", e.toString());
             }
@@ -209,29 +209,6 @@ public final class ReplayDumper {
             }
         }
         return null;
-    }
-
-    /**
-     * playersPrivateInfo / privateDataList → db_id → 具名对象。
-     * 旧格式对象直接合并；新格式扁平数组按 PLAYER_PRIVATE_RESULTS_INDICES + BR_NESTED 解析
-     * 并挂到录制玩家 db_id（对标 pipeline.rs:451-525）。
-     */
-    private static Map<String, JsonNode> resolvePrivatePlayers(JsonNode resolved, JsonNode constants, long selfDbId) {
-        var merged = new LinkedHashMap<String, JsonNode>();
-        for (String key : List.of("playersPrivateInfo", "privateDataList")) {
-            JsonNode node = resolved != null ? resolved.get(key) : null;
-            if (node == null) continue;
-            if (node.isObject()) {
-                for (var prop : node.properties()) merged.put(prop.getKey(), prop.getValue());
-                break;
-            }
-            if (node.isArray() && constants != null) {
-                ObjectNode obj = BattleResultsResolver.resolveFlatPrivate((ArrayNode) node, constants);
-                merged.put(String.valueOf(selfDbId), obj);
-                break;
-            }
-        }
-        return merged;
     }
 
     /**

@@ -41,9 +41,10 @@ class ReplayMergerIT {
         replay = ReplayFile.fromFile(resolve(REPLAY_PATH));
         var gameData = findGameDataDir(resolve(WOWS_DATA_PATH), replay.version());
         assertNotNull(gameData, "游戏数据未找到: " + resolve(WOWS_DATA_PATH));
-        EntitySpecProvider specProvider = GameDataCache.withMaxSize(4)
-            .entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
-        merger = new ReplayMerger(specProvider, null);
+        var cache = GameDataCache.withMaxSize(4);
+        EntitySpecProvider specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
+        var constants = cache.constants(GameDataCache.VersionKey.from(gameData), gameData);
+        merger = new ReplayMerger(specProvider, constants);
     }
 
     private static Path resolve(String path) {
@@ -117,6 +118,8 @@ class ReplayMergerIT {
         var parsed = new ArrayList<ParsedReplay>();
         for (var f : files) parsed.add(merger.parse(ReplayFile.fromFile(f)));
         var single = parsed.get(0);
+        long withResults = parsed.stream().filter(p -> p.report().battleResults() != null).count();
+        log.info("多视角 {} 份中 {} 份含 battle_result", parsed.size(), withResults);
 
         // 各视角事件条数（用于对比并集是否带来增量）
         int maxChat = parsed.stream().mapToInt(p -> p.world().chatLog().size()).max().orElse(0);
@@ -156,6 +159,11 @@ class ReplayMergerIT {
             merged.replayCount(), merged.replay().players().size(), merged.replay().killLog().size(),
             merged.replay().chatLog().size(), merged.replay().damageEvents().size(),
             merged.replay().consumableLog().size());
+
+        // 私有战报汇总：各回放 battle_result 的 playersPrivateInfo/privateDataList 按 db_id 并集
+        assertNotNull(merged.playersPrivateInfo(), "应有 playersPrivateInfo");
+        assertFalse(merged.playersPrivateInfo().isEmpty(), "playersPrivateInfo 应非空");
+        log.info("playersPrivateInfo 玩家数: {}", merged.playersPrivateInfo().size());
     }
 
     @Test

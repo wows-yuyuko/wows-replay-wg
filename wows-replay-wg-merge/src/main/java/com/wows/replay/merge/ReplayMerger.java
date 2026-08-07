@@ -1,6 +1,8 @@
 package com.wows.replay.merge;
 
+import com.wows.replay.JsonMapper;
 import com.wows.replay.ReplayFile;
+import com.wows.replay.data.BattleResultsResolver;
 import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.ingest.BattleWorld;
 import com.wows.replay.ingest.ArtillerySalvo;
@@ -26,6 +28,8 @@ import com.wows.replay.packet.Packet;
 import com.wows.replay.packet.Parser;
 import com.wows.replay.spi.EntitySpecProvider;
 import com.wows.replay.spi.GameConstantsProvider;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -55,6 +59,7 @@ import java.util.List;
  *
  * <p>流式合并（{@link MergedSession}）为后续预留；本类的归一与去重逻辑复用于流式收尾。</p>
  */
+@Slf4j
 public final class ReplayMerger {
 
     private final EntitySpecProvider specProvider;
@@ -114,7 +119,7 @@ public final class ReplayMerger {
 
     /**
      * 核心入口：解析级合并。先把各 {@link ParsedReplay} 经映射层归一，再调用
-     * {@link #mergeNormalized} 做合并去重。
+     * {@link #mergeNormalized} 做合并去重，并汇总各回放的私有战报（playersPrivateInfo）。
      *
      * @param replays 同场次回放，非空；第 0 项为主视角
      * @throws MergeException 版本或竞技场不一致
@@ -126,7 +131,31 @@ public final class ReplayMerger {
         // 映射层：每个 ParsedReplay → NormalizedReplay（实体 id → 全局一致 metaId）
         var views = new ArrayList<NormalizedReplay>(replays.size());
         for (var p : replays) views.add(ReplayMapper.map(p.world(), p.report()));
-        return mergeNormalized(views);
+        var base = mergeNormalized(views);
+
+        // 私有战报汇总：每个回放 battle_result.playersPrivateInfo/privateDataList 按 db_id 并集
+        // （每个玩家的私有数据在其自身回放里最完整）。
+        var privateInfo = new LinkedHashMap<String, JsonNode>();
+        var constantsRoot = constantsRoot();
+        for (var p : replays) {
+            String raw = p.report().battleResults();
+            if (raw == null) continue;
+            try {
+                JsonNode resolved = BattleResultsResolver.resolve(JsonMapper.readTree(raw), constantsRoot);
+                long selfDbId = p.report().selfPlayer() != null ? p.report().selfPlayer().dbId() : 0;
+                privateInfo.putAll(BattleResultsResolver.resolvePrivatePlayers(resolved, constantsRoot, selfDbId));
+            } catch (Exception e) {
+                log.warn("battle_results 私有数据解析失败: {}", e.toString());
+            }
+        }
+        if (privateInfo.isEmpty()) return base;
+        return new MergedResult(base.replayCount(), base.replay(), privateInfo, base.dedupStats());
+    }
+
+    /** constants.json 根节点（JsonConstantsProvider 时可用，用于私有战报扁平数组解析）。 */
+    private JsonNode constantsRoot() {
+        if (constants instanceof com.wows.replay.JsonConstantsProvider jcp) return jcp.root();
+        return null;
     }
 
     /**
@@ -289,7 +318,7 @@ public final class ReplayMerger {
             voiceLineLog, ribbonLog, salvos, torpedoes, shotHits,
             teamScores, capturePoints, buffZones, capturedBuffs, weatherZones, buildings);
 
-        return new MergedResult(views.size(), merged, dedup);
+        return new MergedResult(views.size(), merged, java.util.Map.of(), dedup);
     }
 
     // ── 校验 ─────────────────────────────────────────────────────────────
