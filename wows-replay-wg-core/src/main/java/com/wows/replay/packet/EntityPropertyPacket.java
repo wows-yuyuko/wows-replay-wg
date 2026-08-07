@@ -1,8 +1,8 @@
 package com.wows.replay.packet;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.wows.replay.types.ArgValue;
 import com.wows.replay.model.EntityId;
+import com.wows.replay.types.ArgValue;
 
 /**
  * 0x07: 实体属性更新。 */

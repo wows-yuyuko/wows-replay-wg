@@ -3,7 +3,9 @@ package com.wows.replay.ingest;
 import com.wows.replay.model.EntityId;
 import com.wows.replay.model.GameParamId;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Unified entity state — the single representation of an entity across the ingest layer.

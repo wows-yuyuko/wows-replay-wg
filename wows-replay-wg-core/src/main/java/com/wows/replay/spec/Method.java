@@ -1,7 +1,5 @@
 package com.wows.replay.spec;
 
-import com.wows.replay.types.ArgType;
-
 import java.util.List;
 
 /**

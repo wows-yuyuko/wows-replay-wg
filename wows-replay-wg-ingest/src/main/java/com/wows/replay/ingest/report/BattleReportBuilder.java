@@ -5,18 +5,10 @@ import com.wows.replay.ReplayMeta;
 import com.wows.replay.ingest.BattleWorld;
 import com.wows.replay.ingest.DamageEvent;
 import com.wows.replay.ingest.EntityState;
-import com.wows.replay.model.EntityId;
-import com.wows.replay.model.GameParamId;
-import com.wows.replay.model.Recognized;
-import com.wows.replay.model.Vec3;
-import com.wows.replay.model.Version;
+import com.wows.replay.model.*;
 import tools.jackson.databind.JsonNode;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 战斗结束报告装配器（对标 Rust {@code BattleWorld::into_report()}，report.rs）。

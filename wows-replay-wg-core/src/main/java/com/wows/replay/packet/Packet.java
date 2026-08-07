@@ -2,7 +2,6 @@ package com.wows.replay.packet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.wows.replay.PacketTypeId;
-import com.wows.replay.packet.RawPacket;
 import com.wows.replay.model.GameClock;
 
 /**

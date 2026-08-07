@@ -4,25 +4,8 @@ import com.wows.replay.JsonMapper;
 import com.wows.replay.ReplayFile;
 import com.wows.replay.data.BattleResultsResolver;
 import com.wows.replay.decode.PacketDecoder;
-import com.wows.replay.ingest.BattleWorld;
-import com.wows.replay.ingest.ArtillerySalvo;
-import com.wows.replay.ingest.BuffZoneState;
-import com.wows.replay.ingest.BuildingState;
-import com.wows.replay.ingest.CapturedBuff;
-import com.wows.replay.ingest.CapturePointState;
-import com.wows.replay.ingest.RibbonEvent;
-import com.wows.replay.ingest.ShotHitRecord;
-import com.wows.replay.ingest.TeamScore;
-import com.wows.replay.ingest.TorpedoRecord;
-import com.wows.replay.ingest.VoiceLineEvent;
-import com.wows.replay.ingest.WeatherZoneState;
-import com.wows.replay.ingest.mapped.NormalizedChat;
-import com.wows.replay.ingest.mapped.NormalizedConsumable;
-import com.wows.replay.ingest.mapped.NormalizedDamage;
-import com.wows.replay.ingest.mapped.NormalizedDeadShip;
-import com.wows.replay.ingest.mapped.NormalizedKill;
-import com.wows.replay.ingest.mapped.NormalizedReplay;
-import com.wows.replay.ingest.mapped.ReplayMapper;
+import com.wows.replay.ingest.*;
+import com.wows.replay.ingest.mapped.*;
 import com.wows.replay.ingest.report.BattleReportBuilder;
 import com.wows.replay.packet.Packet;
 import com.wows.replay.packet.Parser;
@@ -31,11 +14,7 @@ import com.wows.replay.spi.GameConstantsProvider;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * 同场次多视角回放的结果级合并去重器（docs/replay-parser-call-chain.md §10 的结果级部分）。

@@ -1,7 +1,6 @@
 package com.wows.replay.dumper;
 
 import com.wows.replay.ReplayFile;
-import com.wows.replay.decode.DecodedPayload;
 import com.wows.replay.decode.PacketDecoder;
 import com.wows.replay.ingest.BattleWorld;
 import com.wows.replay.ingest.report.MatchResult;

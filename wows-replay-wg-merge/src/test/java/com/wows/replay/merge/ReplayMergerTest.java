@@ -1,11 +1,6 @@
 package com.wows.replay.merge;
 
-import com.wows.replay.ingest.mapped.NormalizedChat;
-import com.wows.replay.ingest.mapped.NormalizedConsumable;
-import com.wows.replay.ingest.mapped.NormalizedDamage;
-import com.wows.replay.ingest.mapped.NormalizedKill;
-import com.wows.replay.ingest.mapped.NormalizedPlayer;
-import com.wows.replay.ingest.mapped.NormalizedReplay;
+import com.wows.replay.ingest.mapped.*;
 import com.wows.replay.model.Version;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

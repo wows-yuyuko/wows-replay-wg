@@ -1,8 +1,8 @@
 package com.wows.replay.spec;
 
-import com.wows.replay.types.ArgType;
-import com.wows.replay.spi.DefFileLoader;
 import com.wows.replay.model.Version;
+import com.wows.replay.spi.DefFileLoader;
+import com.wows.replay.types.ArgType;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

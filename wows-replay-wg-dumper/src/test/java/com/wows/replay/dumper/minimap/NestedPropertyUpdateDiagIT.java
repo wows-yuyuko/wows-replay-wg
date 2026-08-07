@@ -3,7 +3,6 @@ package com.wows.replay.dumper.minimap;
 import com.wows.replay.ReplayFile;
 import com.wows.replay.model.Version;
 import com.wows.replay.packet.EntityCreatePacket;
-import com.wows.replay.packet.Packet;
 import com.wows.replay.packet.Parser;
 import com.wows.replay.packet.PropertyUpdatePacket;
 import com.wows.replay.spec.GameDataCache;
@@ -19,13 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 

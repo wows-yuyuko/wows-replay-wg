@@ -2,17 +2,7 @@ package com.wows.replay.ingest.mapped;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.wows.replay.ingest.ArtillerySalvo;
-import com.wows.replay.ingest.BuffZoneState;
-import com.wows.replay.ingest.BuildingState;
-import com.wows.replay.ingest.CapturedBuff;
-import com.wows.replay.ingest.CapturePointState;
-import com.wows.replay.ingest.RibbonEvent;
-import com.wows.replay.ingest.ShotHitRecord;
-import com.wows.replay.ingest.TeamScore;
-import com.wows.replay.ingest.TorpedoRecord;
-import com.wows.replay.ingest.VoiceLineEvent;
-import com.wows.replay.ingest.WeatherZoneState;
+import com.wows.replay.ingest.*;
 import com.wows.replay.ingest.report.BattleType;
 import com.wows.replay.ingest.report.FinishType;
 import com.wows.replay.ingest.report.MatchResult;

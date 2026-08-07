@@ -1,11 +1,11 @@
 package com.wows.replay.packet;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.wows.replay.types.ArgValue;
 import com.wows.replay.model.EntityId;
 import com.wows.replay.model.GameParamId;
 import com.wows.replay.model.Rot3;
 import com.wows.replay.model.Vec3;
+import com.wows.replay.types.ArgValue;
 
 import java.util.Map;
 

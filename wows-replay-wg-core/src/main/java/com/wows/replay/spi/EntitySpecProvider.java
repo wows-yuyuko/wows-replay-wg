@@ -1,7 +1,7 @@
 package com.wows.replay.spi;
 
-import com.wows.replay.spec.EntitySpec;
 import com.wows.replay.model.Version;
+import com.wows.replay.spec.EntitySpec;
 
 import java.util.List;
 

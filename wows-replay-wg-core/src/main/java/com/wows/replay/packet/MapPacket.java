@@ -1,7 +1,6 @@
 package com.wows.replay.packet;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.wows.replay.model.EntityId;
 
 /**
  * 0x28: 地图/竞技场信息。 */

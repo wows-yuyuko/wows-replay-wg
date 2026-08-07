@@ -1,8 +1,8 @@
 package com.wows.replay.decode;
 
 import com.wows.replay.model.EntityId;
-import com.wows.replay.types.ArgValue;
 import com.wows.replay.packet.EntityPropertyPacket;
+import com.wows.replay.types.ArgValue;
 
 import java.util.Optional;
 

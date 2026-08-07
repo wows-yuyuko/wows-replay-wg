@@ -1,13 +1,10 @@
 package com.wows.replay.packet;
 
-import com.wows.replay.PacketTypeId;
-import com.wows.replay.packet.RawPacket;
+import com.wows.replay.model.*;
 import com.wows.replay.spec.EntitySpec;
-import com.wows.replay.spec.Property;
+import com.wows.replay.spi.EntitySpecProvider;
 import com.wows.replay.types.ArgType;
 import com.wows.replay.types.ArgValue;
-import com.wows.replay.spi.EntitySpecProvider;
-import com.wows.replay.model.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;

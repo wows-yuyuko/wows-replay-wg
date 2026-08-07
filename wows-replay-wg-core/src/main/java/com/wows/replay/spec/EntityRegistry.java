@@ -1,9 +1,8 @@
 package com.wows.replay.spec;
 
-import com.wows.replay.spec.EntitySpec;
+import com.wows.replay.model.Version;
 import com.wows.replay.spi.DefFileLoader;
 import com.wows.replay.spi.EntitySpecProvider;
-import com.wows.replay.model.Version;
 
 import java.io.IOException;
 import java.util.List;

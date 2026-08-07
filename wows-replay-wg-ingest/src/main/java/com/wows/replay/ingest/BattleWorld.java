@@ -5,10 +5,10 @@ import com.wows.replay.constant.GameConstants;
 import com.wows.replay.decode.DecodedPayload;
 import com.wows.replay.decode.PlayerStateData;
 import com.wows.replay.decode.PropertyDecoder;
-import com.wows.replay.spi.GameConstantsProvider;
-import com.wows.replay.types.ArgValue;
 import com.wows.replay.model.*;
 import com.wows.replay.packet.*;
+import com.wows.replay.spi.GameConstantsProvider;
+import com.wows.replay.types.ArgValue;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
