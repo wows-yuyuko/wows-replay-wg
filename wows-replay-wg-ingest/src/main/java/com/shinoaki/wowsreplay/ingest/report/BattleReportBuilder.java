@@ -72,8 +72,9 @@ public final class BattleReportBuilder {
             var info = entry.getValue();
             boolean isSelf = info.relation == 0;
             var vehicle = buildVehicleEntity(info.entityId, isSelf);
+            var initialState = world.arenaPlayers().get(metaId);
             players.add(new Player(metaId, dbId, info.entityId, info.username, info.teamId, info.relation,
-                isBot(metaId, info.entityId), vehicle));
+                isBot(metaId, info.entityId), initialState, vehicle));
         }
 
         // 4. frags 关联到 Player（用战舰实体 id 反查）
@@ -190,6 +191,9 @@ public final class BattleReportBuilder {
         if (es.shipConfig != null) {
             shipConfig = ShipConfig.parse(es.shipConfig,
                 Version.fromClientExe(meta.clientVersionFromExe()));
+        }
+        if (shipConfig != null) {
+            shipConfig = shipConfig.withCommander(es.captainSkills, es.captainParamsId);
         }
 
         return new VehicleEntity(

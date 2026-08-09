@@ -2,6 +2,7 @@ package com.shinoaki.wowsreplay.ingest;
 
 import com.shinoaki.wowsreplay.core.model.EntityId;
 import com.shinoaki.wowsreplay.core.model.GameParamId;
+import com.shinoaki.wowsreplay.core.data.CommanderSkills;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +39,8 @@ public final class EntityState {
     public String playerName;
     /** 船长参数 id（EntityCreate 时从 crewModifiersCompactParams.paramsId 解析，之后永不刷新）。 */
     public Long captainParamsId;
+    /** 舰长已学技能（crewModifiersCompactParams.learnedSkills 原始 skill-type id，6 舰种数组）。 */
+    public CommanderSkills captainSkills;
     /** Raw ship configuration blob */
     public byte[] shipConfig;
     /** Smoke screen radius (for SmokeScreen entities) */

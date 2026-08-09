@@ -1,5 +1,6 @@
 package com.shinoaki.wowsreplay.core.data;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.shinoaki.wowsreplay.core.model.Version;
 
@@ -39,10 +40,22 @@ public record ShipConfig(
     @JsonProperty("ensigns") List<Long> ensigns,
     @JsonProperty("ecoboosts") List<Long> ecoboosts,
     @JsonProperty("naval_flag") Long navalFlag,
-    @JsonProperty("last_boarded_crew") Long lastBoardedCrew
+    @JsonProperty("last_boarded_crew") Long lastBoardedCrew,
+    /** 舰长已学技能（原始 skill-type id，6 舰种数组），非 shipConfig blob 字段，由装配层附加。 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("commander_skills") CommanderSkills commanderSkills,
+    /** 舰长 id（crewModifiersCompactParams.paramsId 原值），非 shipConfig blob 字段，由装配层附加。 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("commander_skills_id") Long commanderSkillsId
 ) {
     /** 消耗品（对标 Rust {@code ShipConfig::abilities}）。 */
     public List<Long> consumables() { return abilities; }
+
+    /** 附加舰长信息（commander_skills / commander_skills_id），返回新实例。 */
+    public ShipConfig withCommander(CommanderSkills commanderSkills, Long commanderSkillsId) {
+        return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
+            ensigns, ecoboosts, navalFlag, lastBoardedCrew, commanderSkills, commanderSkillsId);
+    }
 
     /**
      * 从二进制 blob 解析；早期版本截断的 blob 在字节耗尽处停止（对标 Rust take_section）。
@@ -82,7 +95,7 @@ public record ShipConfig(
         if (isOwned == null) lastBoardedCrew = null; // 全格式尾缺失
 
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
-            ensigns, ecoboosts, navalFlag, lastBoardedCrew);
+            ensigns, ecoboosts, navalFlag, lastBoardedCrew, null, null);
     }
 
     /** 读 count(u32) + count 个 id(u32)；字节不足时返回已读部分。 */

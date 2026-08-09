@@ -3,6 +3,7 @@ package com.shinoaki.wowsreplay.ingest;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayMeta;
 import com.shinoaki.wowsreplay.core.constant.GameConstants;
+import com.shinoaki.wowsreplay.core.data.CommanderSkills;
 import com.shinoaki.wowsreplay.core.decode.DecodedPayload;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
 import com.shinoaki.wowsreplay.core.decode.PropertyDecoder;
@@ -595,9 +596,11 @@ public class BattleWorld {
                     es.shipConfig = value;
                 }
                 // Captain: crewModifiersCompactParams.paramsId（EntityCreate 时冻结，永不刷新）
-                if (props.get("crewModifiersCompactParams") instanceof ArgValue.DictVal(Map<String, ArgValue> cmcp)
-                    && cmcp.get("paramsId") instanceof ArgValue.IntVal(long value)) {
-                    es.captainParamsId = value;
+                if (props.get("crewModifiersCompactParams") instanceof ArgValue.DictVal(Map<String, ArgValue> cmcp)) {
+                    if (cmcp.get("paramsId") instanceof ArgValue.IntVal(long value)) {
+                        es.captainParamsId = value;
+                    }
+                    es.captainSkills = parseLearnedSkills(cmcp.get("learnedSkills"));
                 }
             }
             case "Avatar" -> {
@@ -1643,6 +1646,35 @@ public class BattleWorld {
         if (t instanceof ArgValue.IntVal(long value)) {
             getOrCreateEntity(eid, null).teamId = (int) value;
         }
+    }
+
+    /**
+     * 解析 {@code crewModifiersCompactParams.learnedSkills}：0.10.0+ 为 6 舰种 skill-type id 数组，
+     * 0.9.x 前为 u64 位掩码（位 i → skill type i+1，应用到全部舰种）。无法解析返回 null。
+     */
+    private static CommanderSkills parseLearnedSkills(ArgValue learnedSkills) {
+        if (learnedSkills instanceof ArgValue.ArrayVal(List<ArgValue> species) && species.size() >= 6) {
+            return new CommanderSkills(
+                skillTypeIds(species.get(0)), skillTypeIds(species.get(1)), skillTypeIds(species.get(2)),
+                skillTypeIds(species.get(3)), skillTypeIds(species.get(4)), skillTypeIds(species.get(5)));
+        }
+        if (learnedSkills instanceof ArgValue.IntVal(long mask)) {
+            var ids = new ArrayList<Integer>();
+            for (int i = 0; i < 64; i++) {
+                if ((mask & (1L << i)) != 0) ids.add(i + 1);
+            }
+            return new CommanderSkills(ids, ids, ids, ids, ids, ids);
+        }
+        return null;
+    }
+
+    private static List<Integer> skillTypeIds(ArgValue arr) {
+        if (!(arr instanceof ArgValue.ArrayVal(List<ArgValue> elements))) return List.of();
+        var out = new ArrayList<Integer>(elements.size());
+        for (var e : elements) {
+            if (e instanceof ArgValue.IntVal(long v)) out.add((int) v);
+        }
+        return out;
     }
 
     private void applyCpDict(CapturePointState s, Map<String, ArgValue> dict) {

@@ -4,6 +4,7 @@ import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.ReplayVersionMismatchException;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
+import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
@@ -267,7 +268,8 @@ public final class ReplayDumper {
 
     /**
      * players 装配（对标 Rust pipeline.rs player_json）：玩家字段（metaId + accountId，去掉
-     * 视角相关 entity_id）+ vehicle{ship_id/modernizations/consumables/exteriors}。
+     * 视角相关 entity_id）+ vehicle{ship_id/modernizations/consumables/exteriors} +
+     * commander_skills/commander_skills_id（舰长原始 id，不做名称解析）。
      */
     static List<Map<String, Object>> buildPlayers(BattleReport report) {
         var players = new ArrayList<Map<String, Object>>();
@@ -280,19 +282,58 @@ public final class ReplayDumper {
             pm.put("team_id", p.teamId());
             pm.put("relation", p.relation());
             pm.put("is_bot", p.isBot());
+            if (p.initialState() != null) {
+                pm.put("initial_state", buildInitialState(p.initialState()));
+            }
             var veh = p.vehicleEntity();
-            if (veh != null && veh.shipConfig() != null) {
-                var sc = veh.shipConfig();
+            if (veh != null) {
                 var v = new LinkedHashMap<String, Object>();
-                v.put("ship_id", sc.shipParamsId());
-                v.put("modernizations", sc.modernization());
-                v.put("consumables", sc.consumables());
-                v.put("exteriors", sc.exteriors());
-                pm.put("vehicle", v);
+                if (veh.shipConfig() != null) {
+                    var sc = veh.shipConfig();
+                    v.put("ship_id", sc.shipParamsId());
+                    v.put("modernizations", sc.modernization());
+                    v.put("consumables", sc.consumables());
+                    v.put("exteriors", sc.exteriors());
+                    // 舰长信息（原始 id，不做名称/传奇舰长解析）：learnedSkills 6 舰种数组 + paramsId
+                    if (sc.commanderSkills() != null) v.put("commander_skills", sc.commanderSkills());
+                    if (sc.commanderSkillsId() != null) v.put("commander_skills_id", sc.commanderSkillsId());
+                }
+                if (!v.isEmpty()) pm.put("vehicle", v);
             }
             players.add(pm);
         }
         return players;
+    }
+
+    /**
+     * initial_state 装配（对标 Rust pipeline.rs player_json：保留具名字段 + human_properties +
+     * raw_with_names，去掉原始 raw 索引映射）。null 时只输出原始字段名映射。
+     */
+    static Map<String, Object> buildInitialState(PlayerStateData psd) {
+        var m = new LinkedHashMap<String, Object>();
+        m.put("username", psd.username());
+        m.put("clan", psd.clan());
+        m.put("clan_id", psd.clanId());
+        m.put("clan_color", psd.clanColor());
+        m.put("realm", psd.realm());
+        m.put("db_id", psd.dbId());
+        m.put("meta_ship_id", psd.metaShipId());
+        m.put("entity_id", psd.entityId());
+        m.put("team_id", psd.teamId());
+        m.put("max_health", psd.maxHealth());
+        m.put("is_abuser", psd.isAbuser());
+        m.put("is_hidden", psd.isHidden());
+        m.put("is_bot", psd.isBot());
+        if (psd.avatarId() != null) {
+            var hp = new LinkedHashMap<String, Object>();
+            hp.put("avatar_id", psd.avatarId());
+            hp.put("prebattle_id", psd.prebattleId());
+            hp.put("is_client_loaded", psd.isClientLoaded());
+            hp.put("is_connected", psd.isConnected());
+            m.put("human_properties", hp);
+        }
+        m.put("raw_with_names", psd.rawWithNames());
+        return m;
     }
 
     /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat 按 clock 排序，玩家身份只用 metaId。 */
