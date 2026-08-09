@@ -172,6 +172,39 @@ class WebFunctionTest {
         assertTrue(tl.path("gap").path("score_gap").size() > 0, "分数差有数据");
     }
 
+    @Test
+    @DisplayName("多视角合并：dumpMergedJson 输出与单 replay 同构")
+    void mergedReplayOutput() throws Exception {
+        Path dir = Path.of("../temp/wg_15.6/热点");
+        assumeTrue(Files.isDirectory(dir), "缺少 temp/wg_15.6/热点");
+        List<Path> reps;
+        try (var s = Files.walk(dir)) {
+            reps = s.filter(p -> p.toString().endsWith(".wowsreplay")).sorted().limit(2).toList();
+        }
+        assumeTrue(reps.size() == 2, "热点目录下至少 2 份回放");
+
+        var primary = ReplayFile.fromFile(reps.get(0));
+        Path gd = findGameData(Path.of("../temp/wows-data"), primary);
+        assumeTrue(gd != null, "缺少匹配版本的游戏数据");
+        var cache = GameDataCache.withMaxSize(4);
+        var vk = GameDataCache.VersionKey.from(gd);
+        var sp = cache.entitySpecs(vk, gd);
+        var cs = cache.constants(vk, gd);
+
+        var options = new ReplayDumper.Options(true, 7, false, null);
+        var alt = ReplayFile.fromFile(reps.get(1));
+        String json = new ReplayDumper(sp, cs, gd).dumpMergedJson(primary, List.of(alt), options);
+        JsonNode out = JsonMapper.readTree(json);
+
+        assertTrue(out.path("master_meta_id").asLong() > 0, "master_meta_id 为主视角玩家");
+        assertTrue(out.path("players").isArray() && out.path("players").size() >= 2, "合并后有玩家");
+        assertTrue(out.path("game_events").isArray(), "有 game_events");
+        JsonNode wf = out.path("webFunction");
+        assertTrue(wf.path("battle_stats").path("teams").size() >= 2, "双方队伍统计");
+        assertTrue(wf.path("battle_timeline").path("duration").asDouble() > 0, "时间线时长");
+        assertTrue(out.path("battle_results").path("playersPublicInfo").isObject(), "battle_results 已处理");
+    }
+
     // ── 构造辅助 ────────────────────────────────────────────────────────
 
     private static ObjectNode playerNode(long metaId, long accountId, int team) {

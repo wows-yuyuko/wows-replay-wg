@@ -9,6 +9,7 @@ import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapExtractor;
+import com.shinoaki.wowsreplay.dumper.minimap.MinimapMerger;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
 import com.shinoaki.wowsreplay.dumper.web.BattleStatsCalculator;
 import com.shinoaki.wowsreplay.dumper.web.BattleTimelineCalculator;
@@ -18,6 +19,8 @@ import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
 import com.shinoaki.wowsreplay.ingest.report.BattleReport;
 import com.shinoaki.wowsreplay.ingest.report.BattleReportBuilder;
+import com.shinoaki.wowsreplay.merge.ParsedReplay;
+import com.shinoaki.wowsreplay.merge.ReplayMerger;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import tools.jackson.databind.JsonNode;
@@ -140,6 +143,51 @@ public final class ReplayDumper {
         // battle_results 已由 BattleReportBuilder 用 constants.json 解析为具名对象；
         // 最终输出阶段用 ResultsInfoExtractor 把 playersPublicInfo 每个玩家精简为 BattleData。
         JsonNode battleResults = ResultsInfoExtractor.processBattleResults(report.battleResults());
+        NormalizedReplay normalized = ReplayMapper.map(world, report);
+        MinimapOutput mm = options.minimap()
+            ? new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract()
+            : null;
+        return assembleFinal(replay, report, normalized, mm, battleResults, options);
+    }
+
+    /**
+     * 多视角合并解析：主视角 + alt 视角 → 最终 JSON（形状与单 replay 一致）。
+     *
+     * @param primary 主视角回放
+     * @param alts    alt 视角回放（同场次）
+     * @return 合并后的单一 JSON
+     * @throws ReplayVersionMismatchException 主视角 build 与 game-data 不匹配
+     */
+    public String dumpMergedJson(ReplayFile primary, List<ReplayFile> alts, Options options)
+            throws ReplayVersionMismatchException {
+        verifyVersion(primary);
+        var merger = new ReplayMerger(specProvider, constants);
+        var parsed = new ArrayList<ParsedReplay>(1 + (alts == null ? 0 : alts.size()));
+        parsed.add(merger.parse(primary));
+        if (alts != null) {
+            for (var a : alts) parsed.add(merger.parse(a));
+        }
+        var merged = merger.merge(parsed);
+        var report = parsed.get(0).report();
+
+        JsonNode battleResults = ResultsInfoExtractor.processBattleResults(report.battleResults());
+        MinimapOutput mm = options.minimap()
+            ? new MinimapMerger(specProvider, constants, replaysOf(primary, alts), options.minimapStep()).merge()
+            : null;
+        return JsonMapper.toJson(assembleFinal(primary, report, merged.replay(), mm, battleResults, options));
+    }
+
+    private static List<ReplayFile> replaysOf(ReplayFile primary, List<ReplayFile> alts) {
+        var all = new ArrayList<ReplayFile>(1 + (alts == null ? 0 : alts.size()));
+        all.add(primary);
+        if (alts != null) all.addAll(alts);
+        return all;
+    }
+
+    /** 公共最终输出装配：单 replay 与多视角合并共用（形状一致）。 */
+    private Map<String, Object> assembleFinal(ReplayFile replay, BattleReport report,
+                                              NormalizedReplay normalized, MinimapOutput mm,
+                                              JsonNode battleResults, Options options) {
         var out = new LinkedHashMap<String, Object>();
         out.put("battle_results", battleResults);
         out.put("arena_id", report.arenaId());
@@ -156,7 +204,6 @@ public final class ReplayDumper {
         out.put("match_result", report.matchResult());
         out.put("finish_type", report.finishType());
         // 映射层：实体 id → 全局一致 metaId，事件流输出只带 metaId
-        NormalizedReplay normalized = ReplayMapper.map(world, report);
         List<Map<String, Object>> players = buildPlayers(report);
         JsonNode playersNode = JsonMapper.toTree(players);
         out.put("players", playersNode);
@@ -178,8 +225,7 @@ public final class ReplayDumper {
             out.put("self_damage_stats", report.selfDamageStats());
         }
         var minimap = new LinkedHashMap<String, Object>();
-        if (options.minimap()) {
-            var mm = new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract();
+        if (mm != null) {
             minimap.put("frames", mm.frames());
             minimap.put("firing_events", mm.firingEvents());
             minimap.put("damage_events", mm.damageEvents());
