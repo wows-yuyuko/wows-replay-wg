@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.shinoaki.wowsreplay.core.model.EntityId;
 import com.shinoaki.wowsreplay.core.model.Recognized;
 import com.shinoaki.wowsreplay.core.model.Version;
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.Map;
@@ -47,8 +48,8 @@ public record BattleReport(
     /** 聊天记录（到达顺序）。 */
     @JsonProperty("game_chat") List<GameMessage> gameChat,
 
-    /** 原始战报 JSON。 */
-    @JsonProperty("battle_results") String battleResults,
+    /** 原始战报（已用 constants.json 解析为具名对象；无 battle_results 数据包时为 null）。 */
+    @JsonProperty("battle_results") JsonNode battleResults,
 
     /** key为metaId 击杀者 → 死亡记录（按击杀者排序，确定性）。 */
     @JsonProperty("frags") Map<Long, List<DeathInfo>> frags,

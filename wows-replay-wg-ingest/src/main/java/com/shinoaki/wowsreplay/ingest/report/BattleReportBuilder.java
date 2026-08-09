@@ -1,10 +1,11 @@
 package com.shinoaki.wowsreplay.ingest.report;
 
+import com.shinoaki.wowsreplay.core.JsonConstantsProvider;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayMeta;
+import com.shinoaki.wowsreplay.core.data.BattleResultsResolver;
 import com.shinoaki.wowsreplay.core.data.ShipConfig;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
-import com.shinoaki.wowsreplay.ingest.DamageEvent;
 import com.shinoaki.wowsreplay.ingest.EntityState;
 import com.shinoaki.wowsreplay.core.model.*;
 import tools.jackson.databind.JsonNode;
@@ -19,9 +20,8 @@ import java.util.*;
  *
  * <h2>装配流程（report.rs §4）</h2>
  * <ol>
- *   <li>伤害汇总（damageByEntity + authoritativeSelfDamage）</li>
- *   <li>KillLog 展开（fragsByKiller / deathByVictim）</li>
- *   <li>战报 JSON 解析（playersPublicInfo）</li>
+ *   <li>KillLog 展开（fragsByKiller）</li>
+ *   <li>战报 JSON 解析（playersPublicInfo → battleResults）</li>
  *   <li>构建 Player 列表（含 VehicleEntity）</li>
  *   <li>frags 关联到 Player</li>
  *   <li>self_player 解析（必须存在，§7.3）</li>
@@ -43,50 +43,40 @@ public final class BattleReportBuilder {
 
     /** 核心入口：装配完整战报。应在 {@code world.finish()} 之后调用。 */
     public BattleReport build() {
-        // 1. 伤害汇总
-        Map<EntityId, Double> damageByEntity = new LinkedHashMap<>();
-        for (var e : world.damageByAggressor().entrySet()) {
-            double total = e.getValue().stream().mapToDouble(DamageEvent::amount).sum();
-            damageByEntity.put(new EntityId(e.getKey()), total);
-        }
-        Optional<Double> authoritativeSelfDamage = world.selfDamageStats().isEmpty()
-            ? Optional.empty()
-            : Optional.of(world.selfDamageStats().stream()
-                .filter(e -> e.category() == DamageStatCategory.Enemy)
-                .mapToDouble(DamageStatEntry::total).sum());
-
-        // 2. KillLog 展开
+        // 1. KillLog 展开（fragsByKiller：击杀者战舰实体 → 击杀列表，供顶层 frags）
         var fragsByKiller = new LinkedHashMap<EntityId, List<DeathInfo>>();
-        var deathByVictim = new LinkedHashMap<EntityId, DeathInfo>();
         for (var kill : world.killLog()) {
             fragsByKiller.computeIfAbsent(new EntityId(kill.killerEid()), k -> new ArrayList<>())
                 .add(DeathInfo.from(kill));
-            deathByVictim.putIfAbsent(new EntityId(kill.victimEid()), DeathInfo.from(kill));
         }
 
-        // 3. 战报 JSON 解析
+        // 2. 战报 JSON 解析（用 constants.json 解析为具名对象，作为 BattleReport.battleResults）
         JsonNode parsedBattleResults = null;
+        JsonNode resolvedResults = null;
         if (world.battleResultsJson() != null) {
             try {
                 parsedBattleResults = JsonMapper.readTree(world.battleResultsJson());
+                // 用 constants.json 把 playersPublicInfo/playersPrivateInfo 位置数组解析为具名对象
+                // （对标 pipeline.rs resolve_battle_results），作为 BattleReport.battleResults。
+                if (world.constants() instanceof JsonConstantsProvider jcp) {
+                    resolvedResults = BattleResultsResolver.resolve(parsedBattleResults, jcp.root());
+                }
             } catch (Exception ignored) { /* 解析失败→null，不崩溃（§7.2） */ }
         }
 
-        // 4. 构建 Player 列表
+        // 3. 构建 Player 列表
         List<Player> players = new ArrayList<>();
         for (var entry : world.players().entrySet()) {
             long metaId = entry.getKey();
             long dbId = world.accountIdOf(metaId);
             var info = entry.getValue();
             boolean isSelf = info.relation == 0;
-            var vehicle = buildVehicleEntity(info.entityId, dbId, isSelf,
-                damageByEntity, authoritativeSelfDamage, deathByVictim, fragsByKiller,
-                parsedBattleResults);
+            var vehicle = buildVehicleEntity(info.entityId, isSelf);
             players.add(new Player(metaId, dbId, info.entityId, info.username, info.teamId, info.relation,
                 isBot(metaId, info.entityId), vehicle));
         }
 
-        // 5. frags 关联到 Player（用战舰实体 id 反查）
+        // 4. frags 关联到 Player（用战舰实体 id 反查）
         Map<Long, List<DeathInfo>> frags = new LinkedHashMap<>();
         for (var p : players) {
             var veh = p.vehicleEntity();
@@ -96,12 +86,12 @@ public final class BattleReportBuilder {
             }
         }
 
-        // 6. self_player
+        // 5. self_player
         Player selfPlayer = players.stream().filter(p -> p.relation() == 0).findFirst()
             .orElseThrow(() -> new IllegalStateException(
                 "could not resolve the recording (self) player: replay carries no roster RPC (pre-0.9 format)"));
 
-        // 7. 时钟与时长（§5.5）；0 作为"未设置"哨兵（战斗时钟实际都远大于 0）。
+        // 6. 时钟与时长（§5.5）；0 作为"未设置"哨兵（战斗时钟实际都远大于 0）。
         float matchEnd = world.battleResultClock() != 0f
             ? world.battleResultClock() : world.battleEndClock();
         float playedDuration = 0f;
@@ -113,7 +103,7 @@ public final class BattleReportBuilder {
             extraDuration = world.battleEndClock() - matchEnd;
         }
 
-        // 8. 胜负判定（§5.4）
+        // 7. 胜负判定（§5.4）
         MatchResult matchResult = null;
         if (world.matchFinished()) {
             int winning = world.winningTeam();
@@ -122,7 +112,7 @@ public final class BattleReportBuilder {
             else matchResult = MatchResult.DRAW;
         }
 
-        // 9. 元数据（§5.7）
+        // 8. 元数据（§5.7）
         Version version = Version.fromClientExe(meta.clientVersionFromExe());
         String mapName = meta.mapName();
         // 无本地化资源时回退到常量里的模式名（§12.4.3），再无则原始 scenario。
@@ -133,7 +123,7 @@ public final class BattleReportBuilder {
             ? (long) world.maxDuration() : meta.duration();
         long arenaId = parseArenaId(world.arenaId());
 
-        // 10. 快照其余字段
+        // 9. 快照其余字段
         var gameChat = world.chatLog().stream()
             .map(c -> new GameMessage(c.clock(), world.accountIdOf(c.metaId()), c.senderName(), c.channel(), c.message()))
             .toList();
@@ -170,7 +160,8 @@ public final class BattleReportBuilder {
 
         return new BattleReport(
             arenaId, selfPlayer, version, mapName, gameMode, gameType, matchGroup,
-            players, gameChat, world.battleResultsJson(), frags, matchResult, finishType,
+            players, gameChat, resolvedResults != null ? resolvedResults : parsedBattleResults, frags, matchResult,
+            finishType,
             capturePoints, buffZones, capturedBuffs, teamScores, buildings, weatherZones,
             world.battleStartClock(), world.selfDamageStats(), activeConsumables,
             maxDuration, playedDuration, extraDuration);
@@ -178,12 +169,7 @@ public final class BattleReportBuilder {
 
     // ── VehicleEntity 构建（§5.1 / §5.3）────────────────────────────────────
 
-    private VehicleEntity buildVehicleEntity(int playerEntityId, long dbId, boolean isSelf,
-                                             Map<EntityId, Double> damageByEntity,
-                                             Optional<Double> authoritativeSelfDamage,
-                                             Map<EntityId, DeathInfo> deathByVictim,
-                                             Map<EntityId, List<DeathInfo>> fragsByKiller,
-                                             JsonNode parsedBattleResults) {
+    private VehicleEntity buildVehicleEntity(int playerEntityId, boolean isSelf) {
         int vehicleEid = resolveVehicleEid(playerEntityId);
         EntityState es = world.entities().get(vehicleEid);
         if (es == null) {
@@ -197,18 +183,8 @@ public final class BattleReportBuilder {
         }
 
         EntityId id = new EntityId(vehicleEid);
-        double damage = isSelf
-            ? authoritativeSelfDamage.orElseGet(() -> damageByEntity.getOrDefault(id, 0.0))
-            : damageByEntity.getOrDefault(id, 0.0);
-
         GameParamId captain = es.captainParamsId != null && es.captainParamsId != 0
             ? new GameParamId(es.captainParamsId) : null;
-
-        JsonNode resultsInfo = null;
-        if (parsedBattleResults != null) {
-            var publicInfo = parsedBattleResults.get("playersPublicInfo");
-            if (publicInfo != null) resultsInfo = publicInfo.get(String.valueOf(dbId));
-        }
 
         ShipConfig shipConfig = null;
         if (es.shipConfig != null) {
@@ -219,12 +195,7 @@ public final class BattleReportBuilder {
         return new VehicleEntity(
             id,
             0.0f,                                   // visibilityChangedAt 恒为 0.0（§5.3）
-            toVehicleProps(es),
             captain,
-            damage,
-            deathByVictim.get(id),
-            resultsInfo,
-            fragsByKiller.getOrDefault(id, List.of()),
             shipConfig);
     }
 
@@ -234,12 +205,6 @@ public final class BattleReportBuilder {
             if (e.getValue() == playerEntityId) return e.getKey();
         }
         return playerEntityId;
-    }
-
-    private VehicleProps toVehicleProps(EntityState es) {
-        return new VehicleProps(
-            es.health, es.maxHealth, es.isAlive, es.isInvisible, es.teamId,
-            new Vec3(es.x, es.y, es.z), es.heading);
     }
 
     private boolean isBot(long metaId, int entityId) {

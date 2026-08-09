@@ -5,10 +5,6 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * 战报位置数组 → 具名对象解析（对标 Rust {@code wowsunpack::battle_results::resolve_battle_results}）。
  *
@@ -109,59 +105,6 @@ public final class BattleResultsResolver {
             }
         }
         return obj;
-    }
-
-    /**
-     * 新格式私有结果（{@code privateDataList} 为单玩家扁平数组）：按
-     * {@code PLAYER_PRIVATE_RESULTS_INDICES} 取具名，再按 {@code BR_NESTED/PLAYER_PRIVATE_RESULTS}
-     * 把嵌套子数组解析为具名对象（对标 pipeline.rs:466-507）。
-     */
-    public static ObjectNode resolveFlatPrivate(tools.jackson.databind.node.ArrayNode arr, JsonNode constants) {
-        ObjectNode obj = indexToObject(constants != null ? constants.get("PLAYER_PRIVATE_RESULTS_INDICES") : null, arr);
-        JsonNode nested = constants != null ? constants.path("BR_NESTED").path("PLAYER_PRIVATE_RESULTS") : null;
-        if (nested != null && nested.isArray()) {
-            for (var entry : nested) {
-                String field = entry.path("field").asString(null);
-                String subList = entry.path("sub_list").asString(null);
-                if (field == null || subList == null) continue;
-                JsonNode fieldVal = obj.get(field);
-                if (fieldVal != null && fieldVal.isArray()) {
-                    JsonNode names = constants.get(subList);
-                    if (names != null && names.isArray()) {
-                        obj.set(field, resolveArray(names, fieldVal));
-                    }
-                }
-            }
-        }
-        return obj;
-    }
-
-    /**
-     * 私有战报 → {@code db_id → 具名对象}。
-     *
-     * <p>旧格式 {@code playersPrivateInfo} 对象：直接按玩家 db_id 收集；新格式
-     * {@code privateDataList} 单玩家扁平数组：按 {@code PLAYER_PRIVATE_RESULTS_INDICES} +
-     * {@code BR_NESTED} 解析并挂到<b>录制玩家</b> db_id（对标 pipeline.rs:451-525）。</p>
-     *
-     * <p>多视角合并时对每份回放调用后并集，即可得到完整的 {@code playersPrivateInfo}
-     * （每个玩家的私有数据在其自身回放里最完整）。</p>
-     */
-    public static Map<String, JsonNode> resolvePrivatePlayers(JsonNode resolved, JsonNode constants, long selfDbId) {
-        var merged = new LinkedHashMap<String, JsonNode>();
-        for (String key : List.of("playersPrivateInfo", "privateDataList")) {
-            JsonNode node = resolved != null ? resolved.get(key) : null;
-            if (node == null) continue;
-            if (node.isObject()) {
-                for (var prop : node.properties()) merged.put(prop.getKey(), prop.getValue());
-                break;
-            }
-            if (node.isArray() && constants != null) {
-                ObjectNode obj = resolveFlatPrivate((ArrayNode) node, constants);
-                merged.put(String.valueOf(selfDbId), obj);
-                break;
-            }
-        }
-        return merged;
     }
 
     private static JsonNodeFactory JsonNodeFactory() {

@@ -1,9 +1,7 @@
 package com.shinoaki.wowsreplay.dumper;
 
-import com.shinoaki.wowsreplay.core.JsonConstantsProvider;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
-import com.shinoaki.wowsreplay.core.data.BattleResultsResolver;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
@@ -11,6 +9,9 @@ import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapExtractor;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
+import com.shinoaki.wowsreplay.dumper.web.BattleStatsCalculator;
+import com.shinoaki.wowsreplay.dumper.web.BattleTimelineCalculator;
+import com.shinoaki.wowsreplay.dumper.web.ResultsInfoExtractor;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
@@ -19,6 +20,7 @@ import com.shinoaki.wowsreplay.ingest.report.BattleReportBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
@@ -41,15 +43,13 @@ public final class ReplayDumper {
 
     /** 管线选项（对标 Rust {@code ParseOptions} 的 Single 子集）。 */
     public record Options(
-        boolean minimap,
-        int minimapStep,
-        boolean selfDamageStats,
-        boolean vehicleEvents,
-        boolean battleResults,
-        /* minimap 字段 brotli 压缩等级 0-11，null 表示不压缩。 */
-        Integer compressLevel
+            boolean minimap,
+            int minimapStep,
+            boolean selfDamageStats,
+            /* minimap 字段 brotli 压缩等级 0-11，null 表示不压缩。 */
+            Integer compressLevel
     ) {
-        public static final Options DEFAULT = new Options(false, 7, false, false, false, null);
+        public static final Options DEFAULT = new Options(false, 7, false, null);
     }
 
     private final EntitySpecProvider specProvider;
@@ -99,21 +99,11 @@ public final class ReplayDumper {
 
     private Map<String, Object> assemble(ReplayFile replay, BattleWorld world,
                                          BattleReport report, Options options) {
-        // 战报常量解析（对标 pipeline.rs）：解析 battle_results 供 private_results_info 富化
-        var constantsTree = loadConstants();
-        JsonNode resolvedResults = null;
-        Map<String, JsonNode> resolvedPrivate = new LinkedHashMap<>();
-        if (report.battleResults() != null) {
-            try {
-                JsonNode raw = JsonMapper.readTree(report.battleResults());
-                resolvedResults = constantsTree != null ? BattleResultsResolver.resolve(raw, constantsTree) : raw;
-                resolvedPrivate = BattleResultsResolver.resolvePrivatePlayers(resolvedResults, constantsTree, report.selfPlayer().dbId());
-            } catch (Exception e) {
-                log.warn("battle_results 解析失败: {}", e.toString());
-            }
-        }
-
+        // battle_results 已由 BattleReportBuilder 用 constants.json 解析为具名对象；
+        // 最终输出阶段用 ResultsInfoExtractor 把 playersPublicInfo 每个玩家精简为 BattleData。
+        JsonNode battleResults = ResultsInfoExtractor.processBattleResults(report.battleResults());
         var out = new LinkedHashMap<String, Object>();
+        out.put("battle_results", battleResults);
         out.put("arena_id", report.arenaId());
         out.put("date_time", replay.meta().dateTime());
         out.put("version", report.version() != null ? report.version().toString() : null);
@@ -127,7 +117,13 @@ public final class ReplayDumper {
         out.put("finish_type", report.finishType());
         // 映射层：实体 id → 全局一致 metaId，事件流输出只带 metaId
         NormalizedReplay normalized = ReplayMapper.map(world, report);
-        out.put("players", buildPlayers(report, resolvedPrivate));
+        List<Map<String, Object>> players = buildPlayers(report);
+        JsonNode playersNode = JsonMapper.toTree(players);
+        out.put("players", playersNode);
+        // 最终输出阶段：webFunction 对象收纳从 WebFunction 迁移来的计算数据
+        ObjectNode webFunction = JsonMapper.createObject();
+        webFunction.set("battle_stats", JsonMapper.toTree(
+                BattleStatsCalculator.calculate(playersNode, battleResults)));
         out.put("game_events", buildGameEvents(normalized));
         out.put("capture_points", report.capturePoints());
         out.put("buff_zones", report.buffZones());
@@ -138,37 +134,32 @@ public final class ReplayDumper {
         out.put("max_duration", report.maxDuration());
         out.put("played_duration", report.playedDuration());
         out.put("extra_duration", report.extraDuration());
-
         if (options.selfDamageStats()) {
             out.put("self_damage_stats", report.selfDamageStats());
         }
-        if (!resolvedPrivate.isEmpty()) {
-            out.put("playersPrivateInfo", resolvedPrivate);
-        }
-        if (options.battleResults() && resolvedResults != null) {
-            out.put("battle_results", resolvedResults);
-        }
-
+        var minimap = new LinkedHashMap<String, Object>();
         if (options.minimap()) {
             var mm = new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract();
+            minimap.put("frames", mm.frames());
+            minimap.put("firing_events", mm.firingEvents());
+            minimap.put("damage_events", mm.damageEvents());
+            minimap.put("shot_hits", mm.shotHits());
+            minimap.put("dead_ships", mm.deadShips());
             if (options.compressLevel() != null) {
-                int level = Math.clamp(options.compressLevel(), 0, 11);
-                out.put("frames", compressMinimapField(mm.frames(), level));
-                out.put("firing_events", compressMinimapField(mm.firingEvents(), level));
-                out.put("damage_events", compressMinimapField(mm.damageEvents(), level));
-                out.put("shot_hits", compressMinimapField(mm.shotHits(), level));
+                out.put("minimap", compressMinimapField(minimap, Math.clamp(options.compressLevel(), 0, 11)));
             } else {
-                out.put("frames", mm.frames());
-                out.put("firing_events", mm.firingEvents());
-                out.put("damage_events", mm.damageEvents());
-                out.put("shot_hits", mm.shotHits());
+                out.put("minimap", minimap);
             }
-            out.put("dead_ships", mm.deadShips());
             out.put("battle_stage", mm.battleStage());
             out.put("winning_team", mm.winningTeam());
             out.put("scoring_rules", mm.scoringRules());
+            // 最终输出阶段：基于流式处理产物计算累计伤害时间线与团队差距
+            double duration = report.playedDuration() > 0 ? report.playedDuration() : report.maxDuration();
+            webFunction.set("battle_timeline", JsonMapper.toTree(
+                    BattleTimelineCalculator.calculate(playersNode, battleResults, mm, duration)));
         }
 
+        out.put("webFunction", webFunction);
         return out;
     }
 
@@ -191,30 +182,11 @@ public final class ReplayDumper {
         com.aayushatharva.brotli4j.Brotli4jLoader.ensureAvailability();
     }
 
-    /** 加载 constants.json（GameConstantsProvider 为 JsonConstantsProvider 时直接用，否则从 game-data 读）。 */
-    private JsonNode loadConstants() {
-        if (constants instanceof JsonConstantsProvider jcp) {
-            return jcp.root();
-        }
-        if (gameDataBase != null) {
-            var p = gameDataBase.resolve("constants.json");
-            if (Files.exists(p)) {
-                try {
-                    return JsonMapper.readTree(Files.readAllBytes(p));
-                } catch (Exception e) {
-                    log.warn("读取 constants.json 失败 {}: {}", p, e.toString());
-                }
-            }
-        }
-        return null;
-    }
-
     /**
      * players 装配（对标 Rust pipeline.rs player_json）：玩家字段（metaId + accountId，去掉
-     * 视角相关 entity_id）+ vehicle{ship_id/modernizations/consumables/exteriors/private_results_info}。
+     * 视角相关 entity_id）+ vehicle{ship_id/modernizations/consumables/exteriors}。
      */
-    static List<Map<String, Object>> buildPlayers(BattleReport report,
-                                                  Map<String, JsonNode> resolvedPrivate) {
+    static List<Map<String, Object>> buildPlayers(BattleReport report) {
         var players = new ArrayList<Map<String, Object>>();
         for (var p : report.players()) {
             var pm = new LinkedHashMap<String, Object>();
@@ -233,9 +205,6 @@ public final class ReplayDumper {
                 v.put("modernizations", sc.modernization());
                 v.put("consumables", sc.consumables());
                 v.put("exteriors", sc.exteriors());
-                if (resolvedPrivate != null && resolvedPrivate.get(String.valueOf(p.dbId())) != null) {
-                    v.put("private_results_info", resolvedPrivate.get(String.valueOf(p.dbId())));
-                }
                 pm.put("vehicle", v);
             }
             players.add(pm);
@@ -297,8 +266,8 @@ public final class ReplayDumper {
     static Integer parseSpaceSize(Path gameDataBase, String mapName) {
         if (mapName == null || mapName.isBlank()) return null;
         Path[] candidates = {
-            gameDataBase.resolve(mapName).resolve("space.settings"),
-            gameDataBase.resolve("spaces").resolve(mapName).resolve("space.settings"),
+                gameDataBase.resolve(mapName).resolve("space.settings"),
+                gameDataBase.resolve("spaces").resolve(mapName).resolve("space.settings"),
         };
         for (var p : candidates) {
             if (Files.exists(p)) {
@@ -336,7 +305,8 @@ public final class ReplayDumper {
         if (chunkNode != null) {
             try {
                 chunkSize = Double.parseDouble(chunkNode.getTextContent().trim());
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         double chunksX = maxX - minX + 1;
@@ -346,7 +316,7 @@ public final class ReplayDumper {
         int spaceSize = Math.max(spaceW, spaceH);
 
         log.info("Map {}: bounds=({},{})..({},{}) chunk_size={} space_size={}",
-            file.getParent() != null ? file.getParent().getFileName() : "", minX, minY, maxX, maxY, chunkSize, spaceSize);
+                file.getParent() != null ? file.getParent().getFileName() : "", minX, minY, maxX, maxY, chunkSize, spaceSize);
         return spaceSize;
     }
 
@@ -357,13 +327,17 @@ public final class ReplayDumper {
 
     private static int intAttrOrChild(org.w3c.dom.Element parent, String name) {
         if (parent.hasAttribute(name)) {
-            try { return Integer.parseInt(parent.getAttribute(name)); }
-            catch (NumberFormatException ignored) {}
+            try {
+                return Integer.parseInt(parent.getAttribute(name));
+            } catch (NumberFormatException ignored) {
+            }
         }
         var nl = parent.getElementsByTagName(name);
         if (nl.getLength() > 0) {
-            try { return Integer.parseInt(nl.item(0).getTextContent().trim()); }
-            catch (NumberFormatException ignored) {}
+            try {
+                return Integer.parseInt(nl.item(0).getTextContent().trim());
+            } catch (NumberFormatException ignored) {
+            }
         }
         return 0;
     }

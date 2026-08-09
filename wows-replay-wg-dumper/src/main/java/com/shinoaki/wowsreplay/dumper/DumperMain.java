@@ -44,8 +44,6 @@ public final class DumperMain {
         boolean minimap = false;
         int minimapStep = 7;
         boolean selfDamageStats = false;
-        boolean vehicleEvents = false;
-        boolean battleResults = false;
         Integer compressLevel = null;
 
         int i = 0;
@@ -57,8 +55,6 @@ public final class DumperMain {
                 case "--minimap" -> minimap = true;
                 case "--minimap-step" -> minimapStep = Integer.parseInt(require(args, ++i, a));
                 case "--self-damage-stats" -> selfDamageStats = true;
-                case "--vehicle-events" -> vehicleEvents = true;
-                case "--battle-results" -> battleResults = true;
                 case "--compress" -> compressLevel = Integer.parseInt(require(args, ++i, a));
                 case "--merge-mode", "--alt-replays", "--cache-only", "--constants-file" ->
                     System.err.println("警告: 参数 " + a + " 未实现（多 rep 合并），忽略");
@@ -88,8 +84,7 @@ public final class DumperMain {
         var specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
         GameConstantsProvider constants = cache.constants(GameDataCache.VersionKey.from(gameData), gameData);
 
-        var options = new ReplayDumper.Options(minimap, minimapStep, selfDamageStats, vehicleEvents, battleResults,
-            compressLevel);
+        var options = new ReplayDumper.Options(minimap, minimapStep, selfDamageStats, compressLevel);
         var json = new ReplayDumper(specProvider, constants, gameData).dumpPrettyJson(replay, options);
 
         if (outFile != null) {
@@ -131,13 +126,5 @@ public final class DumperMain {
             }
         }
         return best;
-    }
-
-    /** 便于从其它入口复用的调试辅助。 */
-    static String summarize(ReplayDumper.Options o) {
-        return "ReplayDumper.Options(" + Arrays.asList(
-            "minimap=" + o.minimap(), "step=" + o.minimapStep(),
-            "selfDamageStats=" + o.selfDamageStats(), "vehicleEvents=" + o.vehicleEvents(),
-            "battleResults=" + o.battleResults()) + ")";
     }
 }

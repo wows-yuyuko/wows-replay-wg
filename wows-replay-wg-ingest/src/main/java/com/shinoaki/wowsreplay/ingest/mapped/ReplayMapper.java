@@ -1,5 +1,6 @@
 package com.shinoaki.wowsreplay.ingest.mapped;
 
+import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.report.BattleReport;
 
@@ -46,7 +47,7 @@ public final class ReplayMapper {
             report.battleStartClock(),
             world.battleResultClock(),
             world.battleEndClock(),
-            report.battleResults(),
+            report.battleResults() != null ? JsonMapper.toJson(report.battleResults()) : null,
 
             mapPlayers(world, report),
             mapKills(world),

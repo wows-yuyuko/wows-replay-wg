@@ -1,7 +1,7 @@
 package com.shinoaki.wowsreplay.merge;
 
 import com.shinoaki.wowsreplay.core.model.Version;
-import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
+import com.shinoaki.wowsreplay.ingest.mapped.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

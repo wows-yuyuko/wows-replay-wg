@@ -17,7 +17,6 @@
         <module>wows-replay-wg-ingest</module>
         <module>wows-replay-wg-dumper</module>
         <module>wows-replay-wg-merge</module>
-        <module>WebFunction</module>
     </modules>
 
     <properties>

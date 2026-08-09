@@ -101,9 +101,7 @@ class ReplayAnalyzerIT {
         assertEquals(1200, report.maxDuration(), "max_duration");
         assertTrue(report.playedDuration() > 0, "played_duration 应 > 0");
         assertNotNull(report.battleResults(), "battle_results 不应为 null");
-        assertTrue(report.players().stream().anyMatch(p -> p.vehicleEntity() != null
-                && p.vehicleEntity().damage() > 0),
-            "应至少有一名玩家有 >0 伤害");
+        assertNotNull(report.battleResults().get("playersPublicInfo"), "playersPublicInfo 应存在");
 
         var json = JsonMapper.toPrettyJson(report);
         assertTrue(json.contains("\"arena_id\"") && json.contains("\"self_player\""),

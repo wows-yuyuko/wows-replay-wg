@@ -160,11 +160,6 @@ class ReplayMergerIT {
             merged.replayCount(), merged.replay().players().size(), merged.replay().killLog().size(),
             merged.replay().chatLog().size(), merged.replay().damageEvents().size(),
             merged.replay().consumableLog().size());
-
-        // 私有战报汇总：各回放 battle_result 的 playersPrivateInfo/privateDataList 按 db_id 并集
-        assertNotNull(merged.playersPrivateInfo(), "应有 playersPrivateInfo");
-        assertFalse(merged.playersPrivateInfo().isEmpty(), "playersPrivateInfo 应非空");
-        log.info("playersPrivateInfo 玩家数: {}", merged.playersPrivateInfo().size());
     }
 
     @Test
