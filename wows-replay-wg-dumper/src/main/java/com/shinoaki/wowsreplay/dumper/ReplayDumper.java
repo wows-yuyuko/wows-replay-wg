@@ -2,6 +2,7 @@ package com.shinoaki.wowsreplay.dumper;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
+import com.shinoaki.wowsreplay.core.ReplayVersionMismatchException;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
@@ -63,17 +64,54 @@ public final class ReplayDumper {
     }
 
     /** 解析回放 → 单一 JSON（对标 Rust {@code parse_replay_with_options}）。 */
-    public String dumpJson(ReplayFile replay, Options options) {
+    public String dumpJson(ReplayFile replay, Options options) throws ReplayVersionMismatchException {
+        verifyVersion(replay);
         var world = parseWorld(replay);
         var report = new BattleReportBuilder(world, replay.meta()).build();
         var out = assemble(replay, world, report, options);
         return JsonMapper.toJson(out);
     }
 
-    public String dumpPrettyJson(ReplayFile replay, Options options) {
+    public String dumpPrettyJson(ReplayFile replay, Options options) throws ReplayVersionMismatchException {
+        verifyVersion(replay);
         var world = parseWorld(replay);
         var report = new BattleReportBuilder(world, replay.meta()).build();
         return JsonMapper.toPrettyJson(assemble(replay, world, report, options));
+    }
+
+    /**
+     * 版本门禁：回放 client build 必须与加载的 game-data build 一致，否则拒绝解析
+     * （防止用错版本的游戏数据解码，对标 ReplayVersionMismatchException）。
+     * 任一 build 未知时跳过。
+     */
+    private void verifyVersion(ReplayFile replay) throws ReplayVersionMismatchException {
+        if (gameDataBase == null) return;
+        Path dataDir = gameDataBase.getParent();
+        if (dataDir == null) return;
+        String dataName = dataDir.getFileName().toString();
+        long dataBuild = parseBuildNumber(dataName);
+        if (dataBuild <= 0) return;
+
+        String clientVersion = replay.meta().clientVersionFromExe();
+        String[] parts = clientVersion != null ? clientVersion.split(",") : new String[0];
+        long replayBuild = parts.length >= 4 ? parseBuildNumber(parts[3]) : 0;
+        if (replayBuild > 0 && dataBuild != replayBuild) {
+            throw new ReplayVersionMismatchException(
+                "回放 build 与游戏数据不匹配：回放 " + replay.version() + "，数据目录 " + dataName
+                    + "（拒绝解析，防止 schema 错配）");
+        }
+    }
+
+    /** 从 "data-M.m.p.b" 目录名或纯数字串解析 build 号，无法解析返回 0。 */
+    private static long parseBuildNumber(String s) {
+        if (s == null) return 0;
+        int idx = s.lastIndexOf('.');
+        String build = idx >= 0 ? s.substring(idx + 1) : s;
+        try {
+            return Long.parseLong(build);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     // ── 解析 ──────────────────────────────────────────────────────────────
@@ -105,6 +143,8 @@ public final class ReplayDumper {
         var out = new LinkedHashMap<String, Object>();
         out.put("battle_results", battleResults);
         out.put("arena_id", report.arenaId());
+        // 主视角用户：单 replay 为录制者(self)玩家的 meta_id
+        out.put("master_meta_id", report.selfPlayer().metaId());
         out.put("date_time", replay.meta().dateTime());
         out.put("version", report.version() != null ? report.version().toString() : null);
         out.put("map_id", replay.meta().mapId());
@@ -151,7 +191,6 @@ public final class ReplayDumper {
                 out.put("minimap", minimap);
             }
             out.put("battle_stage", mm.battleStage());
-            out.put("winning_team", mm.winningTeam());
             out.put("scoring_rules", mm.scoringRules());
             // 最终输出阶段：基于流式处理产物计算累计伤害时间线与团队差距
             double duration = report.playedDuration() > 0 ? report.playedDuration() : report.maxDuration();

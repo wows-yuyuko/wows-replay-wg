@@ -14,14 +14,19 @@ import java.util.Map;
  * 并集后按事件身份去重。所有玩家身份均为全局一致的 {@code metaId}（accountId 保留在玩家信息），
  * 与单视角输出（{@code NormalizedReplay}）同构。</p>
  *
- * @param replay      合并后的规范化回放（元数据 + 玩家 + 事件流 + 状态集）
- * @param dedupStats  去重统计：流名 → 被合并掉（重复）的条数
+ * @param replayCount  参与合并的回放份数（含主视角）
+ * @param masterMetaId 主视角用户 meta_id（主 replay 的 self 玩家）
+ * @param replay       合并后的规范化回放（元数据 + 玩家 + 事件流 + 状态集）
+ * @param dedupStats   去重统计：流名 → 被合并掉（重复）的条数
  * @see ReplayMerger
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MergedResult(
     /** 参与合并的回放份数（含主视角）。 */
     @JsonProperty("replay_count") int replayCount,
+
+    /** 主视角用户 meta_id（主 replay 的 self 玩家）。 */
+    @JsonProperty("master_meta_id") long masterMetaId,
 
     /** 合并后的规范化回放数据（与单视角输出同构）。 */
     @JsonProperty("replay") NormalizedReplay replay,

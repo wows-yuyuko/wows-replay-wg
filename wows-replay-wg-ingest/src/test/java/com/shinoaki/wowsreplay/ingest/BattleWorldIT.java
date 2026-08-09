@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * BattleWorld 摄入集成测试：回放文件 → Parser → PacketDecoder → BattleWorld。
  *
- * <p>ReplayAnalyzer / BattleReport 装配 / minimap 提取测试在 dumper 模块。</p>
+ * <p>BattleReport 装配 / minimap 提取测试在 dumper 模块。</p>
  */
 @Slf4j
 class BattleWorldIT {

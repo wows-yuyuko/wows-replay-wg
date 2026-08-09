@@ -132,6 +132,10 @@ class WebFunctionTest {
         String json = new ReplayDumper(sp, cs, gd).dumpJson(replay, options);
         JsonNode out = JsonMapper.readTree(json);
 
+        // 0. master_meta_id = 主视角(self)玩家 meta_id
+        assertTrue(out.path("master_meta_id").isNumber() && out.path("master_meta_id").asLong() > 0,
+            "master_meta_id 应为主视角玩家 meta_id");
+
         // 1. players 不再内嵌 results_info（webFunction 计算数据从 battle_results 取数）
         JsonNode players = out.path("players");
         assertTrue(players.isArray() && players.size() >= 2, "真实回放应有多个玩家");

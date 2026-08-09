@@ -73,6 +73,16 @@ class ReplayMergerTest {
             "不同场次的 replay 不能合并");
     }
 
+    @Test
+    @DisplayName("master_meta_id = 主视角 self(relation==0) 玩家 meta_id")
+    void masterMetaIdFromPrimarySelf() {
+        var a = view(1, VERSION,
+            List.of(player(1, 101, "Alice", 0), player(2, 102, "Bob", 1)),
+            List.of(), List.of(), List.of(), List.of());
+        var merged = new ReplayMerger(null, null).mergeNormalized(List.of(a));
+        assertEquals(1, merged.masterMetaId(), "master_meta_id 应为主视角 self 玩家 meta_id");
+    }
+
     // ── 构造辅助 ────────────────────────────────────────────────────────
 
     private static NormalizedReplay view(long arenaId, Version version,
@@ -92,6 +102,10 @@ class ReplayMergerTest {
 
     private static NormalizedPlayer player(long metaId, long accountId, String name) {
         return new NormalizedPlayer(metaId, accountId, name, 1, 1, false);
+    }
+
+    private static NormalizedPlayer player(long metaId, long accountId, String name, int relation) {
+        return new NormalizedPlayer(metaId, accountId, name, 1, relation, false);
     }
 
     private static NormalizedKill kill(float clock, long killerMetaId, long victimMetaId, String victimName) {

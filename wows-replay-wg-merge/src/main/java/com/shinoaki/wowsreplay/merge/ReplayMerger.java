@@ -53,7 +53,7 @@ public final class ReplayMerger {
     // ── 解析 ─────────────────────────────────────────────────────────────
 
     /**
-     * 解析单份回放为 {@link ParsedReplay}（等价 {@code ReplayAnalyzer.buildBattleReport}）。
+     * 解析单份回放为 {@link ParsedReplay}（等价 {@link BattleReportBuilder} 的装配产物）。
      *
      * @throws IllegalArgumentException 未注入 {@link EntitySpecProvider}
      */
@@ -121,8 +121,13 @@ public final class ReplayMerger {
         if (views == null || views.isEmpty()) {
             throw new IllegalArgumentException("至少需要一份已归一回放");
         }
-        var primary = views.get(0);
+        var primary = views.getFirst();
         validateSameBattle(views);
+        // 主视角用户 meta_id：主 replay 的 self(relation==0) 玩家
+        long masterMetaId = primary.players().stream()
+            .filter(p -> p.relation() == 0)
+            .map(NormalizedPlayer::metaId)
+            .findFirst().orElse(0L);
 
         var dedup = new LinkedHashMap<String, Integer>();
 
@@ -239,10 +244,9 @@ public final class ReplayMerger {
         }
         dedup.put("capturedBuffs", total(views, v -> v.capturedBuffs().size()) - capturedBuffs.size());
 
-        var buildings = new ArrayList<BuildingState>();
         var bdById = new LinkedHashMap<Integer, BuildingState>();
         for (var v : views) for (var b : v.buildings()) bdById.putIfAbsent(b.entityId(), b);
-        buildings.addAll(bdById.values());
+        var buildings = new ArrayList<BuildingState>(bdById.values());
         dedup.put("buildings", total(views, v -> v.buildings().size()) - buildings.size());
 
         // ── 排序（时间线确定性：clock 升序；状态集按索引/队伍序）──
@@ -268,14 +272,14 @@ public final class ReplayMerger {
             voiceLineLog, ribbonLog, salvos, torpedoes, shotHits,
             teamScores, capturePoints, buffZones, capturedBuffs, weatherZones, buildings);
 
-        return new MergedResult(views.size(), merged, dedup);
+        return new MergedResult(views.size(), masterMetaId, merged, dedup);
     }
 
     // ── 校验 ─────────────────────────────────────────────────────────────
 
     /** 同场次校验（基于已归一数据的 version/arenaId）：版本一致 + 竞技场一致（双方非 0 才比较）。 */
     private static void validateSameBattle(List<NormalizedReplay> views) {
-        var primary = views.get(0);
+        var primary = views.getFirst();
         for (int i = 1; i < views.size(); i++) {
             var v = views.get(i);
             var pv = primary.version();
