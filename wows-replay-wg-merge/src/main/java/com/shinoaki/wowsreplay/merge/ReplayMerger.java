@@ -5,15 +5,13 @@ import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.data.BattleResultsResolver;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
-import com.shinoaki.wowsreplay.ingest.*;
-import com.shinoaki.wowsreplay.ingest.mapped.*;
-import com.wows.replay.ingest.*;
-import com.wows.replay.ingest.mapped.*;
-import com.shinoaki.wowsreplay.ingest.report.BattleReportBuilder;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
+import com.shinoaki.wowsreplay.ingest.*;
+import com.shinoaki.wowsreplay.ingest.mapped.*;
+import com.shinoaki.wowsreplay.ingest.report.BattleReportBuilder;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 

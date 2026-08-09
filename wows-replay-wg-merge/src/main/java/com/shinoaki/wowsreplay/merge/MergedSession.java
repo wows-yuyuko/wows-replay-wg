@@ -1,7 +1,7 @@
 package com.shinoaki.wowsreplay.merge;
 
-import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.core.model.GameClock;
+import com.shinoaki.wowsreplay.ingest.BattleWorld;
 
 /**
  * 多视角合并会话（预留接口，对标 Rust {@code MergedReplays}，merged.rs §10）。

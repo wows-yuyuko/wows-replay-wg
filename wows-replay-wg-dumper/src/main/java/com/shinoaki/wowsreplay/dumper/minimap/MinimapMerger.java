@@ -1,9 +1,14 @@
 package com.shinoaki.wowsreplay.dumper.minimap;
 
-import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.constant.GameConstants;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
+import com.shinoaki.wowsreplay.core.model.Version;
+import com.shinoaki.wowsreplay.core.packet.Packet;
+import com.shinoaki.wowsreplay.core.packet.Parser;
+import com.shinoaki.wowsreplay.core.packet.RawPacket;
+import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
+import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.ingest.ArtillerySalvo;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.ShotHitRecord;
@@ -11,11 +16,6 @@ import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
 import com.shinoaki.wowsreplay.merge.ParsedReplay;
 import com.shinoaki.wowsreplay.merge.ReplayMerger;
-import com.shinoaki.wowsreplay.core.packet.Packet;
-import com.shinoaki.wowsreplay.core.packet.Parser;
-import com.shinoaki.wowsreplay.core.packet.RawPacket;
-import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
-import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;

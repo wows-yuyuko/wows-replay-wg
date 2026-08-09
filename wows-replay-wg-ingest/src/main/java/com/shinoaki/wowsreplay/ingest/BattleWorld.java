@@ -1,22 +1,18 @@
 package com.shinoaki.wowsreplay.ingest;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
-import com.shinoaki.wowsreplay.ingest.report.BattleReport;
-import com.shinoaki.wowsreplay.ingest.report.DamageStatCategory;
-import com.shinoaki.wowsreplay.ingest.report.DamageStatEntry;
-import com.shinoaki.wowsreplay.core.model.*;
-import com.shinoaki.wowsreplay.core.packet.*;
-import com.shinoaki.wowsreplay.model.*;
 import com.shinoaki.wowsreplay.core.ReplayMeta;
 import com.shinoaki.wowsreplay.core.constant.GameConstants;
 import com.shinoaki.wowsreplay.core.decode.DecodedPayload;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
 import com.shinoaki.wowsreplay.core.decode.PropertyDecoder;
-import com.shinoaki.wowsreplay.packet.*;
-import com.wows.replay.model.*;
-import com.wows.replay.packet.*;
+import com.shinoaki.wowsreplay.core.model.*;
+import com.shinoaki.wowsreplay.core.packet.*;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.core.types.ArgValue;
+import com.shinoaki.wowsreplay.ingest.report.BattleReport;
+import com.shinoaki.wowsreplay.ingest.report.DamageStatCategory;
+import com.shinoaki.wowsreplay.ingest.report.DamageStatEntry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;

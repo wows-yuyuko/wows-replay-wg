@@ -16,22 +16,17 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.wows</groupId>
+            <groupId>com.shinoaki.wowsreplay</groupId>
             <artifactId>wows-replay-wg-ingest</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.wows</groupId>
+            <groupId>com.shinoaki.wowsreplay</groupId>
             <artifactId>wows-replay-wg-merge</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!--
-                产出自包含 fat jar（classifier=all，含全部依赖 + 原生库），供外部非 Maven 项目
-                单文件依赖（java -jar 可直接运行 DumperMain）。普通 jar 仍走 Maven 坐标消费：
-                com.wows:wows-replay-wg-dumper（依赖 core/ingest/merge 经 mvn install 装到本地库）。
-            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>

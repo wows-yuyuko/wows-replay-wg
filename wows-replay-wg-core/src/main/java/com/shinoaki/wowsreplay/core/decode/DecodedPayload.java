@@ -2,10 +2,6 @@ package com.shinoaki.wowsreplay.core.decode;
 
 import com.shinoaki.wowsreplay.core.model.*;
 import com.shinoaki.wowsreplay.core.packet.*;
-import com.shinoaki.wowsreplay.model.*;
-import com.shinoaki.wowsreplay.packet.*;
-import com.wows.replay.model.*;
-import com.wows.replay.packet.*;
 import com.shinoaki.wowsreplay.core.types.ArgValue;
 
 import java.util.List;

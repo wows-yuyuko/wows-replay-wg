@@ -1,14 +1,12 @@
 package com.shinoaki.wowsreplay.ingest.report;
 
-import com.shinoaki.wowsreplay.core.data.ShipConfig;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayMeta;
+import com.shinoaki.wowsreplay.core.data.ShipConfig;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.DamageEvent;
 import com.shinoaki.wowsreplay.ingest.EntityState;
 import com.shinoaki.wowsreplay.core.model.*;
-import com.shinoaki.wowsreplay.model.*;
-import com.wows.replay.model.*;
 import tools.jackson.databind.JsonNode;
 
 import java.util.*;

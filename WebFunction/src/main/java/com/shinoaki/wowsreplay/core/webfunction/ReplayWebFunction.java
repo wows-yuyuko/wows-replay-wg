@@ -22,6 +22,6 @@ public class ReplayWebFunction implements Function<BattleReport, JsonNode> {
         if (playersPublicInfoNode.isMissingNode()) {
             return battleResultsNode;
         }
-
+        return null;
     }
 }

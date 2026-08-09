@@ -2,14 +2,12 @@ package com.shinoaki.wowsreplay.ingest.mapped;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.shinoaki.wowsreplay.core.ingest.*;
+import com.shinoaki.wowsreplay.core.model.Recognized;
+import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.ingest.*;
-import com.wows.replay.ingest.*;
 import com.shinoaki.wowsreplay.ingest.report.BattleType;
 import com.shinoaki.wowsreplay.ingest.report.FinishType;
 import com.shinoaki.wowsreplay.ingest.report.MatchResult;
-import com.shinoaki.wowsreplay.core.model.Recognized;
-import com.shinoaki.wowsreplay.core.model.Version;
 
 import java.util.List;
 

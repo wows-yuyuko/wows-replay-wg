@@ -48,23 +48,23 @@
         <dependencies>
             <!-- Internal modules -->
             <dependency>
-                <groupId>com.wows</groupId>
+                <groupId>com.shinoaki.wowsreplay</groupId>
                 <artifactId>wows-replay-wg-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.wows</groupId>
+                <groupId>com.shinoaki.wowsreplay</groupId>
                 <artifactId>wows-replay-wg-ingest</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.wows</groupId>
+                <groupId>com.shinoaki.wowsreplay</groupId>
                 <artifactId>wows-replay-wg-dumper</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.wows</groupId>
+                <groupId>com.shinoaki.wowsreplay</groupId>
                 <artifactId>wows-replay-wg-merge</artifactId>
                 <version>${project.version}</version>
             </dependency>

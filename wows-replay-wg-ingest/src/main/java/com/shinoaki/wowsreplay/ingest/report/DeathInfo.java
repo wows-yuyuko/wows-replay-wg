@@ -1,8 +1,8 @@
 package com.shinoaki.wowsreplay.ingest.report;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.shinoaki.wowsreplay.ingest.KillRecord;
 import com.shinoaki.wowsreplay.core.model.EntityId;
+import com.shinoaki.wowsreplay.ingest.KillRecord;
 
 /**
  * 死亡信息（对标 Rust {@code DeathInfo}，report.rs §5.2）。

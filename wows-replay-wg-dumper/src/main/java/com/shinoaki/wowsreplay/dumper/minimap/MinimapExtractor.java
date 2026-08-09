@@ -1,18 +1,18 @@
 package com.shinoaki.wowsreplay.dumper.minimap;
 
-import com.shinoaki.wowsreplay.core.model.Vec3;
-import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.constant.GameConstants;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
+import com.shinoaki.wowsreplay.core.model.Vec3;
+import com.shinoaki.wowsreplay.core.packet.NamedArgs;
+import com.shinoaki.wowsreplay.core.packet.Packet;
+import com.shinoaki.wowsreplay.core.packet.Parser;
+import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
+import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.ingest.ArtillerySalvo;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.ShotHitRecord;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
-import com.shinoaki.wowsreplay.core.packet.NamedArgs;
-import com.shinoaki.wowsreplay.core.packet.Parser;
-import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
-import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 
 import java.util.ArrayList;
 import java.util.HashSet;

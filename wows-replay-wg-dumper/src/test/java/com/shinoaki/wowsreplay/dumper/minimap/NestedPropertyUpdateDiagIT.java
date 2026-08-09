@@ -1,11 +1,11 @@
 package com.shinoaki.wowsreplay.dumper.minimap;
 
-import com.shinoaki.wowsreplay.core.spec.EntitySpec;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.packet.EntityCreatePacket;
 import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.packet.PropertyUpdatePacket;
+import com.shinoaki.wowsreplay.core.spec.EntitySpec;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import com.shinoaki.wowsreplay.core.spec.Property;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;

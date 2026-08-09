@@ -1,8 +1,6 @@
 package com.shinoaki.wowsreplay.core.packet;
 
 import com.shinoaki.wowsreplay.core.model.*;
-import com.shinoaki.wowsreplay.model.*;
-import com.wows.replay.model.*;
 import com.shinoaki.wowsreplay.core.spec.EntitySpec;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.types.ArgType;

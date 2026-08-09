@@ -1,17 +1,17 @@
 package com.shinoaki.wowsreplay.dumper;
 
-import com.shinoaki.wowsreplay.ingest.report.BattleReport;
-import com.shinoaki.wowsreplay.ingest.report.BattleReportBuilder;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayException;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.ReplayVersionMismatchException;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
-import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
+import com.shinoaki.wowsreplay.ingest.BattleWorld;
+import com.shinoaki.wowsreplay.ingest.report.BattleReport;
+import com.shinoaki.wowsreplay.ingest.report.BattleReportBuilder;
 
 import java.io.IOException;
 import java.nio.file.Path;

@@ -1,13 +1,13 @@
 package com.shinoaki.wowsreplay.merge;
 
-import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
-import com.shinoaki.wowsreplay.ingest.BattleWorld;
-import com.shinoaki.wowsreplay.ingest.MetaPlayer;
 import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
+import com.shinoaki.wowsreplay.ingest.BattleWorld;
+import com.shinoaki.wowsreplay.ingest.MetaPlayer;
+import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
