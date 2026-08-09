@@ -131,26 +131,6 @@ public final class ResultsInfoExtractor {
         return out;
     }
 
-    /**
-     * 处理整个战报树：把 {@code playersPublicInfo} 中每个玩家的公开结果精简为 BattleData
-     * （deep copy，不修改入参）。
-     */
-    public static ObjectNode processBattleResults(JsonNode resolvedResults) {
-        ObjectNode out = resolvedResults != null && resolvedResults.isObject()
-            ? (ObjectNode) resolvedResults.deepCopy()
-            : JsonMapper.createObject();
-        JsonNode publicInfo = out.get("playersPublicInfo");
-        if (publicInfo != null && publicInfo.isObject()) {
-            for (var prop : publicInfo.properties()) {
-                JsonNode v = prop.getValue();
-                if (v.isObject()) {
-                    ((ObjectNode) publicInfo).set(prop.getKey(), extract(v));
-                }
-            }
-        }
-        return out;
-    }
-
     /** 字段存在即拷贝到目标键（值为 null 也保留）。 */
     private static void copyScalar(ObjectNode out, JsonNode raw, String srcName, String dstName) {
         if (raw.has(srcName)) {

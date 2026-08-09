@@ -49,9 +49,8 @@ class WebFunctionTest {
         publicInfo.set("200", rawResults(2000, 200, 40000, false, 0,
             1000, 0, 100, 500, "100", interactionB()));
         resolvedResults.set("playersPublicInfo", publicInfo);
-        JsonNode battleResults = ResultsInfoExtractor.processBattleResults(resolvedResults);
 
-        BattleStats stats = BattleStatsCalculator.calculate(players, battleResults);
+        BattleStats stats = BattleStatsCalculator.calculate(players, resolvedResults);
         JsonNode st = JsonMapper.toTree(stats);
         assertEquals(1000, st.path("teams").path("0").path("damage").asDouble(), "0队总伤害");
         assertEquals(50000, st.path("teams").path("0").path("hp_pool").asDouble(), "0队总血池");
@@ -65,7 +64,7 @@ class WebFunctionTest {
         assertEquals(12345, pA.path("received_from").path("200").path("total").asDouble(), "A 被200打");
         assertEquals(26502, pA.path("spotted").path("200").path("scouting_damage").asDouble(), "A 点亮200");
 
-        BattleTimeline timeline = BattleTimelineCalculator.calculate(players, battleResults, minimap(), 50);
+        BattleTimeline timeline = BattleTimelineCalculator.calculate(players, resolvedResults, minimap(), 50);
         JsonNode tl = JsonMapper.toTree(timeline);
         JsonNode tlA = tl.path("players").path("100");
         assertEquals(1000, tlA.get(tlA.size() - 1).path("value").asDouble(), "A 累计伤害不校准");
@@ -144,13 +143,12 @@ class WebFunctionTest {
             assertFalse(p.path("vehicle").has("results_info"), "vehicle 不再内嵌 results_info");
         }
 
-        // 2. battle_results 已处理：playersPublicInfo 每个玩家精简为 BattleData
+        // 2. battle_results 原样输出：playersPublicInfo 为具名对象（未精简）
         JsonNode br = out.path("battle_results");
         assertTrue(br.path("playersPublicInfo").isObject(), "battle_results.playersPublicInfo 应存在");
         assertFalse(br.path("playersPublicInfo").isEmpty(), "playersPublicInfo 应有玩家");
         for (JsonNode v : br.path("playersPublicInfo")) {
-            assertTrue(v.path("damage").isNumber(), "已精简含 damage");
-            assertFalse(v.has("victory_points_own_ship_kill"), "非白名单丢弃");
+            assertTrue(v.path("damage").isNumber(), "playersPublicInfo 玩家含 damage");
         }
 
         // 3. webFunction.battle_stats

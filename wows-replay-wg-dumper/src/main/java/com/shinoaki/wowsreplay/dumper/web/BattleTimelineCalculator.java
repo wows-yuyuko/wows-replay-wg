@@ -292,12 +292,12 @@ public final class BattleTimelineCalculator {
         return dc != null && clock >= dc;
     }
 
-    /** {@code battle_results.playersPublicInfo[account_id]}（已精简为 BattleData），缺失返回 null。 */
+    /** {@code battle_results.playersPublicInfo[account_id]} → 精简 BattleData（缺失返回 null）。 */
     private static JsonNode resultsInfoOf(JsonNode battleResults, String accountId) {
         if (battleResults == null) return null;
         JsonNode publicInfo = battleResults.get("playersPublicInfo");
         if (publicInfo == null) return null;
         JsonNode ri = publicInfo.get(accountId);
-        return ri != null && ri.isObject() ? ri : null;
+        return ri != null && ri.isObject() ? ResultsInfoExtractor.extract(ri) : null;
     }
 }

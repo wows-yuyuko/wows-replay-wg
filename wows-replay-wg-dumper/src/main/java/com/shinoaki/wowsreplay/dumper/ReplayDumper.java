@@ -13,7 +13,6 @@ import com.shinoaki.wowsreplay.dumper.minimap.MinimapMerger;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
 import com.shinoaki.wowsreplay.dumper.web.BattleStatsCalculator;
 import com.shinoaki.wowsreplay.dumper.web.BattleTimelineCalculator;
-import com.shinoaki.wowsreplay.dumper.web.ResultsInfoExtractor;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
@@ -140,9 +139,8 @@ public final class ReplayDumper {
 
     private Map<String, Object> assemble(ReplayFile replay, BattleWorld world,
                                          BattleReport report, Options options) {
-        // battle_results 已由 BattleReportBuilder 用 constants.json 解析为具名对象；
-        // 最终输出阶段用 ResultsInfoExtractor 把 playersPublicInfo 每个玩家精简为 BattleData。
-        JsonNode battleResults = ResultsInfoExtractor.processBattleResults(report.battleResults());
+        // battle_results 已由 BattleReportBuilder 用 constants.json 解析为具名对象，原样输出。
+        JsonNode battleResults = report.battleResults();
         NormalizedReplay normalized = ReplayMapper.map(world, report);
         MinimapOutput mm = options.minimap()
             ? new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract()
@@ -170,7 +168,7 @@ public final class ReplayDumper {
         var merged = merger.merge(parsed);
         var report = parsed.get(0).report();
 
-        JsonNode battleResults = ResultsInfoExtractor.processBattleResults(report.battleResults());
+        JsonNode battleResults = report.battleResults();
         MinimapOutput mm = options.minimap()
             ? new MinimapMerger(specProvider, constants, replaysOf(primary, alts), options.minimapStep()).merge()
             : null;
