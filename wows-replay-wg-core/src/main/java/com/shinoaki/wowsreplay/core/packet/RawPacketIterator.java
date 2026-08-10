@@ -69,9 +69,9 @@ public class RawPacketIterator implements Iterator<RawPacket> {
             int rawType = buffer.getInt();              // u32 little-endian
             float rawClock = buffer.getFloat();         // f32 little-endian
 
-            // ── Diagnostic: suspicious type ID ──────────────────────────
+            // ── Diagnostic: suspicious type ID（流末 0xffffffff 哨兵为预期）──
             if (rawType < 0 || rawType > MAX_VALID_TYPE) {
-                log.warn(
+                log.debug(
                     "Corrupt header at byte offset {} ({} remaining): size={} type=0x{} clock={}",
                     headerPos, buffer.remaining() + HEADER_SIZE,
                     packetSize, Integer.toHexString(rawType), rawClock);

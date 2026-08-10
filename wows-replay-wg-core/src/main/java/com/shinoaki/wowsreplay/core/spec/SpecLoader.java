@@ -305,7 +305,7 @@ public final class SpecLoader {
                 // 排序时视为变长；无内部 <Type> 时按长度前缀 BLOB 处理。
                 var inner = childByName(node, "Type");
                 if (inner == null) {
-                    log.warn("USER_TYPE 缺少内部 <Type>，回退为 BLOB: node={} text='{}'",
+                    log.debug("USER_TYPE 缺少内部 <Type>，回退为 BLOB: node={} text='{}'",
                         node.getNodeName(), text);
                     yield ArgType.Primitive.BLOB;
                 }
