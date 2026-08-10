@@ -119,13 +119,12 @@ class WebFunctionTest {
         Path rep = firstReplay(repDir);
         assumeTrue(rep != null, "temp/wg_15.6 下没有 .wowsreplay 文件");
 
-        var replay = ReplayFile.fromFile(rep);
-        Path gd = findGameData(Path.of("../temp/wows-data"), replay);
+        var replay = ReplayFile.fromFile(rep, Path.of("../temp/wows-data"));
+        Path gd = GameDataCache.resolveGameDataDir(replay);
         assumeTrue(gd != null, "缺少匹配版本的游戏数据");
         var cache = GameDataCache.withMaxSize(4);
-        var vk = GameDataCache.VersionKey.from(gd);
-        var sp = cache.entitySpecs(vk, gd);
-        var cs = cache.constants(vk, gd);
+        var sp = cache.entitySpecs(replay);
+        var cs = cache.constants(replay);
 
         var options = new ReplayDumper.Options(true, 7, false, null);
         String json = new ReplayDumper(sp, cs, gd).dumpJson(replay, options);
@@ -181,16 +180,15 @@ class WebFunctionTest {
         }
         assumeTrue(reps.size() == 2, "热点目录下至少 2 份回放");
 
-        var primary = ReplayFile.fromFile(reps.get(0));
-        Path gd = findGameData(Path.of("../temp/wows-data"), primary);
+        var primary = ReplayFile.fromFile(reps.get(0), Path.of("../temp/wows-data"));
+        Path gd = GameDataCache.resolveGameDataDir(primary);
         assumeTrue(gd != null, "缺少匹配版本的游戏数据");
         var cache = GameDataCache.withMaxSize(4);
-        var vk = GameDataCache.VersionKey.from(gd);
-        var sp = cache.entitySpecs(vk, gd);
-        var cs = cache.constants(vk, gd);
+        var sp = cache.entitySpecs(primary);
+        var cs = cache.constants(primary);
 
         var options = new ReplayDumper.Options(true, 7, false, null);
-        var alt = ReplayFile.fromFile(reps.get(1));
+        var alt = ReplayFile.fromFile(reps.get(1), Path.of("../temp/wows-data"));
         String json = new ReplayDumper(sp, cs, gd).dumpMergedJson(primary, List.of(alt), options);
         JsonNode out = JsonMapper.readTree(json);
 
@@ -284,34 +282,6 @@ class WebFunctionTest {
 
     private static MinimapEntity entity(long metaId, int teamId, float health, float maxHealth, boolean alive) {
         return new MinimapEntity(metaId, 0f, 0f, 0f, true, teamId, health, maxHealth, alive, 0);
-    }
-
-    /** 在 base 下找 data-{M}.{m}.{p}.{build}/live（取 build 最高），对标 DumperMain.findGameData。 */
-    private static Path findGameData(Path base, ReplayFile replay) throws java.io.IOException {
-        var v = replay.version();
-        String prefix = "data-" + v.major() + "." + v.minor() + "." + v.patch() + ".";
-        Path best = null;
-        long bestBuild = -1;
-        try (var entries = Files.list(base)) {
-            for (var dir : entries.toList()) {
-                if (!Files.isDirectory(dir)) continue;
-                String name = dir.getFileName().toString();
-                if (!name.startsWith(prefix)) continue;
-                String buildStr = name.substring(prefix.length()).split("\\.")[0];
-                long build;
-                try {
-                    build = Long.parseLong(buildStr);
-                } catch (NumberFormatException e) {
-                    continue;
-                }
-                var live = dir.resolve("live");
-                if (Files.isDirectory(live) && build > bestBuild) {
-                    best = live;
-                    bestBuild = build;
-                }
-            }
-        }
-        return best;
     }
 
     /** 递归找第一个 .wowsreplay。 */

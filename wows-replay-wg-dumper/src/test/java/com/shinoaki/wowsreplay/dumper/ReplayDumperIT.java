@@ -30,8 +30,9 @@ class ReplayDumperIT {
 
     @BeforeAll
     static void setUp() throws Exception {
-        replay = ReplayFile.fromFile(resolve(REPLAY_PATH));
-        gameData = findGameDataDir(resolve(WOWS_DATA_BASE), replay.version());
+        var base = resolve(WOWS_DATA_BASE);
+        replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
+        gameData = GameDataCache.resolveGameDataDir(replay);
         assertNotNull(gameData, "游戏数据未找到");
     }
 
@@ -39,24 +40,12 @@ class ReplayDumperIT {
         return Path.of(System.getProperty("user.dir")).getParent().resolve(path);
     }
 
-    private static Path findGameDataDir(Path base, Version version) throws Exception {
-        var prefix = "data-" + version.major() + "." + version.minor() + ".";
-        try (var entries = Files.list(base)) {
-            for (var dir : entries.toList()) {
-                if (Files.isDirectory(dir) && dir.getFileName().toString().startsWith(prefix)) {
-                    return dir.resolve("live");
-                }
-            }
-        }
-        return null;
-    }
-
     @Test
     @DisplayName("ReplayDumper: 单一 JSON 装配（report+game_events+space_size+minimap）")
     void dumpSingle() throws Exception {
         var cache = GameDataCache.withMaxSize(4);
-        var specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
-        var constants = cache.constants(GameDataCache.VersionKey.from(gameData), gameData);
+        var specProvider = cache.entitySpecs(replay);
+        var constants = cache.constants(replay);
 
         var options = new ReplayDumper.Options(true, 7, false, 6);
         var json = new ReplayDumper(specProvider, constants, gameData).dumpPrettyJson(replay, options);

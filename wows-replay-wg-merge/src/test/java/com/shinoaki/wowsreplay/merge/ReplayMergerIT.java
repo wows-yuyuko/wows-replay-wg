@@ -2,7 +2,6 @@ package com.shinoaki.wowsreplay.merge;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
-import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
@@ -39,29 +38,17 @@ class ReplayMergerIT {
 
     @BeforeAll
     static void setUp() throws Exception {
-        replay = ReplayFile.fromFile(resolve(REPLAY_PATH));
-        var gameData = findGameDataDir(resolve(WOWS_DATA_PATH), replay.version());
-        assertNotNull(gameData, "游戏数据未找到: " + resolve(WOWS_DATA_PATH));
+        var base = resolve(WOWS_DATA_PATH);
+        replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
+        assertNotNull(GameDataCache.resolveGameDataDir(replay), "游戏数据未找到: " + base);
         var cache = GameDataCache.withMaxSize(4);
-        EntitySpecProvider specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
-        var constants = cache.constants(GameDataCache.VersionKey.from(gameData), gameData);
+        EntitySpecProvider specProvider = cache.entitySpecs(replay);
+        var constants = cache.constants(replay);
         merger = new ReplayMerger(specProvider, constants);
     }
 
     private static Path resolve(String path) {
         return Path.of(System.getProperty("user.dir")).getParent().resolve(path);
-    }
-
-    private static Path findGameDataDir(Path wowsDataBase, Version version) {
-        var prefix = "data-" + version.major() + "." + version.minor() + ".";
-        var children = wowsDataBase.toFile().listFiles();
-        if (children == null) return null;
-        for (var f : children) {
-            if (f.isDirectory() && f.getName().startsWith(prefix)) {
-                return f.toPath().resolve("live");
-            }
-        }
-        return null;
     }
 
     @Test

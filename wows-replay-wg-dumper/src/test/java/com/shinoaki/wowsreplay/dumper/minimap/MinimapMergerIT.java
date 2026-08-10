@@ -2,7 +2,6 @@ package com.shinoaki.wowsreplay.dumper.minimap;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
-import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
@@ -35,30 +34,15 @@ class MinimapMergerIT {
     @BeforeAll
     static void setUp() throws Exception {
         files = multiViewFiles();
-        var first = ReplayFile.fromFile(files.get(0));
-        var gameData = findGameDataDir(resolve(WOWS_DATA_PATH), first.version());
-        assertNotNull(gameData, "游戏数据未找到");
+        var first = ReplayFile.fromFile(files.get(0), resolve(WOWS_DATA_PATH));
+        assertNotNull(GameDataCache.resolveGameDataDir(first), "游戏数据未找到");
         var cache = GameDataCache.withMaxSize(4);
-        specProvider = cache.entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
-        constants = cache.constants(GameDataCache.VersionKey.from(gameData), gameData);
+        specProvider = cache.entitySpecs(first);
+        constants = cache.constants(first);
     }
 
     private static Path resolve(String path) {
         return Path.of(System.getProperty("user.dir")).getParent().resolve(path);
-    }
-
-    private static Path findGameDataDir(Path wowsDataBase, Version version) {
-        var prefix = "data-" + version.major() + "." + version.minor() + ".";
-        try (var entries = Files.list(wowsDataBase)) {
-            for (var dir : entries.toList()) {
-                if (Files.isDirectory(dir) && dir.getFileName().toString().startsWith(prefix)) {
-                    return dir.resolve("live");
-                }
-            }
-        } catch (IOException e) {
-            return null;
-        }
-        return null;
     }
 
     private static List<Path> multiViewFiles() throws IOException {

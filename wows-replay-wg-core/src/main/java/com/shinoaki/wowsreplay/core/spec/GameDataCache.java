@@ -1,6 +1,7 @@
 package com.shinoaki.wowsreplay.core.spec;
 
 import com.shinoaki.wowsreplay.core.JsonConstantsProvider;
+import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,37 +37,118 @@ public final class GameDataCache {
         return new GameDataCache(maxSize);
     }
 
+    /** 获取（或加载并缓存）replay 对应版本的 constants.json。 */
+    public JsonConstantsProvider constants(ReplayFile replay) {
+        var gd = resolve(replay);
+        if (gd == null) {
+            log.warn("未找到匹配版本的游戏数据（base={}），返回空常量实现", replay.gameDataBase());
+            return emptyConstants();
+        }
+        var key = gd.version.subKey("constants");
+        return (JsonConstantsProvider) store.computeIfAbsent(key, _ -> loadConstants(gd.dir));
+    }
+
+    /** 获取（或加载并缓存）replay 对应版本的实体规范提供者。 */
+    public EntitySpecProvider entitySpecs(ReplayFile replay) {
+        var gd = resolve(replay);
+        if (gd == null) {
+            log.warn("未找到匹配版本的游戏数据（base={}），返回空 spec", replay.gameDataBase());
+            return EntitySpecProvider.empty();
+        }
+        var key = gd.version.subKey("entitySpecs");
+        return (EntitySpecProvider) store.computeIfAbsent(key, _ -> loadEntitySpecs(gd.dir));
+    }
+
     /** 获取（或加载并缓存）指定版本的 constants.json。 */
     public JsonConstantsProvider constants(VersionKey version, Path gameDataDir) {
         var key = version.subKey("constants");
-        return (JsonConstantsProvider) store.computeIfAbsent(key, _ -> {
-            var path = gameDataDir.resolve("constants.json");
-            if (!Files.exists(path)) {
-                log.warn("{} 缺少 constants.json，返回空常量实现", gameDataDir);
-                return new JsonConstantsProvider("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            }
-            return JsonConstantsProvider.fromFile(path);
-        });
+        return (JsonConstantsProvider) store.computeIfAbsent(key, _ -> loadConstants(gameDataDir));
     }
 
     /** 获取（或加载并缓存）指定版本的实体规范提供者。 */
     public EntitySpecProvider entitySpecs(VersionKey version, Path gameDataDir) {
         var key = version.subKey("entitySpecs");
-        return (EntitySpecProvider) store.computeIfAbsent(key, _ -> {
-            // 验证 .def 文件存在性
-            var entitiesXml = gameDataDir.resolve("scripts/entities.xml");
-            var aliasXml = gameDataDir.resolve("scripts/entity_defs/alias.xml");
-            if (!Files.exists(entitiesXml) || !Files.exists(aliasXml)) {
-                log.warn("{} 中缺少 scripts/entities.xml 或 scripts/entity_defs/alias.xml", gameDataDir);
-                return EntitySpecProvider.empty();
+        return (EntitySpecProvider) store.computeIfAbsent(key, _ -> loadEntitySpecs(gameDataDir));
+    }
+
+    /**
+     * 在 base 下按 replay 版本定位 {@code data-M.m.p.b/live} 目录（同版本取 build 最高）。
+     *
+     * @return live 目录；base 为 null 或未匹配到返回 null
+     */
+    public static Path resolveGameDataDir(ReplayFile replay) throws IOException {
+        Path base = replay.gameDataBase();
+        if (base == null) return null;
+        var v = replay.version();
+        String prefix = "data-" + v.major() + "." + v.minor() + "." + v.patch() + ".";
+        Path best = null;
+        long bestBuild = -1;
+        try (var entries = Files.list(base)) {
+            for (var dir : entries.toList()) {
+                if (!Files.isDirectory(dir)) continue;
+                String name = dir.getFileName().toString();
+                if (!name.startsWith(prefix)) continue;
+                String buildStr = name.substring(prefix.length()).split("\\.")[0];
+                long build;
+                try {
+                    build = Long.parseLong(buildStr);
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                var live = dir.resolve("live");
+                if (Files.isDirectory(live) && build > bestBuild) {
+                    best = live;
+                    bestBuild = build;
+                }
             }
-            return new EntityRegistry(path -> {
-                var file = gameDataDir.resolve(path);
-                if (!Files.exists(file)) throw new IOException("def file not found: " + path);
-                return Files.readAllBytes(file);
-            });
+        }
+        return best;
+    }
+
+    private JsonConstantsProvider emptyConstants() {
+        return new JsonConstantsProvider("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    private JsonConstantsProvider loadConstants(Path gameDataDir) {
+        var path = gameDataDir.resolve("constants.json");
+        if (!Files.exists(path)) {
+            log.warn("{} 缺少 constants.json，返回空常量实现", gameDataDir);
+            return emptyConstants();
+        }
+        return JsonConstantsProvider.fromFile(path);
+    }
+
+    private EntitySpecProvider loadEntitySpecs(Path gameDataDir) {
+        // 验证 .def 文件存在性
+        var entitiesXml = gameDataDir.resolve("scripts/entities.xml");
+        var aliasXml = gameDataDir.resolve("scripts/entity_defs/alias.xml");
+        if (!Files.exists(entitiesXml) || !Files.exists(aliasXml)) {
+            log.warn("{} 中缺少 scripts/entities.xml 或 scripts/entity_defs/alias.xml", gameDataDir);
+            return EntitySpecProvider.empty();
+        }
+        return new EntityRegistry(path -> {
+            var file = gameDataDir.resolve(path);
+            if (!Files.exists(file)) throw new IOException("def file not found: " + path);
+            return Files.readAllBytes(file);
         });
     }
+
+    /** 解析 replay → (版本键, live 目录)；未匹配或 IO 异常返回 null。 */
+    private static GameData resolve(ReplayFile replay) {
+        Path dir;
+        try {
+            dir = resolveGameDataDir(replay);
+        } catch (IOException e) {
+            log.warn("定位游戏数据目录失败（base={}）: {}", replay.gameDataBase(), e.toString());
+            return null;
+        }
+        if (dir == null) return null;
+        // 版本键取自 data-* 目录名（live 的父目录），非 live 本身。
+        var vk = VersionKey.from(dir.getParent());
+        return new GameData(vk, dir);
+    }
+
+    private record GameData(VersionKey version, Path dir) {}
 
     /** 版本标识，按 major.minor.patch 分组，忽略 build 号。 */
     public record VersionKey(int major, int minor, int patch, String subKey) {

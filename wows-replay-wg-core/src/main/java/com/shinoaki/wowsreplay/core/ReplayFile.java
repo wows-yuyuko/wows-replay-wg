@@ -57,12 +57,15 @@ public final class ReplayFile {
     private final String rawMeta;
     private final byte[] packetData;
     private final Version version;
+    /** 游戏数据基础目录（含 data-M.m.p.b/live 子目录），可为 null。 */
+    private final Path gameDataBase;
 
-    private ReplayFile(ReplayMeta meta, String rawMeta, byte[] packetData) {
+    private ReplayFile(ReplayMeta meta, String rawMeta, byte[] packetData, Path gameDataBase) {
         this.meta = meta;
         this.rawMeta = rawMeta;
         this.packetData = packetData;
         this.version = Version.fromClientExe(meta.clientVersionFromExe());
+        this.gameDataBase = gameDataBase;
     }
 
     // ── Public API ──────────────────────────────────────────────────────────
@@ -85,6 +88,11 @@ public final class ReplayFile {
     /** Game version parsed from metadata. */
     public Version version() {
         return version;
+    }
+
+    /** 游戏数据基础目录（{@link #fromFile(Path, Path)} 时指定），无则为 null。 */
+    public Path gameDataBase() {
+        return gameDataBase;
     }
 
     /** Total number of packets in the stream. */
@@ -144,6 +152,16 @@ public final class ReplayFile {
      * @throws ReplayException on parse/decompress/decrypt errors
      */
     public static ReplayFile fromBytes(byte[] bytes) throws ReplayException {
+        return fromBytes(bytes, null);
+    }
+
+    /**
+     * Parse a replay from an in-memory byte array, carrying a game-data base directory.
+     *
+     * @param bytes        raw .wowsreplay file bytes
+     * @param gameDataBase 游戏数据基础目录（含 data-M.m.p.b/live），可为 null
+     */
+    public static ReplayFile fromBytes(byte[] bytes, Path gameDataBase) throws ReplayException {
         if (bytes == null || bytes.length < 12) {
             throw new ReplayException("Replay data too short (need at least 12 bytes for header)");
         }
@@ -209,16 +227,24 @@ public final class ReplayFile {
         } catch (RuntimeException e) {
             throw new ReplayException("Failed to parse replay metadata JSON", e);
         }
-        return new ReplayFile(meta, rawMeta, packetData);
+        return new ReplayFile(meta, rawMeta, packetData, gameDataBase);
     }
 
     /**
      * Parse a replay from a file on disk.
      */
     public static ReplayFile fromFile(Path path) throws ReplayException, IOException {
+        return fromFile(path, null);
+    }
+
+    /**
+     * Parse a replay from a file on disk, carrying a game-data base directory
+     * （供 {@code GameDataCache} 按版本定位 data-M.m.p.b/live）。
+     */
+    public static ReplayFile fromFile(Path path, Path gameDataBase) throws ReplayException, IOException {
         byte[] bytes = Files.readAllBytes(path);
         try {
-            return fromBytes(bytes);
+            return fromBytes(bytes, gameDataBase);
         } catch (ReplayException e) {
             throw new ReplayException("Failed to parse replay: " + path + " — " + e.getMessage(), e);
         }

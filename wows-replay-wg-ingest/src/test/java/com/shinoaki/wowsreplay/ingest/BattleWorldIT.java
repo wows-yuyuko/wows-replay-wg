@@ -41,13 +41,12 @@ class BattleWorldIT {
 
     @BeforeAll
     static void setUp() throws Exception {
-        replay = ReplayFile.fromFile(resolve(REPLAY_PATH));
+        var base = resolve(WOWS_DATA_PATH);
+        replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
         version = replay.version();
 
-        var gameData = findGameDataDir(resolve(WOWS_DATA_PATH), version);
-        assertNotNull(gameData, "游戏数据未找到: " + resolve(WOWS_DATA_PATH));
-        specProvider = GameDataCache.withMaxSize(4)
-            .entitySpecs(GameDataCache.VersionKey.from(gameData), gameData);
+        assertNotNull(GameDataCache.resolveGameDataDir(replay), "游戏数据未找到: " + base);
+        specProvider = GameDataCache.withMaxSize(4).entitySpecs(replay);
 
         // 完整管线：Parser → PacketDecoder → BattleWorld
         var parser = new Parser(specProvider, version);
@@ -69,18 +68,6 @@ class BattleWorldIT {
 
     private static Path resolve(String path) {
         return Path.of(System.getProperty("user.dir")).getParent().resolve(path);
-    }
-
-    private static Path findGameDataDir(Path wowsDataBase, Version version) {
-        var prefix = "data-" + version.major() + "." + version.minor() + ".";
-        var children = wowsDataBase.toFile().listFiles();
-        if (children == null) return null;
-        for (var f : children) {
-            if (f.isDirectory() && f.getName().startsWith(prefix)) {
-                return f.toPath().resolve("live");
-            }
-        }
-        return null;
     }
 
     @Test
