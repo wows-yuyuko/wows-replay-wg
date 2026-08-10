@@ -2,7 +2,6 @@ package com.shinoaki.wowsreplay.dumper;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
-import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,12 +42,8 @@ class ReplayDumperIT {
     @Test
     @DisplayName("ReplayDumper: 单一 JSON 装配（report+game_events+space_size+minimap）")
     void dumpSingle() throws Exception {
-        var cache = GameDataCache.withMaxSize(4);
-        var specProvider = cache.entitySpecs(replay);
-        var constants = cache.constants(replay);
-
         var options = new ReplayDumper.Options(true, 7, false, 6);
-        var json = new ReplayDumper(specProvider, constants, gameData).dumpPrettyJson(replay, options);
+        var json = new ReplayDumper(replay, options).dumpPrettyJson();
         var tree = JsonMapper.readTree(json);
         var out = resolve("temp/compare/java_dump.json");
         Files.writeString(out, json);

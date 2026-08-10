@@ -7,6 +7,7 @@ import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
+import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapExtractor;
@@ -56,30 +57,103 @@ public final class ReplayDumper {
         public static final Options DEFAULT = new Options(false, 7, false, null);
     }
 
+    /** 全部视角回放（第 0 项为主视角）。 */
+    private final List<ReplayFile> replays;
+    /** 主视角（= replays 第 0 项）：spec/constants 解析、dumpJson 与合并广播状态的权威。 */
+    private final ReplayFile primary;
+    private final Options options;
     private final EntitySpecProvider specProvider;
     private final GameConstantsProvider constants;
-    private final Path gameDataBase;
+    private final GameDataCache cache;
+    /** 匹配版本的游戏数据 live 目录（base 缺失/未匹配时为 null，版本门禁与 space_size 兜底）。 */
+    private final Path gameDataDir;
 
-    public ReplayDumper(EntitySpecProvider specProvider, GameConstantsProvider constants, Path gameDataBase) {
-        this.specProvider = specProvider;
-        this.constants = constants;
-        this.gameDataBase = gameDataBase;
+    /**
+     * @param replay  主视角回放（需带 {@link ReplayFile#gameDataBase()}，内部按版本自动生成
+     *                {@link EntitySpecProvider} / {@link GameConstantsProvider}）
+     * @param options 管线选项（minimap / 压缩 / selfDamageStats 等）
+     */
+    public ReplayDumper(ReplayFile replay, Options options) {
+        this(List.of(replay), options, GameDataCache.withMaxSize(4));
     }
 
-    /** 解析回放 → 单一 JSON（对标 Rust {@code parse_replay_with_options}）。 */
-    public String dumpJson(ReplayFile replay, Options options) throws ReplayVersionMismatchException {
-        verifyVersion(replay);
-        var world = parseWorld(replay);
-        var report = new BattleReportBuilder(world, replay.meta()).build();
-        var out = assemble(replay, world, report, options);
-        return JsonMapper.toJson(out);
+    /**
+     * @param replays 同场次多视角回放（第 0 项为主视角）；{@link #dumpMergedJson()} 合并全部，
+     *                {@link #dumpJson()} / {@link #dumpPrettyJson()} 只处理主视角
+     * @param options 管线选项
+     */
+    public ReplayDumper(List<ReplayFile> replays, Options options) {
+        this(replays, options, GameDataCache.withMaxSize(4));
     }
 
-    public String dumpPrettyJson(ReplayFile replay, Options options) throws ReplayVersionMismatchException {
-        verifyVersion(replay);
-        var world = parseWorld(replay);
-        var report = new BattleReportBuilder(world, replay.meta()).build();
-        return JsonMapper.toPrettyJson(assemble(replay, world, report, options));
+    /** 提供共享 {@link GameDataCache} 的构造（多实例复用缓存，避免重复加载游戏数据）。 */
+    public ReplayDumper(List<ReplayFile> replays, Options options, GameDataCache cache) {
+        if (replays == null || replays.isEmpty()) {
+            throw new IllegalArgumentException("至少需要一份回放");
+        }
+        this.replays = List.copyOf(replays);
+        this.primary = this.replays.getFirst();
+        this.options = options;
+        this.cache = cache;
+        this.specProvider = cache.entitySpecs(primary);
+        this.constants = cache.constants(primary);
+        this.gameDataDir = resolveGameDataDir(primary);
+    }
+
+    /** 解析主视角 → 单一 JSON（对标 Rust {@code parse_replay_with_options}）。 */
+    public String dumpJson() throws ReplayVersionMismatchException {
+        return JsonMapper.toJson(dump());
+    }
+
+    public Map<String,Object> dump() throws ReplayVersionMismatchException {
+        verifyVersion(primary);
+        var world = parseWorld(primary);
+        var report = new BattleReportBuilder(world, primary.meta()).build();
+        return assemble(primary, world, report);
+    }
+
+    public String dumpPrettyJson() throws ReplayVersionMismatchException {
+        return JsonMapper.toPrettyJson(dump());
+    }
+
+    /**
+     * 多视角合并解析：主视角（replays 第 0 项）+ 其余视角 → 最终 JSON（形状与单 replay 一致）。
+     *
+     * @return 合并后的单一 JSON
+     * @throws ReplayVersionMismatchException 主视角 build 与 game-data 不匹配
+     */
+    public Map<String, Object> dumpMerged() throws ReplayVersionMismatchException {
+        verifyVersion(primary);
+        var merger = new ReplayMerger(specProvider, constants);
+        var parsed = new ArrayList<ParsedReplay>(replays.size());
+        for (var r : replays) parsed.add(merger.parse(r));
+        var merged = merger.merge(parsed);
+        var report = parsed.getFirst().report();
+
+        JsonNode battleResults = report.battleResults();
+        MinimapOutput mm = options.minimap()
+                ? new MinimapMerger(specProvider, constants, replays, options.minimapStep()).merge()
+                : null;
+        return assembleFinal(primary, report, merged.replay(), mm, battleResults);
+    }
+
+    /**
+     * 多视角合并解析：主视角（replays 第 0 项）+ 其余视角 → 最终 JSON（形状与单 replay 一致）。
+     *
+     * @return 合并后的单一 JSON
+     * @throws ReplayVersionMismatchException 主视角 build 与 game-data 不匹配
+     */
+    public String dumpMergedJson() throws ReplayVersionMismatchException {
+        return JsonMapper.toJson(dumpMerged());
+    }
+
+    private static Path resolveGameDataDir(ReplayFile replay) {
+        try {
+            return GameDataCache.resolveGameDataDir(replay);
+        } catch (IOException e) {
+            log.warn("定位游戏数据目录失败: {}", e.toString());
+            return null;
+        }
     }
 
     /**
@@ -88,8 +162,8 @@ public final class ReplayDumper {
      * 任一 build 未知时跳过。
      */
     private void verifyVersion(ReplayFile replay) throws ReplayVersionMismatchException {
-        if (gameDataBase == null) return;
-        Path dataDir = gameDataBase.getParent();
+        if (gameDataDir == null) return;
+        Path dataDir = gameDataDir.getParent();
         if (dataDir == null) return;
         String dataName = dataDir.getFileName().toString();
         long dataBuild = parseBuildNumber(dataName);
@@ -138,55 +212,20 @@ public final class ReplayDumper {
 
     // ── 装配（对标 Rust build_json_output）────────────────────────────────
 
-    private Map<String, Object> assemble(ReplayFile replay, BattleWorld world,
-                                         BattleReport report, Options options) {
+    private Map<String, Object> assemble(ReplayFile replay, BattleWorld world, BattleReport report) {
         // battle_results 已由 BattleReportBuilder 用 constants.json 解析为具名对象，原样输出。
         JsonNode battleResults = report.battleResults();
         NormalizedReplay normalized = ReplayMapper.map(world, report);
         MinimapOutput mm = options.minimap()
             ? new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract()
             : null;
-        return assembleFinal(replay, report, normalized, mm, battleResults, options);
-    }
-
-    /**
-     * 多视角合并解析：主视角 + alt 视角 → 最终 JSON（形状与单 replay 一致）。
-     *
-     * @param primary 主视角回放
-     * @param alts    alt 视角回放（同场次）
-     * @return 合并后的单一 JSON
-     * @throws ReplayVersionMismatchException 主视角 build 与 game-data 不匹配
-     */
-    public String dumpMergedJson(ReplayFile primary, List<ReplayFile> alts, Options options)
-            throws ReplayVersionMismatchException {
-        verifyVersion(primary);
-        var merger = new ReplayMerger(specProvider, constants);
-        var parsed = new ArrayList<ParsedReplay>(1 + (alts == null ? 0 : alts.size()));
-        parsed.add(merger.parse(primary));
-        if (alts != null) {
-            for (var a : alts) parsed.add(merger.parse(a));
-        }
-        var merged = merger.merge(parsed);
-        var report = parsed.get(0).report();
-
-        JsonNode battleResults = report.battleResults();
-        MinimapOutput mm = options.minimap()
-            ? new MinimapMerger(specProvider, constants, replaysOf(primary, alts), options.minimapStep()).merge()
-            : null;
-        return JsonMapper.toJson(assembleFinal(primary, report, merged.replay(), mm, battleResults, options));
-    }
-
-    private static List<ReplayFile> replaysOf(ReplayFile primary, List<ReplayFile> alts) {
-        var all = new ArrayList<ReplayFile>(1 + (alts == null ? 0 : alts.size()));
-        all.add(primary);
-        if (alts != null) all.addAll(alts);
-        return all;
+        return assembleFinal(replay, report, normalized, mm, battleResults);
     }
 
     /** 公共最终输出装配：单 replay 与多视角合并共用（形状一致）。 */
     private Map<String, Object> assembleFinal(ReplayFile replay, BattleReport report,
                                               NormalizedReplay normalized, MinimapOutput mm,
-                                              JsonNode battleResults, Options options) {
+                                              JsonNode battleResults) {
         var out = new LinkedHashMap<String, Object>();
         out.put("battle_results", battleResults);
         out.put("arena_id", report.arenaId());
@@ -196,7 +235,7 @@ public final class ReplayDumper {
         out.put("version", report.version() != null ? report.version().toString() : null);
         out.put("map_id", replay.meta().mapId());
         out.put("map_name", report.mapName());
-        out.put("space_size", parseSpaceSize(gameDataBase, replay.meta().mapName()));
+        out.put("space_size", parseSpaceSize(gameDataDir, replay.meta().mapName()));
         out.put("game_mode", report.gameMode());
         out.put("game_type", replay.meta().gameType());
         out.put("match_group", report.matchGroup());

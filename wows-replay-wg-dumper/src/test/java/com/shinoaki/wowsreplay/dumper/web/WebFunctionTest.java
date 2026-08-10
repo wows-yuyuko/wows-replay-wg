@@ -120,14 +120,10 @@ class WebFunctionTest {
         assumeTrue(rep != null, "temp/wg_15.6 下没有 .wowsreplay 文件");
 
         var replay = ReplayFile.fromFile(rep, Path.of("../temp/wows-data"));
-        Path gd = GameDataCache.resolveGameDataDir(replay);
-        assumeTrue(gd != null, "缺少匹配版本的游戏数据");
-        var cache = GameDataCache.withMaxSize(4);
-        var sp = cache.entitySpecs(replay);
-        var cs = cache.constants(replay);
+        assumeTrue(GameDataCache.resolveGameDataDir(replay) != null, "缺少匹配版本的游戏数据");
 
         var options = new ReplayDumper.Options(true, 7, false, null);
-        String json = new ReplayDumper(sp, cs, gd).dumpJson(replay, options);
+        String json = new ReplayDumper(replay, options).dumpJson();
         JsonNode out = JsonMapper.readTree(json);
 
         // 0. master_meta_id = 主视角(self)玩家 meta_id
@@ -181,15 +177,11 @@ class WebFunctionTest {
         assumeTrue(reps.size() == 2, "热点目录下至少 2 份回放");
 
         var primary = ReplayFile.fromFile(reps.get(0), Path.of("../temp/wows-data"));
-        Path gd = GameDataCache.resolveGameDataDir(primary);
-        assumeTrue(gd != null, "缺少匹配版本的游戏数据");
-        var cache = GameDataCache.withMaxSize(4);
-        var sp = cache.entitySpecs(primary);
-        var cs = cache.constants(primary);
+        assumeTrue(GameDataCache.resolveGameDataDir(primary) != null, "缺少匹配版本的游戏数据");
 
         var options = new ReplayDumper.Options(true, 7, false, null);
         var alt = ReplayFile.fromFile(reps.get(1), Path.of("../temp/wows-data"));
-        String json = new ReplayDumper(sp, cs, gd).dumpMergedJson(primary, List.of(alt), options);
+        String json = new ReplayDumper(List.of(primary, alt), options).dumpMergedJson();
         JsonNode out = JsonMapper.readTree(json);
 
         assertTrue(out.path("master_meta_id").asLong() > 0, "master_meta_id 为主视角玩家");

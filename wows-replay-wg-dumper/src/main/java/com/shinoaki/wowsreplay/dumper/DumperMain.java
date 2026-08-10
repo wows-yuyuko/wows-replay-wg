@@ -2,7 +2,6 @@ package com.shinoaki.wowsreplay.dumper;
 
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
-import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Files;
@@ -79,12 +78,8 @@ public final class DumperMain {
         }
         log.info("使用游戏数据: {}", gameData);
 
-        var cache = GameDataCache.withMaxSize(4);
-        var specProvider = cache.entitySpecs(replay);
-        GameConstantsProvider constants = cache.constants(replay);
-
         var options = new ReplayDumper.Options(minimap, minimapStep, selfDamageStats, compressLevel);
-        var json = new ReplayDumper(specProvider, constants, gameData).dumpPrettyJson(replay, options);
+        var json = new ReplayDumper(replay, options).dumpPrettyJson();
 
         if (outFile != null) {
             Files.writeString(outFile, json);
