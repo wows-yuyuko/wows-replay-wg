@@ -43,7 +43,9 @@ class ReplayDumperIT {
     @DisplayName("ReplayDumper: 单一 JSON 装配（report+game_events+space_size+minimap）")
     void dumpSingle() throws Exception {
         var options = new ReplayDumper.Options(true, 7, false, 6);
-        var json = new ReplayDumper(replay, options).dumpPrettyJson();
+        var replayDumper = new ReplayDumper(replay, options);
+        var dumper = replayDumper.dump();
+        var json = JsonMapper.toPrettyJson(dumper);
         var tree = JsonMapper.readTree(json);
         var out = resolve("temp/compare/java_dump.json");
         Files.writeString(out, json);
