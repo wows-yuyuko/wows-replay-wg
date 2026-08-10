@@ -18,6 +18,7 @@ import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
 import com.shinoaki.wowsreplay.dumper.web.BattleStatsCalculator;
 import com.shinoaki.wowsreplay.dumper.web.BattleTimelineCalculator;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
+import com.shinoaki.wowsreplay.ingest.mapped.NormalizedKill;
 import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
 import com.shinoaki.wowsreplay.ingest.report.BattleReport;
@@ -429,16 +430,7 @@ public final class ReplayDumper {
         }
 
         for (var k : replay.killLog()) {
-            var killer = new LinkedHashMap<String, Object>();
-            killer.put("meta_id", k.killerMetaId());
-            killer.put("username", k.killerName());
-            var victim = new LinkedHashMap<String, Object>();
-            victim.put("meta_id", k.victimMetaId());
-            victim.put("username", k.victimName());
-            var data = new LinkedHashMap<String, Object>();
-            data.put("killer", killer);
-            data.put("victim", victim);
-            data.put("cause", k.cause());
+            var data = getData(k);
             events.add(event("kill", k.clock(), data));
         }
 
@@ -453,6 +445,20 @@ public final class ReplayDumper {
 
         events.sort(Comparator.comparingDouble(e -> ((Number) e.get("clock")).doubleValue()));
         return events;
+    }
+
+    private static LinkedHashMap<String, Object> getData(NormalizedKill k) {
+        var killer = new LinkedHashMap<String, Object>();
+        killer.put("meta_id", k.killerMetaId());
+        killer.put("username", k.killerName());
+        var victim = new LinkedHashMap<String, Object>();
+        victim.put("meta_id", k.victimMetaId());
+        victim.put("username", k.victimName());
+        var data = new LinkedHashMap<String, Object>();
+        data.put("killer", killer);
+        data.put("victim", victim);
+        data.put("cause", k.cause());
+        return data;
     }
 
     private static Map<String, Object> event(String type, float clock, Map<String, Object> data) {
