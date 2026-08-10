@@ -3,6 +3,8 @@ package com.shinoaki.wowsreplay.dumper;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.ReplayVersionMismatchException;
+import com.shinoaki.wowsreplay.core.data.CommanderSkills;
+import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
 import com.shinoaki.wowsreplay.core.packet.Packet;
@@ -105,7 +107,7 @@ public final class ReplayDumper {
         return JsonMapper.toJson(dump());
     }
 
-    public Map<String,Object> dump() throws ReplayVersionMismatchException {
+    public Map<String, Object> dump() throws ReplayVersionMismatchException {
         verifyVersion(primary);
         var world = parseWorld(primary);
         var report = new BattleReportBuilder(world, primary.meta()).build();
@@ -174,7 +176,7 @@ public final class ReplayDumper {
         long replayBuild = parts.length >= 4 ? parseBuildNumber(parts[3]) : 0;
         if (replayBuild > 0 && dataBuild != replayBuild) {
             throw new ReplayVersionMismatchException(
-                "回放 build 与游戏数据不匹配：回放 " + replay.version() + "，数据目录 " + dataName
+                    "回放 build 与游戏数据不匹配：回放 " + replay.version() + "，数据目录 " + dataName
                     + "（拒绝解析，防止 schema 错配）");
         }
     }
@@ -217,8 +219,8 @@ public final class ReplayDumper {
         JsonNode battleResults = report.battleResults();
         NormalizedReplay normalized = ReplayMapper.map(world, report);
         MinimapOutput mm = options.minimap()
-            ? new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract()
-            : null;
+                ? new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract()
+                : null;
         return assembleFinal(replay, report, normalized, mm, battleResults);
     }
 
@@ -242,7 +244,7 @@ public final class ReplayDumper {
         out.put("match_result", report.matchResult());
         out.put("finish_type", report.finishType());
         // 映射层：实体 id → 全局一致 metaId，事件流输出只带 metaId
-        List<Map<String, Object>> players = buildPlayers(report);
+        List<Map<String, Object>> players = buildPlayers(report, cache.wowsInfo(primary));
         JsonNode playersNode = JsonMapper.toTree(players);
         out.put("players", playersNode);
         // 最终输出阶段：webFunction 对象收纳从 WebFunction 迁移来的计算数据
@@ -307,14 +309,14 @@ public final class ReplayDumper {
 
     /**
      * players 装配（对标 Rust pipeline.rs player_json）：玩家字段（metaId + accountId，去掉
-     * 视角相关 entity_id）+ vehicle{ship_id/modernizations/consumables/exteriors} +
-     * commander_skills/commander_skills_id（舰长原始 id，不做名称解析）。
+     * 视角相关 entity_id）+ vehicle{ship_id + modernizations/consumables/exteriors 名称 +
+     * commander_skills 技能名 + commander_skills_id 舰长原始 id}。名称来自 wowsinfo.json
+     * 映射（未知 id → null）；无 wowsinfo.json 时名称为 null。
      */
-    static List<Map<String, Object>> buildPlayers(BattleReport report) {
+    static List<Map<String, Object>> buildPlayers(BattleReport report, WowsInfo wowsInfo) {
         var players = new ArrayList<Map<String, Object>>();
         for (var p : report.players()) {
             var pm = new LinkedHashMap<String, Object>();
-
             pm.put("meta_id", p.metaId());
             pm.put("account_id", p.dbId());
             pm.put("username", p.username());
@@ -330,11 +332,14 @@ public final class ReplayDumper {
                 if (veh.shipConfig() != null) {
                     var sc = veh.shipConfig();
                     v.put("ship_id", sc.shipParamsId());
-                    v.put("modernizations", sc.modernization());
-                    v.put("consumables", sc.consumables());
-                    v.put("exteriors", sc.exteriors());
-                    // 舰长信息（原始 id，不做名称/传奇舰长解析）：learnedSkills 6 舰种数组 + paramsId
-                    if (sc.commanderSkills() != null) v.put("commander_skills", sc.commanderSkills());
+                    // wowsinfo.json 名称映射（ship_id/commander_skills_id 保留原始 id，名称未知 → null）
+                    v.put("modernizations", mapNames(sc.modernization(), wowsInfo::modernization));
+                    v.put("consumables", mapNames(sc.consumables(), wowsInfo::consumable));
+                    v.put("exteriors", mapNames(sc.exteriors(), wowsInfo::exterior));
+                    // 舰长信息（原始 id，不做名称/传奇舰长解析）：learnedSkills 6 舰种技能名 + paramsId
+                    if (sc.commanderSkills() != null) {
+                        v.put("commander_skills", mapSkillNames(sc.commanderSkills(), wowsInfo));
+                    }
                     if (sc.commanderSkillsId() != null) v.put("commander_skills_id", sc.commanderSkillsId());
                 }
                 if (!v.isEmpty()) pm.put("vehicle", v);
@@ -342,6 +347,31 @@ public final class ReplayDumper {
             players.add(pm);
         }
         return players;
+    }
+
+    /** id 数组 → 名称数组（未知 id → null，保持与原始数组同序）。 */
+    private static List<String> mapNames(List<Long> ids, java.util.function.LongFunction<String> nameOf) {
+        var out = new ArrayList<String>(ids.size());
+        for (var id : ids) out.add(nameOf.apply(id));
+        return out;
+    }
+
+    /** 6 舰种技能 id 数组 → 名称数组（同序，未知 → null）。 */
+    private static Map<String, List<String>> mapSkillNames(CommanderSkills skills, WowsInfo wowsInfo) {
+        var out = new LinkedHashMap<String, List<String>>();
+        out.put("aircraft_carrier", skillNames(skills.aircraftCarrier(), wowsInfo));
+        out.put("battleship", skillNames(skills.battleship(), wowsInfo));
+        out.put("cruiser", skillNames(skills.cruiser(), wowsInfo));
+        out.put("destroyer", skillNames(skills.destroyer(), wowsInfo));
+        out.put("auxiliary", skillNames(skills.auxiliary(), wowsInfo));
+        out.put("submarine", skillNames(skills.submarine(), wowsInfo));
+        return out;
+    }
+
+    private static List<String> skillNames(List<Integer> ids, WowsInfo wowsInfo) {
+        var out = new ArrayList<String>(ids.size());
+        for (var id : ids) out.add(wowsInfo.skill(id));
+        return out;
     }
 
     /**

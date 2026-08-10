@@ -2,6 +2,7 @@ package com.shinoaki.wowsreplay.core.spec;
 
 import com.shinoaki.wowsreplay.core.JsonConstantsProvider;
 import com.shinoaki.wowsreplay.core.ReplayFile;
+import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,6 +58,21 @@ public final class GameDataCache {
         }
         var key = gd.version.subKey("entitySpecs");
         return (EntitySpecProvider) store.computeIfAbsent(key, _ -> loadEntitySpecs(gd.dir));
+    }
+
+    /**
+     * 获取（或加载并缓存）replay 对应版本的 wowsinfo.json（{@code <live>/app/data/wowsinfo.json}），
+     * 提供 vehicle 节点数组（ship/modernizations/consumables/exteriors/commander_skills）的 id → 名称映射。
+     * 文件缺失或解析失败返回 {@link WowsInfo#EMPTY}。
+     */
+    public WowsInfo wowsInfo(ReplayFile replay) {
+        var gd = resolve(replay);
+        if (gd == null) {
+            log.warn("未找到匹配版本的游戏数据（base={}），返回空 wowsinfo", replay.gameDataBase());
+            return WowsInfo.EMPTY;
+        }
+        var key = gd.version.subKey("wowsInfo");
+        return (WowsInfo) store.computeIfAbsent(key, _ -> loadWowsInfo(gd.dir));
     }
 
     /** 获取（或加载并缓存）指定版本的 constants.json。 */
@@ -131,6 +147,20 @@ public final class GameDataCache {
             if (!Files.exists(file)) throw new IOException("def file not found: " + path);
             return Files.readAllBytes(file);
         });
+    }
+
+    private WowsInfo loadWowsInfo(Path liveDir) {
+        var path = liveDir.resolve("app/data/wowsinfo.json");
+        if (!Files.exists(path)) {
+            log.warn("{} 缺少 wowsinfo.json，返回空映射", path);
+            return WowsInfo.EMPTY;
+        }
+        try {
+            return WowsInfo.fromJson(Files.readString(path));
+        } catch (Exception e) {
+            log.warn("解析 wowsinfo.json 失败 {}: {}", path, e.toString());
+            return WowsInfo.EMPTY;
+        }
     }
 
     /** 解析 replay → (版本键, live 目录)；未匹配或 IO 异常返回 null。 */
