@@ -11,6 +11,9 @@ class WowsInfoTest {
 
     private static final String SAMPLE = """
         {
+          "ships": {
+            "4292851696": { "type": "AirCarrier" }
+          },
           "modernizations": {
             "PCM003_Airplanes_Mod_I": { "icon": "PCM003_Airplanes_Mod_I", "id": 4290957232 },
             "noId": { "icon": "IDS_N", "id": 0 }
@@ -39,6 +42,13 @@ class WowsInfoTest {
         assertEquals("PAEM001_BlackFriday_Sims", w.exterior(4293521392L));
         assertNull(w.modernization(1L), "未知 id 返回 null");
         assertNull(w.modernization(0L), "id=0 条目跳过");
+    }
+
+    @Test
+    void shipTypeParsedByShipId() {
+        var w = WowsInfo.fromJson(SAMPLE);
+        assertEquals("AirCarrier", w.shipType(4292851696L));
+        assertNull(w.shipType(9999999999L), "未知船返回 null");
     }
 
     @Test

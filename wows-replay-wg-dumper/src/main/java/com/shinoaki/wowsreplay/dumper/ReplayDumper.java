@@ -3,7 +3,7 @@ package com.shinoaki.wowsreplay.dumper;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.ReplayVersionMismatchException;
-import com.shinoaki.wowsreplay.core.data.CommanderSkills;
+import com.shinoaki.wowsreplay.core.data.ShipConfig;
 import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
@@ -336,9 +336,9 @@ public final class ReplayDumper {
                     v.put("modernizations", mapNames(sc.modernization(), wowsInfo::modernization));
                     v.put("consumables", mapNames(sc.consumables(), wowsInfo::consumable));
                     v.put("exteriors", mapNames(sc.exteriors(), wowsInfo::exterior));
-                    // 舰长信息（原始 id，不做名称/传奇舰长解析）：learnedSkills 6 舰种技能名 + paramsId
+                    // 舰长信息（原始 id，不做名称/传奇舰长解析）：按战舰类型取对应舰种技能名数组
                     if (sc.commanderSkills() != null) {
-                        v.put("commander_skills", mapSkillNames(sc.commanderSkills(), wowsInfo));
+                        v.put("commander_skills", mapShipTypeSkills(sc, wowsInfo));
                     }
                     if (sc.commanderSkillsId() != null) v.put("commander_skills_id", sc.commanderSkillsId());
                 }
@@ -357,21 +357,30 @@ public final class ReplayDumper {
     }
 
     /** 6 舰种技能 id 数组 → 名称数组（同序，未知 → null）。 */
-    private static Map<String, List<String>> mapSkillNames(CommanderSkills skills, WowsInfo wowsInfo) {
-        var out = new LinkedHashMap<String, List<String>>();
-        out.put("aircraft_carrier", skillNames(skills.aircraftCarrier(), wowsInfo));
-        out.put("battleship", skillNames(skills.battleship(), wowsInfo));
-        out.put("cruiser", skillNames(skills.cruiser(), wowsInfo));
-        out.put("destroyer", skillNames(skills.destroyer(), wowsInfo));
-        out.put("auxiliary", skillNames(skills.auxiliary(), wowsInfo));
-        out.put("submarine", skillNames(skills.submarine(), wowsInfo));
-        return out;
-    }
-
     private static List<String> skillNames(List<Integer> ids, WowsInfo wowsInfo) {
         var out = new ArrayList<String>(ids.size());
         for (var id : ids) out.add(wowsInfo.skill(id));
         return out;
+    }
+
+    /**
+     * 按战舰类型（wowsinfo shipType）只取对应舰种的技能名数组，结构同 consumables（扁平 string 数组）。
+     * 未知舰种返回空数组。
+     */
+    private static List<String> mapShipTypeSkills(ShipConfig sc, WowsInfo wowsInfo) {
+        var skills = sc.commanderSkills();
+        if (skills == null) return List.of();
+        String type = wowsInfo.shipType(sc.shipParamsId());
+        List<Integer> ids = switch (type == null ? "" : type) {
+            case "AirCarrier" -> skills.aircraftCarrier();
+            case "Battleship" -> skills.battleship();
+            case "Cruiser" -> skills.cruiser();
+            case "Destroyer" -> skills.destroyer();
+            case "Auxiliary" -> skills.auxiliary();
+            case "Submarine" -> skills.submarine();
+            default -> List.of();
+        };
+        return skillNames(ids, wowsInfo);
     }
 
     /**

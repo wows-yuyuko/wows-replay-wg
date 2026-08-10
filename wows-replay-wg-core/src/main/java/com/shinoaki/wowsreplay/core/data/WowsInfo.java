@@ -11,17 +11,9 @@ import java.util.Map;
  *
  * <p>wowsinfo.json 由外部工具生成，位于 {@code <live>/app/data/wowsinfo.json}，结构如下
  * （各条目以内部名作键，值里带 {@code id}（GameParam id）与 {@code icon}；本类反转为 id → 名称）：</p>
- * <pre>
- * {
- *   "modernizations": { "PCM003_...":   { "icon": "PCM003_...", "id": 4290957232, ... } },
- *   "abilities":      { "PCY001_...":   { "icon": "PCY001_...", "id": 4293042096, ... } },
- *   "exteriors":      { "PAEM001_...":  { "icon": "PAEM001_...", "id": 4293521392, ... } },
- *   "skills":         { "AaDamage...":  { "skillType": 1, ... } },
- *   "version": "..."
- * }
- * </pre>
  */
 public record WowsInfo(
+        Map<Long, String> shipType,
         Map<Long, String> modernizations,
         Map<Long, String> consumables,
         Map<Long, String> exteriors,
@@ -29,7 +21,7 @@ public record WowsInfo(
         Map<Integer, String> skills
 ) {
 
-    public static final WowsInfo EMPTY = new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of());
+    public static final WowsInfo EMPTY = new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
     public String modernization(long id) {
         return modernizations.get(id);
@@ -43,6 +35,11 @@ public record WowsInfo(
         return exteriors.get(id);
     }
 
+    /** 战舰类型（"AirCarrier"/"Battleship"/"Destroyer"/"Cruiser"/"Submarine"/"Auxiliary"），未知返回 null。 */
+    public String shipType(long shipId) {
+        return shipType.get(shipId);
+    }
+
     public String skill(int skillType) {
         return skills.get(skillType);
     }
@@ -52,6 +49,7 @@ public record WowsInfo(
         var root = JsonMapper.readTree(json);
 
         return new WowsInfo(
+                shipsTypeMap(root),
                 idNameMap(root, "modernizations"),
                 idNameMap(root, "abilities"),
                 idNameMap(root, "exteriors"),
@@ -76,6 +74,17 @@ public record WowsInfo(
             int type = e.getValue().path("skillType").asInt();
             String name = e.getKey();
             if (type > 0 && !name.isBlank()) out.putIfAbsent(type, name);
+        }
+        return out;
+    }
+
+    private static Map<Long, String> shipsTypeMap(JsonNode root) {
+        var out = new HashMap<Long, String>();
+        for (var e : root.path("ships").properties()) {
+
+            long shipId = Long.parseLong(e.getKey());
+            var type = e.getValue().path("type").asString();
+            out.putIfAbsent(shipId, type);
         }
         return out;
     }
