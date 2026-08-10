@@ -159,7 +159,7 @@ public class BattleWorld {
                 players.put(metaId, new PlayerInfo(name, 0, v.relation()));
             }
         }
-        log.info("BattleWorld: {} meta players, version={}", metaPlayers.size(), version);
+        log.debug("BattleWorld: {} meta players, version={}", metaPlayers.size(), version);
     }
 
     // ── Process ────────────────────────────────────────────────────────
@@ -511,7 +511,7 @@ public class BattleWorld {
         for (var psd : botStates) {
             ingestOneArenaPlayer(psd, true);
         }
-        log.info("ArenaState: {} players + {} bots → {} entity→player mappings, {} players",
+        log.debug("ArenaState: {} players + {} bots → {} entity→player mappings, {} players",
                 playerStates.size(), botStates.size(), entityToPlayer.size(), players.size());
     }
 
@@ -758,7 +758,7 @@ public class BattleWorld {
         if (props != null) {
             // Log first BasePlayerCreate to see actual prop names and componentData
             if (bpCount++ == 0) {
-                log.info("First BasePlayerCreate eid={} type={} props={} componentData={}bytes",
+                log.debug("First BasePlayerCreate eid={} type={} props={} componentData={}bytes",
                         eid, bp.entityType(),
                         props.keySet(),
                         bp.componentData() != null ? bp.componentData().length : 0);
@@ -1231,16 +1231,14 @@ public class BattleWorld {
             }
         }
 
-        var entityTypeCounts = new LinkedHashMap<String, Integer>();
-        for (var es : entities.values()) entityTypeCounts.merge(es.type, 1, Integer::sum);
-        log.info("BattleWorld finish: {} entities (by type: {}, kinds={}), {} players, {} kills, {} damage, {} chat, {} consumables",
-                entities.size(), entityTypeCounts, entityKinds(), players.size(), killLog.size(),
+        log.info("BattleWorld finish: {} entities, {} players, {} kills, {} damage, {} chat, {} consumables",
+                entities.size(), players.size(), killLog.size(),
                 damageEvents.size(), chatLog.size(), consumableLog.size());
-        log.info("  Vehicle Creates: {}, CellPlayer Creates: {}", vehicleCreateCount, cellPlayerCreateCount);
-        log.info("  Entity types: {}", entityTypes);
-        log.info("  Capture points: {}, Buff zones: {}, Weather zones: {}, Buildings: {}",
+        log.debug("  Vehicle Creates: {}, CellPlayer Creates: {}", vehicleCreateCount, cellPlayerCreateCount);
+        log.debug("  Entity types: {}", entityTypes);
+        log.debug("  Capture points: {}, Buff zones: {}, Weather zones: {}, Buildings: {}",
                 capturePoints.size(), buffZones.size(), weatherZones.size(), buildings.size());
-        log.info("  Salvos: {}, Torpedoes: {}, Shot hits: {}, Planes: {}, Wards: {}, Ribbons: {}, Voice lines: {}",
+        log.debug("  Salvos: {}, Torpedoes: {}, Shot hits: {}, Planes: {}, Wards: {}, Ribbons: {}, Voice lines: {}",
                 firedSalvos.size(), torpedoes.size(), shotHits.size(),
                 planeEvents.size(), activeWards.size(), ribbonLog.size(), voiceLineLog.size());
     }

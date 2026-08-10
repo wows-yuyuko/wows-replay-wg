@@ -63,7 +63,7 @@ public final class SpecLoader {
             throw e;
         }
 
-        log.info("发现 {} 个实体类型，开始加载 .def 文件...", entityNames.size());
+        log.debug("发现 {} 个实体类型，开始加载 .def 文件...", entityNames.size());
 
         var result = new ArrayList<EntitySpec>(entityNames.size());
         int skipped = 0;

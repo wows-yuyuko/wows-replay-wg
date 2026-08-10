@@ -523,7 +523,7 @@ public final class ReplayDumper {
         int spaceH = (int) Math.round((chunksY - 4.0) * chunkSize);
         int spaceSize = Math.max(spaceW, spaceH);
 
-        log.info("Map {}: bounds=({},{})..({},{}) chunk_size={} space_size={}",
+        log.debug("Map {}: bounds=({},{})..({},{}) chunk_size={} space_size={}",
                 file.getParent() != null ? file.getParent().getFileName() : "", minX, minY, maxX, maxY, chunkSize, spaceSize);
         return spaceSize;
     }
