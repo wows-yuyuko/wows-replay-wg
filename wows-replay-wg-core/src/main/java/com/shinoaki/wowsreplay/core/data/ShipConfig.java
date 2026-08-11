@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.shinoaki.wowsreplay.core.model.Version;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -33,6 +34,7 @@ import java.util.List;
  *   is_owned(u32) last_boarded_crew(u32)
  * </pre>
  */
+@Slf4j
 public record ShipConfig(
     @JsonProperty("ship_params_id") long shipParamsId,
     @JsonProperty("modernization") List<Long> modernization,
@@ -106,6 +108,12 @@ public record ShipConfig(
         Long isOwned = readU32Opt(buf);
         Long lastBoardedCrew = readU32Opt(buf);
         if (isOwned == null) lastBoardedCrew = null; // 全格式尾缺失
+
+        // 末尾检测：解析完仍有剩余字节 → 疑似 WG 新增未识别字段/布局变化，打 WARN 提示核对。
+        if (buf.remaining() > 0) {
+            log.warn("shipConfig blob 解析后仍有 {} 字节未识别（疑似新增字段或布局变化，ship_params_id={}, blob={}B）",
+                buf.remaining(), shipParamsId, blob.length);
+        }
 
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
             ensigns, ecoboosts, navalFlag, lastBoardedCrew, null, null,
