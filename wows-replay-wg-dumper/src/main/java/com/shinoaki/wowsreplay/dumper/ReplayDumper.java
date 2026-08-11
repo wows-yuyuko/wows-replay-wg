@@ -336,7 +336,7 @@ public final class ReplayDumper {
                     // wowsinfo.json 名称映射（ship_id/commander_skills_id 保留原始 id，名称未知 → null）
                     v.put("modernizations", mapNames(sc.modernization(), wowsInfo::modernization));
                     v.put("consumables", mapNames(sc.consumables(), wowsInfo::consumable));
-                    v.put("exteriors", mapNames(sc.exteriors(), wowsInfo::exterior));
+                    v.put("exteriors", mapExteriors(sc.exteriors(), wowsInfo));
                     // 舰长信息（原始 id，不做名称/传奇舰长解析）：按战舰类型取对应舰种技能名数组
                     if (sc.commanderSkills() != null) {
                         v.put("commander_skills", mapShipTypeSkills(sc, wowsInfo));
@@ -354,6 +354,19 @@ public final class ReplayDumper {
     private static List<String> mapNames(List<Long> ids, java.util.function.LongFunction<String> nameOf) {
         var out = new ArrayList<String>(ids.size());
         for (var id : ids) out.add(nameOf.apply(id));
+        return out;
+    }
+
+    /** exteriors：id 数组 → {type, icon} 对象数组（未知 id → 字段为 null，保持与原始数组同序）。 */
+    private static List<Map<String, String>> mapExteriors(List<Long> ids, WowsInfo wowsInfo) {
+        var out = new ArrayList<Map<String, String>>(ids.size());
+        for (var id : ids) {
+            var info = wowsInfo.exterior(id);
+            var m = new LinkedHashMap<String, String>();
+            m.put("type", info != null ? info.type() : null);
+            m.put("icon", info != null ? info.icon() : null);
+            out.add(m);
+        }
         return out;
     }
 

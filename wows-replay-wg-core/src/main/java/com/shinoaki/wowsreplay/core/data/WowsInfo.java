@@ -16,12 +16,16 @@ public record WowsInfo(
         Map<Long, String> shipType,
         Map<Long, String> modernizations,
         Map<Long, String> consumables,
-        Map<Long, String> exteriors,
+        /** 外观：id → {icon, type}（type 如 "MSkin" 等）。 */
+        Map<Long, ExteriorInfo> exteriors,
         /** skillType id → 技能名（commander_skills 的 skill-type id 用，取条目内部名）。 */
         Map<Integer, String> skills
 ) {
 
     public static final WowsInfo EMPTY = new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+
+    /** 外观条目：icon + type（wowsinfo exteriors 段）。 */
+    public record ExteriorInfo(String icon, String type) {}
 
     public String modernization(long id) {
         return modernizations.get(id);
@@ -31,7 +35,7 @@ public record WowsInfo(
         return consumables.get(id);
     }
 
-    public String exterior(long id) {
+    public ExteriorInfo exterior(long id) {
         return exteriors.get(id);
     }
 
@@ -52,7 +56,7 @@ public record WowsInfo(
                 shipsTypeMap(root),
                 idNameMap(root, "modernizations"),
                 idNameMap(root, "abilities"),
-                idNameMap(root, "exteriors"),
+                exteriorMap(root),
                 skillTypeMap(root));
     }
 
@@ -74,6 +78,18 @@ public record WowsInfo(
             int type = e.getValue().path("skillType").asInt();
             String name = e.getKey();
             if (type > 0 && !name.isBlank()) out.putIfAbsent(type, name);
+        }
+        return out;
+    }
+
+    /** exteriors 段：id → {icon, type}（未知 id / 空 icon 跳过）。 */
+    private static Map<Long, ExteriorInfo> exteriorMap(JsonNode root) {
+        var out = new HashMap<Long, ExteriorInfo>();
+        for (var e : root.path("exteriors").properties()) {
+            long id = e.getValue().path("id").asLong();
+            String icon = e.getValue().path("icon").asString();
+            String type = e.getValue().path("type").asString();
+            if (id != 0 && !icon.isBlank()) out.put(id, new ExteriorInfo(icon, type));
         }
         return out;
     }

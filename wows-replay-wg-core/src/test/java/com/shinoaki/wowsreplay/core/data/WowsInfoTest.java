@@ -22,7 +22,8 @@ class WowsInfoTest {
             "PCY001_CrashCrew": { "icon": "PCY001_CrashCrew", "id": 4293042096 }
           },
           "exteriors": {
-            "PAEM001_BlackFriday_Sims": { "icon": "PAEM001_BlackFriday_Sims", "id": 4293521392 }
+            "PAEM001_BlackFriday_Sims": { "type": "MSkin", "icon": "PAEM001_BlackFriday_Sims", "id": 4293521392 },
+            "noIcon": { "type": "MSkin", "icon": "", "id": 4293521393 }
           },
           "skills": {
             "TorpedoReload": { "skillType": 4 },
@@ -39,9 +40,13 @@ class WowsInfoTest {
 
         assertEquals("PCM003_Airplanes_Mod_I", w.modernization(4290957232L));
         assertEquals("PCY001_CrashCrew", w.consumable(4293042096L));
-        assertEquals("PAEM001_BlackFriday_Sims", w.exterior(4293521392L));
+        var ext = w.exterior(4293521392L);
+        assertNotNull(ext);
+        assertEquals("MSkin", ext.type());
+        assertEquals("PAEM001_BlackFriday_Sims", ext.icon());
         assertNull(w.modernization(1L), "未知 id 返回 null");
         assertNull(w.modernization(0L), "id=0 条目跳过");
+        assertNull(w.exterior(4293521393L), "空 icon 条目跳过");
     }
 
     @Test
