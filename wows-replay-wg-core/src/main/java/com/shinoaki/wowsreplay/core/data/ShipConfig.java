@@ -22,7 +22,7 @@ import java.util.List;
  * <pre>
  *   version(u32) ship_params_id(u32) element_count(u32)
  *   unit_count(u32) units[unit_count]
- *   [v13.2+ 额外 u32（疑似贴花相关；实测均为 0）]
+ *   [v13.2+ 额外 u32（源码注释 _unk；实测均为 0，非贴花）]
  *   modernization: count + ids
  *   exteriors: count + ids
  *   supply_state(u32)（实测 0/2）
@@ -51,7 +51,7 @@ public record ShipConfig(
     /** 舰长 id（crewModifiersCompactParams.paramsId 原值），非 shipConfig blob 字段，由装配层附加。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonProperty("commander_skills_id") Long commanderSkillsId,
-    /** v13.2+ 额外 u32（units 槽之后；疑似贴花相关，待确认）。仅供解析，不输出。 */
+    /** v13.2+ 额外 u32（units 槽之后；源码注释 _unk，非贴花——贴花在 exteriors 段编码）。仅供解析，不输出。 */
     @JsonIgnore Long extraV132,
     /** 补给状态（用途未知，通常 0）。仅供解析，不输出。 */
     @JsonIgnore Long supplyState,
@@ -89,7 +89,7 @@ public record ShipConfig(
 
         Long extraV132 = null;
         if (version != null && version.isAtLeast(new Version(13, 2, 0, 0))) {
-            extraV132 = readU32Opt(buf); // v13.2+ 额外字段（疑似贴花相关，待确认）
+            extraV132 = readU32Opt(buf); // v13.2+ 额外字段（源码注释 _unk，非贴花）
         }
 
         var modernization = readSection(buf);
