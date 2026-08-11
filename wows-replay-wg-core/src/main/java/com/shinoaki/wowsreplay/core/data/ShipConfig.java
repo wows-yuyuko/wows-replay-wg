@@ -26,7 +26,7 @@ import java.util.List;
  *   modernization: count + ids
  *   exteriors: count + ids
  *   supply_state(u32)（实测 0/2）
- *   color_schemes: count + (slot, scheme) 对（实测第一值疑似外观 id 而非槽位序号）
+ *   color_schemes: count + (外观物品 id, 配色方案 id) 对
  *   abilities: count + ids
  *   ensigns: count + ids
  *   ecoboosts: count + ids
@@ -55,13 +55,13 @@ public record ShipConfig(
     @JsonIgnore Long extraV132,
     /** 补给状态（用途未知，通常 0）。仅供解析，不输出。 */
     @JsonIgnore Long supplyState,
-    /** 外观槽位配色方案：(slot, scheme) 对列表。仅供解析，不输出。 */
+    /** 外观槽位配色方案：(外观/涂装物品 GameParams id, 配色方案 id) 映射表。仅供解析，不输出。 */
     @JsonIgnore List<ColorScheme> colorSchemes,
     /** 精英经验/舰船经验值（isOwned 与 last_boarded_crew 之间；Rust 参考实现漏读此字段）。仅供解析，不输出。 */
     @JsonIgnore Long exp
 ) {
-    /** 单个外观槽位配色：(槽位序号, 配色/皮肤 id)。 */
-    public record ColorScheme(long slot, long scheme) {}
+    /** 外观→配色映射：记录「哪个外观/涂装物品用了哪个配色方案」（第一值为物品 GameParams id，非槽位序号）。 */
+    public record ColorScheme(long itemId, long scheme) {}
 
     /** 消耗品（对标 Rust {@code ShipConfig::abilities}）。 */
     public List<Long> consumables() { return abilities; }
