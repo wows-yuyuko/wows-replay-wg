@@ -20,8 +20,9 @@ public record WowsInfo(
         Map<Long, ExteriorInfo> exteriors,
         /** skillType id → 技能名（commander_skills 的 skill-type id 用，取条目内部名）。 */
         Map<Integer, String> skills,
-        /** 消耗品 GameParams id → consumableType（onConsumableUsed 的 b[1] 用它解析；wowsinfo 缺该字段时为空）。 */
-        Map<Long, Integer> abilityConsumableType
+        /** 消耗品 GameParams id → consumableType 名称字符串（onConsumableUsed b[1] 经 constants.json
+         *  CONSUMABLE_IDS 翻译成名字后匹配；wowsinfo 缺该字段时为空）。 */
+        Map<Long, String> abilityConsumableType
 ) {
 
     public static final WowsInfo EMPTY =
@@ -51,8 +52,8 @@ public record WowsInfo(
         return skills.get(skillType);
     }
 
-    /** 消耗品 consumableType（onConsumableUsed b[1]）；未知返回 null。 */
-    public Integer consumableTypeOf(long abilityId) {
+    /** 消耗品 consumableType 名称（abilities.consumableType 字符串）；未知返回 null。 */
+    public String consumableTypeNameOf(long abilityId) {
         return abilityConsumableType.get(abilityId);
     }
 
@@ -103,13 +104,13 @@ public record WowsInfo(
         return out;
     }
 
-    /** abilities 段：消耗品 id → consumableType（wowsinfo 未提供该字段时返回空表）。 */
-    private static Map<Long, Integer> consumableTypeMap(JsonNode root) {
-        var out = new HashMap<Long, Integer>();
+    /** abilities 段：消耗品 id → consumableType 名称字符串（wowsinfo 未提供该字段时返回空表）。 */
+    private static Map<Long, String> consumableTypeMap(JsonNode root) {
+        var out = new HashMap<Long, String>();
         for (var e : root.path("abilities").properties()) {
             long id = e.getValue().path("id").asLong();
-            var ct = e.getValue().path("consumableType");
-            if (id != 0 && ct.isIntegralNumber()) out.put(id, ct.asInt());
+            String name = e.getValue().path("consumableType").asString();
+            if (id != 0 && !name.isBlank()) out.put(id, name);
         }
         return out;
     }
