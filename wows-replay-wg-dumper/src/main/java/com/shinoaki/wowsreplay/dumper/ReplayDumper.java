@@ -337,6 +337,8 @@ public final class ReplayDumper {
                     v.put("modernizations", mapNames(sc.modernization(), wowsInfo::modernization));
                     v.put("consumables", mapNames(sc.consumables(), wowsInfo::consumable));
                     v.put("exteriors", mapExteriors(sc.exteriors(), wowsInfo));
+                    v.put("ensigns", mapExteriors(sc.ensigns(), wowsInfo));
+                    v.put("ecoboosts", mapExteriors(sc.ecoboosts(), wowsInfo));
                     // 舰长信息（原始 id，不做名称/传奇舰长解析）：按战舰类型取对应舰种技能名数组
                     if (sc.commanderSkills() != null) {
                         v.put("commander_skills", mapShipTypeSkills(sc, wowsInfo));
