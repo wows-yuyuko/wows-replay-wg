@@ -41,14 +41,23 @@ import java.util.List;
  */
 @Slf4j
 public record ShipConfig(
+    /** GameParams 舰船模板 ID（wowsinfo.ships 索引；同型号船共享，非战斗内 meta id）。 */
     @JsonProperty("ship_params_id") long shipParamsId,
+    /** 升级品槽（ModernizationSlots）物品 GameParams id。 */
     @JsonProperty("modernization") List<Long> modernization,
+    /** 消耗品槽（AbilitySlots）物品 GameParams id（= vehicle.consumables）。 */
     @JsonProperty("abilities") List<Long> abilities,
+    /** 单位/模块槽（UNIT_TYPE_NAMES，固定 14：船体/引擎/火控/武器/飞机等）GameParams id。 */
     @JsonProperty("units") List<Long> units,
+    /** 外观槽（ExteriorSlots：信号旗/涂装/皮肤/旗帜等）物品 GameParams id。 */
     @JsonProperty("exteriors") List<Long> exteriors,
+    /** 舰旗槽（EnsignSlots）物品 GameParams id。 */
     @JsonProperty("ensigns") List<Long> ensigns,
+    /** 经济加成槽（EcoboostSlots）物品 GameParams id。 */
     @JsonProperty("ecoboosts") List<Long> ecoboosts,
+    /** 海军旗（NationFlags 索引）。 */
     @JsonProperty("naval_flag") Long navalFlag,
+    /** 上次上船的舰长/船员 GameParams id（Commander 参数模板 ID）。 */
     @JsonProperty("last_boarded_crew") Long lastBoardedCrew,
     /** 舰长已学技能（crewModifiersCompactParams.learnedSkills 的 6 舰种 skill-type id 数组，原始值）。
      *  非 shipConfig blob 字段——由装配层在 parse 后经 {@link #withCommander} 附加（同一 EntityCreate）。 */
