@@ -32,7 +32,7 @@ public record WowsInfo(
     public record ExteriorInfo(String icon, String type) {
     }
 
-    public record Abilities(String nation, long id, String icon, String filter, String type) {
+    public record Abilities(String nation,String name, long id, String icon, String filter, String type) {
     }
 
     public String modernization(long id) {
@@ -99,6 +99,7 @@ public record WowsInfo(
             long id = e.getValue().path("id").asLong(0L);
             out.put(id, new Abilities(
                     e.getValue().path("nation").asString(),
+                    e.getValue().path("name").asString(),
                     id,
                     e.getValue().path("icon").asString(),
                     e.getValue().path("filter").asString(),

@@ -452,8 +452,17 @@ public final class ReplayDumper {
     static List<Map<String, Object>> buildGameEvents(BattleReport report, NormalizedReplay replay,
                                                      WowsInfo wowsInfo, GameConstantsProvider constants) {
         var events = new ArrayList<Map<String, Object>>();
-
-
+        // 飞机的消耗品事件在 minimap 里；先在本体消耗品里按 filter 匹配（优先用玩家自己的），
+        // 匹配不到再退回全局 consumableFindFilter。空槽(id=0)/无 vehicle 的玩家跳过。
+        Map<Long, List<WowsInfo.Abilities>> metaMap = new HashMap<>();
+        for (var r : report.players()) {
+            if (r.vehicleEntity() == null || r.vehicleEntity().shipConfig() == null) continue;
+            List<WowsInfo.Abilities> list = new ArrayList<>();
+            for (var consumableId : r.vehicleEntity().shipConfig().consumables()) {
+                list.add(wowsInfo.consumable(consumableId));
+            }
+            metaMap.put(r.metaId(), list);
+        }
         for (var e : replay.consumableLog()) {
             var data = new LinkedHashMap<String, Object>();
             data.put("meta_id", e.metaId());
@@ -461,10 +470,15 @@ public final class ReplayDumper {
             data.put("entity_id", e.entityId());
             data.put("type", e.type());
             data.put("consumable", e.consumableId());
-
             var ctName = constants.consumableName((int) e.consumableId()).orElse(null);
-            var ab = wowsInfo.consumableFindFilter(ctName);
-            data.put("consumable_icon", ab != null ? ab.icon() : null);
+            var abilities = metaMap.getOrDefault(e.metaId(), java.util.List.of());
+            WowsInfo.Abilities optional = abilities.stream()
+                    .filter(Objects::nonNull) // 空槽(id=0)映射为 null，跳过
+                    .filter(f -> ctName != null && f.filter() != null && ctName.equalsIgnoreCase(f.filter()))
+                    .findFirst()
+                    .orElseGet(() -> wowsInfo.consumableFindFilter(ctName));
+            data.put("consumable_icon", optional != null ? optional.icon() : null);
+            data.put("consumable_name", optional != null ? optional.name() : null);
             data.put("activated_at", e.clock());
             data.put("duration", e.duration());
             events.add(event("consumable", e.clock(), data));
