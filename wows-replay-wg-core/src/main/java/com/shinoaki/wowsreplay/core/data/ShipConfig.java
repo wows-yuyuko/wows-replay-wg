@@ -9,7 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 玩家船只装载配置解析（对标 Rust {@code wowsunpack::data::ship_config::ShipConfig}）。
@@ -138,6 +141,79 @@ public record ShipConfig(
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
             ensigns, ecoboosts, navalFlag, lastBoardedCrew, null, null,
             extraV132, supplyState, colorSchemes, exp);
+    }
+
+    /**
+     * 逆向诊断用的完整字节级分解（与 {@link #parse} 同一布局逻辑，额外记录每个 u32 的偏移/数值与
+     * 解析剩余字节）。输出给外部逆向项目对照游戏脚本（ship_params_id → XML 配置）还原 blob 结构。
+     *
+     * <p>返回字段：header/各槽段具名值 + {@code consumed_bytes}/{@code unparsed_size}/
+     * {@code unparsed_hex}（当前解析器未识别的尾部字节）+ {@code u32s} 原始 4 字节序列
+     * （{@code off}/{@code hex}/{@code val}，逆推布局用）。</p>
+     */
+    public static Map<String, Object> hexDump(byte[] blob, Version version) {
+        var m = new LinkedHashMap<String, Object>();
+        if (blob == null) {
+            m.put("size", 0);
+            return m;
+        }
+        m.put("size", blob.length);
+        m.put("hex", HexFormat.of().formatHex(blob));
+
+        var buf = ByteBuffer.wrap(blob).order(ByteOrder.LITTLE_ENDIAN);
+
+        m.put("header_version", readU32(buf, 0L));
+        m.put("ship_params_id", readU32(buf, 0L));
+        m.put("element_count", readU32(buf, 0L));
+
+        long unitCount = readU32(buf, 0L);
+        m.put("unit_count", unitCount);
+        m.put("units", readIds(buf, unitCount));
+
+        if (version != null && version.isAtLeast(new Version(13, 2, 0, 0))) {
+            m.put("extra_v132", readU32(buf, 0L));
+        }
+
+        m.put("modernization", readSection(buf));
+        m.put("exteriors", readSection(buf));
+        m.put("supply_state", readU32(buf, 0L));
+
+        long colorSchemeCount = readU32(buf, 0L);
+        m.put("color_scheme_count", colorSchemeCount);
+        var colorSchemes = new ArrayList<List<Long>>();
+        for (long i = 0; i < colorSchemeCount; i++) {
+            colorSchemes.add(List.of(readU32(buf, 0L), readU32(buf, 0L)));
+        }
+        m.put("color_schemes", colorSchemes);
+
+        m.put("abilities", readSection(buf));
+        m.put("ensigns", readSection(buf));
+        m.put("ecoboosts", readSection(buf));
+
+        m.put("naval_flag", readU32(buf, 0L));
+        m.put("is_owned", readU32(buf, 0L));
+        m.put("exp", readU32(buf, 0L));
+        m.put("last_boarded_crew", readU32(buf, 0L));
+
+        int consumed = blob.length - buf.remaining();
+        m.put("consumed_bytes", consumed);
+        m.put("unparsed_size", buf.remaining());
+        m.put("unparsed_hex", buf.remaining() > 0
+            ? HexFormat.of().formatHex(blob, consumed, blob.length) : "");
+
+        var u32s = new ArrayList<Map<String, Object>>();
+        var raw = ByteBuffer.wrap(blob).order(ByteOrder.LITTLE_ENDIAN);
+        while (raw.remaining() >= 4) {
+            int off = raw.position();
+            long v = raw.getInt() & 0xFFFFFFFFL;
+            var e = new LinkedHashMap<String, Object>();
+            e.put("off", off);
+            e.put("hex", String.format("%08x", v));
+            e.put("val", v);
+            u32s.add(e);
+        }
+        m.put("u32s", u32s);
+        return m;
     }
 
     /** 读 count(u32) + count 个 id(u32)；字节不足时返回已读部分。 */

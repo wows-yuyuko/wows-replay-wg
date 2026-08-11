@@ -1,5 +1,6 @@
 package com.shinoaki.wowsreplay.dumper;
 
+import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import java.util.Arrays;
  * java -cp ... com.wows.replay.dumper.DumperMain <REPLAY> -b <game-data-base>
  *   [-o out.json] [--minimap [--minimap-step N]] [--compress N]
  *   [--self-damage-stats] [--vehicle-events] [--battle-results]
+ *   [--ship-config-dump shipconfig.json]   ← 只输出所有玩家 shipConfig 原始 blob（逆向诊断用）
  * }</pre>
  *
  * <p>多 rep 合并（--merge-mode/--alt-replays）暂未实现。</p>
@@ -43,6 +45,7 @@ public final class DumperMain {
         int minimapStep = 7;
         boolean selfDamageStats = false;
         Integer compressLevel = null;
+        Path shipConfigDump = null;
 
         int i = 0;
         while (i < args.length) {
@@ -54,6 +57,7 @@ public final class DumperMain {
                 case "--minimap-step" -> minimapStep = Integer.parseInt(require(args, ++i, a));
                 case "--self-damage-stats" -> selfDamageStats = true;
                 case "--compress" -> compressLevel = Integer.parseInt(require(args, ++i, a));
+                case "--ship-config-dump" -> shipConfigDump = Path.of(require(args, ++i, a));
                 case "--merge-mode", "--alt-replays", "--cache-only", "--constants-file" ->
                     System.err.println("警告: 参数 " + a + " 未实现（多 rep 合并），忽略");
                 default -> {
@@ -78,8 +82,17 @@ public final class DumperMain {
         }
         log.info("使用游戏数据: {}", gameData);
 
-        var options = new ReplayDumper.Options(minimap, minimapStep, selfDamageStats, compressLevel);
-        var json = new ReplayDumper(replay, options).dumpPrettyJson();
+        var replayDumper = new ReplayDumper(replay, new ReplayDumper.Options(minimap, minimapStep, selfDamageStats, compressLevel));
+
+        // 逆向诊断模式：只输出所有玩家 shipConfig 原始 blob（含未识别尾部），不跑主装配
+        if (shipConfigDump != null) {
+            var scJson = JsonMapper.toPrettyJson(replayDumper.dumpShipConfigs());
+            Files.writeString(shipConfigDump, scJson);
+            System.err.println("已写入 shipConfig dump: " + shipConfigDump);
+            return;
+        }
+
+        var json = replayDumper.dumpPrettyJson();
 
         if (outFile != null) {
             Files.writeString(outFile, json);

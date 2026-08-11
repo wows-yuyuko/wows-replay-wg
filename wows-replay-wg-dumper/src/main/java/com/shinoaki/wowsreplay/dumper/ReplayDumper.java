@@ -7,6 +7,7 @@ import com.shinoaki.wowsreplay.core.data.ShipConfig;
 import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
+import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
@@ -18,6 +19,8 @@ import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
 import com.shinoaki.wowsreplay.dumper.web.BattleStatsCalculator;
 import com.shinoaki.wowsreplay.dumper.web.BattleTimelineCalculator;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
+import com.shinoaki.wowsreplay.ingest.EntityState;
+import com.shinoaki.wowsreplay.ingest.PlayerInfo;
 import com.shinoaki.wowsreplay.ingest.mapped.NormalizedKill;
 import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
@@ -148,6 +151,77 @@ public final class ReplayDumper {
      */
     public String dumpMergedJson() throws ReplayVersionMismatchException {
         return JsonMapper.toJson(dumpMerged());
+    }
+
+    /**
+     * 逆向诊断：dump 所有玩家战舰的 shipConfig 原始 blob（hex + 字段级分解 + 未识别尾部）。
+     * 输出给外部逆向项目对照 ship_params_id 对应的游戏脚本 XML 还原 blob 布局。
+     * 返回的 Map 可直接 {@link JsonMapper#toPrettyJson} 写为文件。
+     */
+    public Map<String, Object> dumpShipConfigs() throws ReplayVersionMismatchException {
+        verifyVersion(primary);
+        var world = parseWorld(primary);
+        return buildShipConfigDump(primary, world);
+    }
+
+    /**
+     * 装配所有玩家 shipConfig blob dump。每艘车一条：entity_id/owner_entity_id/meta_id/username/
+     * account_id + {@link ShipConfig#hexDump} 完整字节分解。
+     *
+     * <p>玩家→战舰关联对标 {@code BattleReportBuilder#buildVehicleEntity}（players 表 Avatar 实体 id →
+     * vehicleToOwner 反查；复用 Avatar id 时即自身）。未关联到玩家（无 roster）的 Vehicle 也照常输出，
+     * 身份字段缺省，保证不丢任何 blob。</p>
+     */
+    static Map<String, Object> buildShipConfigDump(ReplayFile replay, BattleWorld world) {
+        var out = new LinkedHashMap<String, Object>();
+        out.put("version", replay.version().toString());
+        out.put("client_version_from_exe", replay.meta().clientVersionFromExe());
+        out.put("date_time", replay.meta().dateTime());
+        out.put("map_name", replay.meta().mapName());
+        out.put("arena_id", world.arenaId());
+
+        Version version = Version.fromClientExe(replay.meta().clientVersionFromExe());
+        var ships = new ArrayList<Map<String, Object>>();
+        Set<Integer> dumped = new HashSet<>();
+
+        // owner 实体 id → 战舰实体 id（对标 resolveVehicleEid 的反向索引）
+        var ownerToVehicle = new HashMap<Integer, Integer>();
+        for (var e : world.vehicleToOwner().entrySet()) ownerToVehicle.put(e.getValue(), e.getKey());
+
+        for (var pe : world.players().entrySet()) {
+            long metaId = pe.getKey();
+            var pi = pe.getValue();
+            int avatarEid = pi.entityId;
+            int vehicleEid = ownerToVehicle.getOrDefault(avatarEid, avatarEid);
+            EntityState es = world.entities().get(vehicleEid);
+            if (es == null || es.shipConfig == null) continue;
+            dumped.add(vehicleEid);
+
+            var sm = new LinkedHashMap<String, Object>();
+            sm.put("meta_id", metaId);
+            sm.put("username", pi.username);
+            sm.put("account_id", world.accountIdOf(metaId));
+            sm.put("entity_id", vehicleEid);
+            sm.put("owner_entity_id", avatarEid);
+            sm.put("blob", ShipConfig.hexDump(es.shipConfig, version));
+            ships.add(sm);
+        }
+
+        // 兜底：有 blob 但未被任何玩家关联的 Vehicle（旧格式无 roster / 关联缺失），身份字段缺省
+        for (var e : world.entities().entrySet()) {
+            EntityState es = e.getValue();
+            if (es.shipConfig == null || dumped.contains(e.getKey())) continue;
+            if (es.kind != null && !"Vehicle".equals(es.kind)) continue;
+            var sm = new LinkedHashMap<String, Object>();
+            sm.put("entity_id", e.getKey());
+            sm.put("owner_entity_id", world.vehicleToOwner().get(e.getKey()));
+            sm.put("blob", ShipConfig.hexDump(es.shipConfig, version));
+            ships.add(sm);
+        }
+
+        out.put("count", ships.size());
+        out.put("ships", ships);
+        return out;
     }
 
     private static Path resolveGameDataDir(ReplayFile replay) {
