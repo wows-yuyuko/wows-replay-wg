@@ -31,7 +31,7 @@ import java.util.List;
  *   ensigns: count + ids
  *   ecoboosts: count + ids
  *   naval_flag(u32)
- *   is_owned(u32) last_boarded_crew(u32)
+ *   is_owned(u32) exp(u32) last_boarded_crew(u32)
  * </pre>
  */
 @Slf4j
@@ -56,7 +56,9 @@ public record ShipConfig(
     /** 补给状态（用途未知，通常 0）。仅供解析，不输出。 */
     @JsonIgnore Long supplyState,
     /** 外观槽位配色方案：(slot, scheme) 对列表。仅供解析，不输出。 */
-    @JsonIgnore List<ColorScheme> colorSchemes
+    @JsonIgnore List<ColorScheme> colorSchemes,
+    /** 精英经验/舰船经验值（isOwned 与 last_boarded_crew 之间；Rust 参考实现漏读此字段）。仅供解析，不输出。 */
+    @JsonIgnore Long exp
 ) {
     /** 单个外观槽位配色：(槽位序号, 配色/皮肤 id)。 */
     public record ColorScheme(long slot, long scheme) {}
@@ -68,7 +70,7 @@ public record ShipConfig(
     public ShipConfig withCommander(CommanderSkills commanderSkills, Long commanderSkillsId) {
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
             ensigns, ecoboosts, navalFlag, lastBoardedCrew, commanderSkills, commanderSkillsId,
-            extraV132, supplyState, colorSchemes);
+            extraV132, supplyState, colorSchemes, exp);
     }
 
     /**
@@ -106,6 +108,7 @@ public record ShipConfig(
 
         Long navalFlag = readU32Opt(buf);
         Long isOwned = readU32Opt(buf);
+        Long exp = readU32Opt(buf);
         Long lastBoardedCrew = readU32Opt(buf);
         if (isOwned == null) lastBoardedCrew = null; // 全格式尾缺失
 
@@ -117,7 +120,7 @@ public record ShipConfig(
 
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
             ensigns, ecoboosts, navalFlag, lastBoardedCrew, null, null,
-            extraV132, supplyState, colorSchemes);
+            extraV132, supplyState, colorSchemes, exp);
     }
 
     /** 读 count(u32) + count 个 id(u32)；字节不足时返回已读部分。 */
