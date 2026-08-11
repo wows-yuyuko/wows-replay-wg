@@ -1,6 +1,7 @@
 package com.shinoaki.wowsreplay.ingest.mapped;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
+import com.shinoaki.wowsreplay.core.decode.DecodedPayload;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.report.BattleReport;
 
@@ -118,9 +119,18 @@ public final class ReplayMapper {
         for (var c : world.consumableLog()) {
             out.add(new NormalizedConsumable(c.clock(),
                 resolve(metaIdOf(world, c.entityId()), c.metaId()), c.username(),
-                c.consumableId(), c.duration()));
+                c.consumableId(), c.duration(), c.entityId(), typeName(c.kind())));
         }
         return out;
+    }
+
+    /** 消耗品使用者类型名（对标 DecodedPayload.ConsumableKind）。 */
+    private static String typeName(DecodedPayload.ConsumableKind kind) {
+        return switch (kind) {
+            case SHIP -> "ship";
+            case PLANE -> "plane";
+            case OTHER -> "other";
+        };
     }
 
     private static List<NormalizedDeadShip> mapDeadShips(BattleWorld world) {

@@ -336,7 +336,7 @@ public final class ReplayDumper {
                     v.put("ship_id", sc.shipParamsId());
                     // wowsinfo.json 名称映射（ship_id/commander_skills_id 保留原始 id，名称未知 → null）
                     v.put("modernizations", mapNames(sc.modernization(), wowsInfo::modernization));
-                    v.put("consumables", mapNames(sc.consumables(), wowsInfo::consumable));
+                    v.put("consumables", mapConsumable(sc.consumables(), wowsInfo));
                     v.put("exteriors", mapExteriors(sc.exteriors(), wowsInfo));
                     v.put("ensigns", sc.ensigns());
                     v.put("ecoboosts", sc.ecoboosts());
@@ -357,6 +357,19 @@ public final class ReplayDumper {
     private static List<String> mapNames(List<Long> ids, java.util.function.LongFunction<String> nameOf) {
         var out = new ArrayList<String>(ids.size());
         for (var id : ids) out.add(nameOf.apply(id));
+        return out;
+    }
+
+    private static List<String> mapConsumable(List<Long> ids, WowsInfo wowsInfo) {
+        var out = new ArrayList<String>(ids.size());
+        for (var id : ids) {
+            var info = wowsInfo.consumable(id);
+            if (info != null) {
+                out.add(info.icon());
+            } else {
+                out.add(id.toString());
+            }
+        }
         return out;
     }
 
@@ -439,36 +452,19 @@ public final class ReplayDumper {
     static List<Map<String, Object>> buildGameEvents(BattleReport report, NormalizedReplay replay,
                                                      WowsInfo wowsInfo, GameConstantsProvider constants) {
         var events = new ArrayList<Map<String, Object>>();
-        // metaId → consumableType 名字 → 能力 GameParams id（正确映射；wowsinfo 缺字段时为空）
-        var typeToAbility = new HashMap<Long, Map<String, Long>>();
-        boolean hasConsumableTypes = !wowsInfo.abilityConsumableType().isEmpty();
-        for (var p : report.players()) {
-            if (p.vehicleEntity() != null && p.vehicleEntity().shipConfig() != null) {
-                var m = new HashMap<String, Long>();
-                for (var abilityId : p.vehicleEntity().shipConfig().abilities()) {
-                    var ct = wowsInfo.consumableTypeNameOf(abilityId);
-                    if (ct != null) m.putIfAbsent(ct, abilityId);
-                }
-                typeToAbility.put(p.metaId(), m);
-            }
-        }
+
 
         for (var e : replay.consumableLog()) {
             var data = new LinkedHashMap<String, Object>();
             data.put("meta_id", e.metaId());
             data.put("username", e.username());
+            data.put("entity_id", e.entityId());
+            data.put("type", e.type());
             data.put("consumable", e.consumableId());
-            Long gpId = null;
-            var map = typeToAbility.get(e.metaId());
-            if (hasConsumableTypes && map != null) {
-                // 数值 consumableType → 名字（constants.json CONSUMABLE_IDS）→ 匹配能力
-                var ctName = constants.consumableName((int) e.consumableId()).orElse(null);
-                if (ctName != null) gpId = map.get(ctName);
-            }
-            // 匹配不到（无 wowsinfo consumableType / 该船无此能力）→ 直接返回原始数值
-            if (gpId == null) gpId = (long) e.consumableId();
-            data.put("consumable_id", gpId);
-            data.put("consumable_name", wowsInfo.consumable(gpId));
+
+            var ctName = constants.consumableName((int) e.consumableId()).orElse(null);
+            var ab = wowsInfo.consumableFindFilter(ctName);
+            data.put("consumable_icon", ab != null ? ab.icon() : null);
             data.put("activated_at", e.clock());
             data.put("duration", e.duration());
             events.add(event("consumable", e.clock(), data));

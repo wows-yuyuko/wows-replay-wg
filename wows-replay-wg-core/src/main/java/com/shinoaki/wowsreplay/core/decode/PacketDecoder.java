@@ -98,6 +98,7 @@ public class PacketDecoder {
             case "receiveDamageReport" -> decodeDamageReceived(em.entityId(), args);
             case "receiveVehicleDeath" -> decodeShipDestroyed(args);
             case "onConsumableUsed" -> decodeConsumable(em.entityId(), args);
+            case "squadronConsumableUsed" -> decodeSquadronConsumable(em.entityId(), args);
             case "receiveDamageStat" -> decodeDamageStat(args);
             case "onBattleEnd" -> decodeBattleEnd(args);
             case "onShotFired",
@@ -419,6 +420,27 @@ public class PacketDecoder {
             duration = args.size() >= 2 ? floatFromArg(args.get(1)) : 0f;
         }
         return new DecodedPayload.ConsumablePayload(entity, consumableId, duration, usageType);
+    }
+
+    /** CV 飞机（中队）消耗品：Avatar.squadronConsumableUsed(squadronId, usageParams[, workTimeLeft])。
+     *  usageParams blob 与船体 onConsumableUsed 同格式（<BB…>，b[0]=usageType, b[1]=consumableType）。 */
+    private DecodedPayload decodeSquadronConsumable(EntityId entity, NamedArgs args) {
+        int squadronId = 0;
+        int consumableId = 0;
+        float duration = 0f;
+        Integer usageType = null;
+        for (var a : args.values()) {
+            if (a instanceof ArgValue.IntVal(long v)) {
+                if (squadronId == 0) squadronId = (int) v;
+                else duration = v; // workTimeLeft 可能是 int 编码
+            } else if (a instanceof ArgValue.BlobVal(byte[] b) && b.length >= 2) {
+                usageType = b[0] & 0xFF;
+                consumableId = b[1] & 0xFF;
+            } else if (a instanceof ArgValue.FloatVal(double f)) {
+                duration = (float) f;
+            }
+        }
+        return new DecodedPayload.SquadronConsumablePayload(entity, squadronId, consumableId, duration, usageType);
     }
 
     private DecodedPayload decodeDamageStat(NamedArgs args) {

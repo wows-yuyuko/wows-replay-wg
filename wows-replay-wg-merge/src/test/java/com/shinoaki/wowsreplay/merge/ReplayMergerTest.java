@@ -121,6 +121,6 @@ class ReplayMergerTest {
     }
 
     private static NormalizedConsumable consumable(float clock, long metaId, String username, long id) {
-        return new NormalizedConsumable(clock, metaId, username, id, 10f);
+        return new NormalizedConsumable(clock, metaId, username, id, 10f, 0, "ship");
     }
 }

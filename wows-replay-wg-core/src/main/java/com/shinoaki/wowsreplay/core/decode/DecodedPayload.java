@@ -96,9 +96,16 @@ public sealed interface DecodedPayload {
 
     // ── Consumable ─────────────────────────────────────────────────────────
 
+    /** 消耗品使用者类型：船体 / 飞机（中队）/ 其他。 */
+    enum ConsumableKind { SHIP, PLANE, OTHER }
+
     /** consumableId == 0 means unknown/unrecognized. */
     record ConsumablePayload(EntityId entity, int consumableId,
                              float duration, Integer usageType) implements DecodedPayload {}
+
+    /** CV 飞机（中队）消耗品：Avatar.squadronConsumableUsed(squadronId, usageParams[, workTimeLeft])。 */
+    record SquadronConsumablePayload(EntityId entity, int squadronId, int consumableId,
+                                     float duration, Integer usageType) implements DecodedPayload {}
 
     // ── Minimap ────────────────────────────────────────────────────────────
 

@@ -206,6 +206,7 @@ public class BattleWorld {
             // ── Chat / Consumable ──────────────────────────────────────
             case DecodedPayload.ChatMessagePayload chat -> handleChat(chat, elapsed);
             case DecodedPayload.ConsumablePayload cons -> handleConsumable(cons, elapsed);
+            case DecodedPayload.SquadronConsumablePayload cons -> handleSquadronConsumable(cons, elapsed);
 
             // ── Battle end / results ───────────────────────────────────
             case DecodedPayload.BattleEndPayload be -> handleBattleEnd(be, elapsed);
@@ -348,7 +349,15 @@ public class BattleWorld {
         var pl = entityToPlayer.get(cons.entity().value());
         consumableLog.add(new ConsumableEvent(elapsed, cons.entity().value(),
                 pl != null ? pl.metaId() : 0, pl != null ? pl.username() : "",
-                cons.consumableId(), cons.duration()));
+                cons.consumableId(), cons.duration(), DecodedPayload.ConsumableKind.SHIP));
+    }
+
+    /** CV 飞机（中队）消耗品：entity 是母舰 Avatar，消耗品归母舰玩家，类型标记为 PLANE。 */
+    private void handleSquadronConsumable(DecodedPayload.SquadronConsumablePayload cons, float elapsed) {
+        var pl = entityToPlayer.get(cons.entity().value());
+        consumableLog.add(new ConsumableEvent(elapsed, cons.entity().value(),
+                pl != null ? pl.metaId() : 0, pl != null ? pl.username() : "",
+                cons.consumableId(), cons.duration(), DecodedPayload.ConsumableKind.PLANE));
     }
 
     private void handleBattleEnd(DecodedPayload.BattleEndPayload be, float elapsed) {

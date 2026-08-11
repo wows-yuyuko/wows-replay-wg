@@ -25,8 +25,8 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     /** 从字节数组加载。 */
     public JsonConstantsProvider(byte[] jsonBytes) {
         this.root = JsonMapper.readTree(jsonBytes);
-        // 15.x：CONSUMABLE_IDS = name→id；旧版为 CONSUMABLE_STATES。统一反向查找。
-        this.consumableStates = firstNonEmpty(buildReverseLookup("CONSUMABLE_IDS"), buildReverseLookup("CONSUMABLE_STATES"));
+        // 15.x：CONSUMABLE_IDS = name→id
+        this.consumableStates = buildReverseLookup("CONSUMABLE_IDS");
         // 15.x：DEATH_REASONS 是 [{icon,id,name,sound}, ...] 数组；旧版为 DEATH_REASON_NAME 对象。
         this.deathReasons = buildDeathReasonMap();
         this.cameraModes = buildReverseLookup("CAMERA_MODE");

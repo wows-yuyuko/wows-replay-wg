@@ -39,7 +39,9 @@ class WowsInfoTest {
         var w = WowsInfo.fromJson(SAMPLE);
 
         assertEquals("PCM003_Airplanes_Mod_I", w.modernization(4290957232L));
-        assertEquals("PCY001_CrashCrew", w.consumable(4293042096L));
+        var cons = w.consumable(4293042096L);
+        assertNotNull(cons);
+        assertEquals("PCY001_CrashCrew", cons.icon());
         var ext = w.exterior(4293521392L);
         assertNotNull(ext);
         assertEquals("MSkin", ext.type());
