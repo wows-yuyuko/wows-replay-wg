@@ -432,15 +432,25 @@ public final class ReplayDumper {
     }
 
     /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat 按 clock 排序，玩家身份只用 metaId。
-     *  consumable 事件的 consumable 是槽位序号，经该玩家 shipConfig.abilities[槽位] 解析出
-     *  真实消耗品 GameParams id（consumable_id）再查 wowsinfo 名称（consumable_name）。 */
+     *  consumable 事件的 consumable 是 consumableType（onConsumableUsed b[1]，非槽位下标），经该玩家
+     *  shipConfig.abilities 各槽能力的 params.consumableType 反查（wowsinfo abilities.consumableType）
+     *  得真实能力 GameParams id（consumable_id）再查名称（consumable_name）。 */
     static List<Map<String, Object>> buildGameEvents(BattleReport report, NormalizedReplay replay, WowsInfo wowsInfo) {
         var events = new ArrayList<Map<String, Object>>();
-        // metaId → 该玩家消耗品槽数组（shipConfig.abilities；consumableId 即槽位序号）
+        // metaId → 消耗品槽数组（兜底用）；metaId → consumableType → 能力 GameParams id（正确映射）
         var abilitiesByPlayer = new HashMap<Long, List<Long>>();
+        var typeToAbility = new HashMap<Long, Map<Integer, Long>>();
+        boolean hasConsumableTypes = !wowsInfo.abilityConsumableType().isEmpty();
         for (var p : report.players()) {
             if (p.vehicleEntity() != null && p.vehicleEntity().shipConfig() != null) {
-                abilitiesByPlayer.put(p.metaId(), p.vehicleEntity().shipConfig().abilities());
+                var abilities = p.vehicleEntity().shipConfig().abilities();
+                abilitiesByPlayer.put(p.metaId(), abilities);
+                var m = new HashMap<Integer, Long>();
+                for (var abilityId : abilities) {
+                    var ct = wowsInfo.consumableTypeOf(abilityId);
+                    if (ct != null) m.putIfAbsent(ct, abilityId);
+                }
+                typeToAbility.put(p.metaId(), m);
             }
         }
 
@@ -449,10 +459,17 @@ public final class ReplayDumper {
             data.put("meta_id", e.metaId());
             data.put("username", e.username());
             data.put("consumable", e.consumableId());
-            var abilities = abilitiesByPlayer.get(e.metaId());
             Long gpId = null;
-            if (abilities != null && e.consumableId() >= 0 && e.consumableId() < abilities.size()) {
-                gpId = abilities.get((int) e.consumableId());
+            var map = typeToAbility.get(e.metaId());
+            if (hasConsumableTypes && map != null) {
+                gpId = map.get((int) e.consumableId());
+            }
+            // 兜底：wowsinfo 缺 consumableType 时退回 abilities[槽位]（普通船 consumableType=槽位号，适用）
+            if (gpId == null) {
+                var abilities = abilitiesByPlayer.get(e.metaId());
+                if (abilities != null && e.consumableId() >= 0 && e.consumableId() < abilities.size()) {
+                    gpId = abilities.get((int) e.consumableId());
+                }
             }
             data.put("consumable_id", gpId);
             data.put("consumable_name", gpId != null ? wowsInfo.consumable(gpId) : null);

@@ -19,10 +19,13 @@ public record WowsInfo(
         /** 外观：id → {icon, type}（type 如 "MSkin" 等）。 */
         Map<Long, ExteriorInfo> exteriors,
         /** skillType id → 技能名（commander_skills 的 skill-type id 用，取条目内部名）。 */
-        Map<Integer, String> skills
+        Map<Integer, String> skills,
+        /** 消耗品 GameParams id → consumableType（onConsumableUsed 的 b[1] 用它解析；wowsinfo 缺该字段时为空）。 */
+        Map<Long, Integer> abilityConsumableType
 ) {
 
-    public static final WowsInfo EMPTY = new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+    public static final WowsInfo EMPTY =
+            new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
     /** 外观条目：icon + type（wowsinfo exteriors 段）。 */
     public record ExteriorInfo(String icon, String type) {}
@@ -48,6 +51,11 @@ public record WowsInfo(
         return skills.get(skillType);
     }
 
+    /** 消耗品 consumableType（onConsumableUsed b[1]）；未知返回 null。 */
+    public Integer consumableTypeOf(long abilityId) {
+        return abilityConsumableType.get(abilityId);
+    }
+
     /** 解析 wowsinfo.json 文本。缺失/解析异常由调用方兜底。 */
     public static WowsInfo fromJson(String json) {
         var root = JsonMapper.readTree(json);
@@ -57,7 +65,8 @@ public record WowsInfo(
                 idNameMap(root, "modernizations"),
                 idNameMap(root, "abilities"),
                 exteriorMap(root),
-                skillTypeMap(root));
+                skillTypeMap(root),
+                consumableTypeMap(root));
     }
 
     /** 内部名 → {id, name} 段落 → id → name 映射（未知 id / 空名跳过）。 */
@@ -90,6 +99,17 @@ public record WowsInfo(
             String icon = e.getValue().path("icon").asString();
             String type = e.getValue().path("type").asString();
             if (id != 0 && !icon.isBlank()) out.put(id, new ExteriorInfo(icon, type));
+        }
+        return out;
+    }
+
+    /** abilities 段：消耗品 id → consumableType（wowsinfo 未提供该字段时返回空表）。 */
+    private static Map<Long, Integer> consumableTypeMap(JsonNode root) {
+        var out = new HashMap<Long, Integer>();
+        for (var e : root.path("abilities").properties()) {
+            long id = e.getValue().path("id").asLong();
+            var ct = e.getValue().path("consumableType");
+            if (id != 0 && ct.isIntegralNumber()) out.put(id, ct.asInt());
         }
         return out;
     }
