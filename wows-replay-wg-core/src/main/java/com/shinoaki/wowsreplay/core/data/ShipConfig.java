@@ -1,5 +1,6 @@
 package com.shinoaki.wowsreplay.core.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.shinoaki.wowsreplay.core.model.Version;
@@ -13,17 +14,18 @@ import java.util.List;
  * 玩家船只装载配置解析（对标 Rust {@code wowsunpack::data::ship_config::ShipConfig}）。
  *
  * <p>Vehicle 实体的 {@code shipConfig} 属性是二进制 blob（big-endian 头 + little-endian 各槽段）。
- * 解析出 ship_params_id / modernization / abilities(消耗品) / exteriors / units 等原始 id。</p>
+ * 解析出 ship_params_id / modernization / abilities(消耗品) / exteriors / units 等原始 id，
+ * 以及 v13.2+ 额外字段 / supply_state / color_schemes（仅解析不输出，见字段注释）。</p>
  *
  * <p>blob 布局（little-endian，v13.2+ 多一个 u32）：</p>
  * <pre>
  *   version(u32) ship_params_id(u32) element_count(u32)
  *   unit_count(u32) units[unit_count]
- *   [v13.2+ 额外 u32]
+ *   [v13.2+ 额外 u32（疑似贴花相关；实测均为 0）]
  *   modernization: count + ids
  *   exteriors: count + ids
- *   supply_state(u32)
- *   color_schemes: count + (slot, scheme) 对
+ *   supply_state(u32)（实测 0/2）
+ *   color_schemes: count + (slot, scheme) 对（实测第一值疑似外观 id 而非槽位序号）
  *   abilities: count + ids
  *   ensigns: count + ids
  *   ecoboosts: count + ids
@@ -46,15 +48,25 @@ public record ShipConfig(
     @JsonProperty("commander_skills") CommanderSkills commanderSkills,
     /** 舰长 id（crewModifiersCompactParams.paramsId 原值），非 shipConfig blob 字段，由装配层附加。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonProperty("commander_skills_id") Long commanderSkillsId
+    @JsonProperty("commander_skills_id") Long commanderSkillsId,
+    /** v13.2+ 额外 u32（units 槽之后；疑似贴花相关，待确认）。仅供解析，不输出。 */
+    @JsonIgnore Long extraV132,
+    /** 补给状态（用途未知，通常 0）。仅供解析，不输出。 */
+    @JsonIgnore Long supplyState,
+    /** 外观槽位配色方案：(slot, scheme) 对列表。仅供解析，不输出。 */
+    @JsonIgnore List<ColorScheme> colorSchemes
 ) {
+    /** 单个外观槽位配色：(槽位序号, 配色/皮肤 id)。 */
+    public record ColorScheme(long slot, long scheme) {}
+
     /** 消耗品（对标 Rust {@code ShipConfig::abilities}）。 */
     public List<Long> consumables() { return abilities; }
 
     /** 附加舰长信息（commander_skills / commander_skills_id），返回新实例。 */
     public ShipConfig withCommander(CommanderSkills commanderSkills, Long commanderSkillsId) {
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
-            ensigns, ecoboosts, navalFlag, lastBoardedCrew, commanderSkills, commanderSkillsId);
+            ensigns, ecoboosts, navalFlag, lastBoardedCrew, commanderSkills, commanderSkillsId,
+            extraV132, supplyState, colorSchemes);
     }
 
     /**
@@ -71,18 +83,19 @@ public record ShipConfig(
         long unitCount = readU32(buf, 0L);
         var units = readIds(buf, unitCount);
 
+        Long extraV132 = null;
         if (version != null && version.isAtLeast(new Version(13, 2, 0, 0))) {
-            readU32(buf, 0L); // v13.2+ 额外字段
+            extraV132 = readU32Opt(buf); // v13.2+ 额外字段（疑似贴花相关，待确认）
         }
 
         var modernization = readSection(buf);
         var exteriors = readSection(buf);
-        readU32(buf, 0L); // supply_state
+        Long supplyState = readU32Opt(buf);
 
         long colorSchemeCount = readU32(buf, 0L);
+        var colorSchemes = new ArrayList<ColorScheme>();
         for (long i = 0; i < colorSchemeCount; i++) {
-            readU32(buf, 0L);
-            readU32(buf, 0L);
+            colorSchemes.add(new ColorScheme(readU32(buf, 0L), readU32(buf, 0L)));
         }
 
         var abilities = readSection(buf);
@@ -95,7 +108,8 @@ public record ShipConfig(
         if (isOwned == null) lastBoardedCrew = null; // 全格式尾缺失
 
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
-            ensigns, ecoboosts, navalFlag, lastBoardedCrew, null, null);
+            ensigns, ecoboosts, navalFlag, lastBoardedCrew, null, null,
+            extraV132, supplyState, colorSchemes);
     }
 
     /** 读 count(u32) + count 个 id(u32)；字节不足时返回已读部分。 */
