@@ -487,10 +487,36 @@ public final class PlayerStateData {
         var out = new LinkedHashMap<String, Object>();
         for (var e : raw.entrySet()) {
             var name = nameByIndex.get(e.getKey().intValue());
-            if (name != null) out.put(name, e.getValue());
+            if (name != null) {
+                // shipConfigDump 是二进制 blob（BINSTRING 按 ISO-8859-1 解成 String），直接输出 hex
+                out.put(name, KEY_SHIP_CONFIG_DUMP.equals(name) ? toHex(e.getValue()) : e.getValue());
+            }
         }
         return out;
     }
+
+    /** 字节型值 → 小写 hex 字符串（String=Latin-1 字节 / byte[] / List<Number> 均可）。 */
+    private static String toHex(Object rawValue) {
+        var sb = new StringBuilder();
+        if (rawValue instanceof byte[] arr) {
+            for (byte b : arr) appendHexByte(sb, b & 0xFF);
+        } else if (rawValue instanceof String s) {
+            for (int i = 0; i < s.length(); i++) appendHexByte(sb, s.charAt(i));
+        } else if (rawValue instanceof List<?> list) {
+            for (var e : list) {
+                if (e instanceof Number n) appendHexByte(sb, n.intValue() & 0xFF);
+            }
+        } else {
+            return String.valueOf(rawValue);
+        }
+        return sb.toString();
+    }
+
+    private static void appendHexByte(StringBuilder sb, int b) {
+        sb.append(HEX_DIGITS[(b >>> 4) & 0xF]).append(HEX_DIGITS[b & 0xF]);
+    }
+
+    private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
 
     /** 账号 ID（AccountId，取自 accountDBID）。 */
     public AccountId accountId()   { return new AccountId((int) dbId); }
