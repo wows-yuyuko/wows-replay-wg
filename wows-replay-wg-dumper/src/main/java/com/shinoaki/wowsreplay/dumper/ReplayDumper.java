@@ -435,20 +435,17 @@ public final class ReplayDumper {
      *  consumable 事件的 consumable 是 consumableType 数值（onConsumableUsed b[1]，非槽位下标），经
      *  constants.json CONSUMABLE_IDS 翻译成名字，再按该玩家 shipConfig.abilities 各槽能力的
      *  params.consumableType（wowsinfo abilities.consumableType）匹配出真实能力 GameParams id
-     *  （consumable_id）与名称（consumable_name）。 */
+     *  （consumable_id）与名称（consumable_name）；匹配不到时 consumable_id 直接返回原始数值。 */
     static List<Map<String, Object>> buildGameEvents(BattleReport report, NormalizedReplay replay,
                                                      WowsInfo wowsInfo, GameConstantsProvider constants) {
         var events = new ArrayList<Map<String, Object>>();
-        // metaId → 消耗品槽数组（兜底用）；metaId → consumableType 名字 → 能力 GameParams id（正确映射）
-        var abilitiesByPlayer = new HashMap<Long, List<Long>>();
+        // metaId → consumableType 名字 → 能力 GameParams id（正确映射；wowsinfo 缺字段时为空）
         var typeToAbility = new HashMap<Long, Map<String, Long>>();
         boolean hasConsumableTypes = !wowsInfo.abilityConsumableType().isEmpty();
         for (var p : report.players()) {
             if (p.vehicleEntity() != null && p.vehicleEntity().shipConfig() != null) {
-                var abilities = p.vehicleEntity().shipConfig().abilities();
-                abilitiesByPlayer.put(p.metaId(), abilities);
                 var m = new HashMap<String, Long>();
-                for (var abilityId : abilities) {
+                for (var abilityId : p.vehicleEntity().shipConfig().abilities()) {
                     var ct = wowsInfo.consumableTypeNameOf(abilityId);
                     if (ct != null) m.putIfAbsent(ct, abilityId);
                 }
@@ -468,15 +465,10 @@ public final class ReplayDumper {
                 var ctName = constants.consumableName((int) e.consumableId()).orElse(null);
                 if (ctName != null) gpId = map.get(ctName);
             }
-            // 兜底：wowsinfo 缺 consumableType 时退回 abilities[槽位]（普通船 consumableType=槽位号，适用）
-            if (gpId == null) {
-                var abilities = abilitiesByPlayer.get(e.metaId());
-                if (abilities != null && e.consumableId() >= 0 && e.consumableId() < abilities.size()) {
-                    gpId = abilities.get((int) e.consumableId());
-                }
-            }
+            // 匹配不到（无 wowsinfo consumableType / 该船无此能力）→ 直接返回原始数值
+            if (gpId == null) gpId = (long) e.consumableId();
             data.put("consumable_id", gpId);
-            data.put("consumable_name", gpId != null ? wowsInfo.consumable(gpId) : null);
+            data.put("consumable_name", wowsInfo.consumable(gpId));
             data.put("activated_at", e.clock());
             data.put("duration", e.duration());
             events.add(event("consumable", e.clock(), data));
