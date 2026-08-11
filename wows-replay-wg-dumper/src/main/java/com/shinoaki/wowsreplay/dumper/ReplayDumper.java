@@ -245,14 +245,15 @@ public final class ReplayDumper {
         out.put("match_result", report.matchResult());
         out.put("finish_type", report.finishType());
         // 映射层：实体 id → 全局一致 metaId，事件流输出只带 metaId
-        List<Map<String, Object>> players = buildPlayers(report, cache.wowsInfo(primary));
+        WowsInfo wowsInfo = cache.wowsInfo(primary);
+        List<Map<String, Object>> players = buildPlayers(report, wowsInfo);
         JsonNode playersNode = JsonMapper.toTree(players);
         out.put("players", playersNode);
         // 最终输出阶段：webFunction 对象收纳从 WebFunction 迁移来的计算数据
         ObjectNode webFunction = JsonMapper.createObject();
         webFunction.set("battle_stats", JsonMapper.toTree(
                 BattleStatsCalculator.calculate(playersNode, battleResults)));
-        out.put("game_events", buildGameEvents(normalized));
+        out.put("game_events", buildGameEvents(report, normalized, wowsInfo));
         out.put("capture_points", report.capturePoints());
         out.put("buff_zones", report.buffZones());
         out.put("captured_buffs", report.capturedBuffs());
@@ -430,15 +431,31 @@ public final class ReplayDumper {
         return m;
     }
 
-    /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat 按 clock 排序，玩家身份只用 metaId。 */
-    static List<Map<String, Object>> buildGameEvents(NormalizedReplay replay) {
+    /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat 按 clock 排序，玩家身份只用 metaId。
+     *  consumable 事件的 consumable 是槽位序号，经该玩家 shipConfig.abilities[槽位] 解析出
+     *  真实消耗品 GameParams id（consumable_id）再查 wowsinfo 名称（consumable_name）。 */
+    static List<Map<String, Object>> buildGameEvents(BattleReport report, NormalizedReplay replay, WowsInfo wowsInfo) {
         var events = new ArrayList<Map<String, Object>>();
+        // metaId → 该玩家消耗品槽数组（shipConfig.abilities；consumableId 即槽位序号）
+        var abilitiesByPlayer = new HashMap<Long, List<Long>>();
+        for (var p : report.players()) {
+            if (p.vehicleEntity() != null && p.vehicleEntity().shipConfig() != null) {
+                abilitiesByPlayer.put(p.metaId(), p.vehicleEntity().shipConfig().abilities());
+            }
+        }
 
         for (var e : replay.consumableLog()) {
             var data = new LinkedHashMap<String, Object>();
             data.put("meta_id", e.metaId());
             data.put("username", e.username());
             data.put("consumable", e.consumableId());
+            var abilities = abilitiesByPlayer.get(e.metaId());
+            Long gpId = null;
+            if (abilities != null && e.consumableId() >= 0 && e.consumableId() < abilities.size()) {
+                gpId = abilities.get((int) e.consumableId());
+            }
+            data.put("consumable_id", gpId);
+            data.put("consumable_name", gpId != null ? wowsInfo.consumable(gpId) : null);
             data.put("activated_at", e.clock());
             data.put("duration", e.duration());
             events.add(event("consumable", e.clock(), data));
