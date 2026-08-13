@@ -552,8 +552,14 @@ public final class ReplayDumper {
                     .filter(f -> ctName != null && f.filter() != null && ctName.equalsIgnoreCase(f.filter()))
                     .findFirst()
                     .orElseGet(() -> wowsInfo.consumableFindFilter(ctName));
-            data.put("consumable_icon", optional != null ? optional.icon() : null);
-            data.put("consumable_name", optional != null ? optional.name() : null);
+            if (optional != null) {
+                data.put("consumable_icon", optional.icon());
+                data.put("consumable_name", GameDataCache.getLangProvider(optional.name()));
+            } else {
+                data.put("consumable_icon", null);
+                data.put("consumable_name", null);
+            }
+
             data.put("activated_at", e.clock());
             data.put("duration", e.duration());
             events.add(event("consumable", e.clock(), data));
