@@ -8,6 +8,7 @@ import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
 import com.shinoaki.wowsreplay.core.model.Version;
+import com.shinoaki.wowsreplay.core.model.VoiceLine;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
@@ -517,7 +518,15 @@ public final class ReplayDumper {
                                                      WowsInfo wowsInfo, GameConstantsProvider constants) {
         var events = new ArrayList<Map<String, Object>>();
         Map<Long, String> metaToUser = new HashMap<>();
-        for (var p : report.players()) metaToUser.put(p.metaId(), p.username());
+        // 实体 id → metaId 索引（Avatar 实体 id + Vehicle 实体 id，对标 ReplayMapper.metaIdOf）
+        Map<Long, Long> entityToMeta = new HashMap<>();
+        for (var p : report.players()) {
+            metaToUser.put(p.metaId(), p.username());
+            entityToMeta.put((long) p.entityId(), p.metaId());
+            if (p.vehicleEntity() != null) {
+                entityToMeta.put((long) p.vehicleEntity().id().value(), p.metaId());
+            }
+        }
         // 飞机的消耗品事件在 minimap 里；先在本体消耗品里按 filter 匹配（优先用玩家自己的），
         // 匹配不到再退回全局 consumableFindFilter。空槽(id=0)/无 vehicle 的玩家跳过。
         Map<Long, List<WowsInfo.Abilities>> metaMap = new HashMap<>();
@@ -551,7 +560,7 @@ public final class ReplayDumper {
         }
 
         for (var k : replay.killLog()) {
-            var data = getData(k);
+            var data = getData(k, constants);
             events.add(event("kill", k.clock(), data));
         }
 
@@ -570,7 +579,25 @@ public final class ReplayDumper {
             data.put("meta_id", metaId);
             data.put("username", metaToUser.getOrDefault(metaId, "account " + metaId));
             data.put("global", v.isGlobal());
-            data.put("line", v.message());
+            VoiceLine vl = v.voiceLine();
+            data.put("type", vl.type());
+            // 指令参数（仅带参类型：AttentionToSquare/QuickTactic/Retreat/MapPointAttention）
+            VoiceLine.VoiceLineData pd = vl.data();
+            if (pd != null) {
+                var params = new LinkedHashMap<String, Object>();
+                if (pd.x() != null) {
+                    params.put("x", pd.x());
+                    params.put("z", pd.z());
+                }
+                if (pd.tacticTypeId() != null) {
+                    params.put("tactic_type_id", pd.tacticTypeId());
+                }
+                if (pd.targetEntityId() != null) {
+                    params.put("target_entity_id", pd.targetEntityId());
+                    params.put("target_meta_id", entityToMeta.getOrDefault(pd.targetEntityId(), 0L));
+                }
+                if (!params.isEmpty()) data.put("data", params);
+            }
             events.add(event("voiceline", v.clock(), data));
         }
 
@@ -578,7 +605,7 @@ public final class ReplayDumper {
         return events;
     }
 
-    private static LinkedHashMap<String, Object> getData(NormalizedKill k) {
+    private static LinkedHashMap<String, Object> getData(NormalizedKill k, GameConstantsProvider constants) {
         var killer = new LinkedHashMap<String, Object>();
         killer.put("meta_id", k.killerMetaId());
         killer.put("username", k.killerName());
@@ -589,6 +616,8 @@ public final class ReplayDumper {
         data.put("killer", killer);
         data.put("victim", victim);
         data.put("cause", k.cause());
+        // 死亡原因名（constants.json DEATH_REASONS id→name；未知 → null）
+        data.put("cause_name", constants.deathReasonName(k.cause()).orElse(null));
         return data;
     }
 

@@ -1,7 +1,9 @@
 package com.shinoaki.wowsreplay.core.constant;
 
 import com.shinoaki.wowsreplay.core.model.Version;
+import com.shinoaki.wowsreplay.core.model.VoiceLine;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -37,6 +39,7 @@ import java.util.Map;
  *   <li>VoiceLine 快捷指令（客户端 Python 数据，本地无源）— {@link #voiceLineName}</li>
  * </ul>
  */
+@Slf4j
 public final class GameConstants {
 
     private final GameConstantsProvider provider;
@@ -151,14 +154,14 @@ public final class GameConstants {
     // ── VoiceLine（快捷指令）───────────────────────────────────────────
 
     /**
-     * VoiceLine 快捷指令 id → 名称（>=0.12.8 布局，参数从 blob 中消费）。
+     * VoiceLine 快捷指令 id + 参数 → {@link VoiceLine}（>=0.12.8 布局，参数从 blob 中消费）。
      *
      * <p><b>数据源说明</b>：快捷指令（AttentionToSquare / QuickTactic / Wilco …）来自客户端
      * Python UI 代码（快速指令菜单），本地游戏数据（constants.json / constants/*.xml / scripts）
      * 中<b>没有</b>对应常量表，因此本布局只能内部维护，无外部兜底。</p>
      *
      * <p>两个布局的区别在<b>参数来源</b>：新版（>=0.12.8，本方法）参数内嵌在 blob 里逐项读取；
-     * 旧版（{@code voiceLineName(int, Version, int, long)}）参数由调用方作为整数传入。
+     * 旧版（{@code voiceLine(int, Version, int, long)}）参数由调用方作为整数传入。
      * 调用方按回放版本选择方法（docs §10.2：0.12.8 起参数格式变化）。</p>
      *
      * <p>注意：本方法<b>会消费 {@code buf}</b> 的位置（读取指令附加参数）。</p>
@@ -167,38 +170,45 @@ public final class GameConstants {
      * @param version 回放版本（>=0.12.8 使用本布局）
      * @param buf     指令 blob（小端），附加参数从此读取
      */
-    public String voiceLineName(int line, Version version, ByteBuffer buf) {
+    public VoiceLine voiceLine(int line, Version version, ByteBuffer buf) {
         return switch (line) {
-            case 1 -> "AttentionToSquare(" + buf.getShort() + "," + buf.getShort() + ")";
-            case 2 -> "QuickTactic(" + buf.getShort() + "," + buf.getLong() + ")";
-            case 3 -> "RequestingSupport";
-            case 5 -> "Wilco";
-            case 6 -> "Negative";
-            case 7 -> "WellDone";
-            case 8 -> "FairWinds";
-            case 9 -> "Curses";
-            case 10 -> "DefendTheBase";
-            case 11 -> "ProvideAntiAircraft";
+            case 1 -> VoiceLine.coordinate(line, "AttentionToSquare", buf.getShort(), buf.getShort());
+            case 2 -> {
+                int tacticTypeId = buf.getShort();
+                long target = buf.getLong();
+                yield VoiceLine.tactic(line, tacticTypeId, target);
+            }
+            case 3 -> VoiceLine.plain(line, "RequestingSupport");
+            case 5 -> VoiceLine.plain(line, "Wilco");
+            case 6 -> VoiceLine.plain(line, "Negative");
+            case 7 -> VoiceLine.plain(line, "WellDone");
+            case 8 -> VoiceLine.plain(line, "FairWinds");
+            case 9 -> VoiceLine.plain(line, "Curses");
+            case 10 -> VoiceLine.plain(line, "DefendTheBase");
+            case 11 -> VoiceLine.plain(line, "ProvideAntiAircraft");
             case 12 -> {
                 buf.getShort();
-                long id = buf.getLong();
-                yield "Retreat" + (id != 0 ? "(" + id + ")" : "");
+                long target = buf.getLong();
+                yield VoiceLine.retreat(line, target);
             }
-            case 13 -> "IntelRequired";
-            case 14 -> "SetSmokeScreen";
-            case 15 -> "UsingRadar";
-            case 16 -> "UsingHydroSearch";
-            case 17 -> "FollowMe";
-            case 18 -> "MapPointAttention(" + buf.getFloat() + "," + buf.getFloat() + ")";
-            case 19 -> "UsingSubmarineLocator";
-            default -> "UnknownVoiceLine(" + line + " v" + ver(version) + ")";
+            case 13 -> VoiceLine.plain(line, "IntelRequired");
+            case 14 -> VoiceLine.plain(line, "SetSmokeScreen");
+            case 15 -> VoiceLine.plain(line, "UsingRadar");
+            case 16 -> VoiceLine.plain(line, "UsingHydroSearch");
+            case 17 -> VoiceLine.plain(line, "FollowMe");
+            case 18 -> VoiceLine.coordinate(line, "MapPointAttention", buf.getFloat(), buf.getFloat());
+            case 19 -> VoiceLine.plain(line, "UsingSubmarineLocator");
+            default -> {
+                log.warn("未知快捷指令 line id: {}（版本 {}，可能为 WG 新增指令，需在 GameConstants 补映射）", line, version);
+                yield new VoiceLine(line, "UnknownVoiceLine", null);
+            }
         };
     }
 
     /**
-     * VoiceLine 快捷指令 id → 名称（&lt;0.12.8 旧布局，参数由调用方传入）。
+     * VoiceLine 快捷指令 id + 参数 → {@link VoiceLine}（&lt;0.12.8 旧布局，参数由调用方传入）。
      *
-     * <p>与 {@link #voiceLineName(int, Version, ByteBuffer)} 相同的 id→名称布局，仅参数来源不同：
+     * <p>与 {@link #voiceLine(int, Version, ByteBuffer)} 相同的 id→类型布局，仅参数来源不同：
      * 旧版 {@code receive_CommonCMD} 的参数位直接是整数（isGlobal, senderId, line, arg, arg2），
      * 无 blob 消费。见上述新版方法的布局说明。</p>
      *
@@ -207,27 +217,30 @@ public final class GameConstants {
      * @param a       指令附加参数（短型参数位）
      * @param b       指令附加参数（长型参数位）
      */
-    public String voiceLineName(int line, Version version, int a, long b) {
+    public VoiceLine voiceLine(int line, Version version, int a, long b) {
         return switch (line) {
-            case 1 -> "AttentionToSquare(" + a + "," + b + ")";
-            case 2 -> "QuickTactic(" + a + "," + b + ")";
-            case 3 -> "RequestingSupport";
-            case 5 -> "Wilco";
-            case 6 -> "Negative";
-            case 7 -> "WellDone";
-            case 8 -> "FairWinds";
-            case 9 -> "Curses";
-            case 10 -> "DefendTheBase";
-            case 11 -> "ProvideAntiAircraft";
-            case 12 -> "Retreat" + (b != 0 ? "(" + b + ")" : "");
-            case 13 -> "IntelRequired";
-            case 14 -> "SetSmokeScreen";
-            case 15 -> "UsingRadar";
-            case 16 -> "UsingHydroSearch";
-            case 17 -> "FollowMe";
-            case 18 -> "MapPointAttention(" + a + "," + b + ")";
-            case 19 -> "UsingSubmarineLocator";
-            default -> "UnknownVoiceLine(" + line + " v" + ver(version) + ")";
+            case 1 -> VoiceLine.coordinate(line, "AttentionToSquare", a, b);
+            case 2 -> VoiceLine.tactic(line, a, b);
+            case 3 -> VoiceLine.plain(line, "RequestingSupport");
+            case 5 -> VoiceLine.plain(line, "Wilco");
+            case 6 -> VoiceLine.plain(line, "Negative");
+            case 7 -> VoiceLine.plain(line, "WellDone");
+            case 8 -> VoiceLine.plain(line, "FairWinds");
+            case 9 -> VoiceLine.plain(line, "Curses");
+            case 10 -> VoiceLine.plain(line, "DefendTheBase");
+            case 11 -> VoiceLine.plain(line, "ProvideAntiAircraft");
+            case 12 -> VoiceLine.retreat(line, b);
+            case 13 -> VoiceLine.plain(line, "IntelRequired");
+            case 14 -> VoiceLine.plain(line, "SetSmokeScreen");
+            case 15 -> VoiceLine.plain(line, "UsingRadar");
+            case 16 -> VoiceLine.plain(line, "UsingHydroSearch");
+            case 17 -> VoiceLine.plain(line, "FollowMe");
+            case 18 -> VoiceLine.coordinate(line, "MapPointAttention", a, b);
+            case 19 -> VoiceLine.plain(line, "UsingSubmarineLocator");
+            default -> {
+                log.warn("未知快捷指令 line id: {}（版本 {}，可能为 WG 新增指令，需在 GameConstants 补映射）", line, version);
+                yield new VoiceLine(line, "UnknownVoiceLine", null);
+            }
         };
     }
 }

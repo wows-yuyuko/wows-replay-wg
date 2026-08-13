@@ -183,7 +183,7 @@ public final class ReplayMerger {
         var vlSeen = new HashSet<String>();
         for (var v : views) {
             for (var vl : v.voiceLineLog()) {
-                if (vlSeen.add(vl.clock() + "|" + vl.senderId().value() + "|" + vl.message())) voiceLineLog.add(vl);
+                if (vlSeen.add(vl.clock() + "|" + vl.senderId().value() + "|" + vl.voiceLine())) voiceLineLog.add(vl);
             }
         }
         dedup.put("voiceLines", total(views, v -> v.voiceLineLog().size()) - voiceLineLog.size());

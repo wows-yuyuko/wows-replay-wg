@@ -506,7 +506,7 @@ public class BattleWorld {
     }
 
     private void handleVoiceLine(DecodedPayload.VoiceLinePayload vl, float elapsed) {
-        voiceLineLog.add(new VoiceLineEvent(elapsed, vl.senderId(), vl.isGlobal(), vl.message()));
+        voiceLineLog.add(new VoiceLineEvent(elapsed, vl.senderId(), vl.isGlobal(), vl.voiceLine()));
     }
 
     // ── Ingest: Arena players ──────────────────────────────────────────

@@ -156,7 +156,7 @@ public class PacketDecoder {
     private DecodedPayload decodeVoiceLine(NamedArgs args) {
         int senderId;
         boolean isGlobal = false;
-        String voiceLine = "unknown";
+        VoiceLine voiceLine = new VoiceLine(0, "UnknownVoiceLine", null);
         if (version.isAtLeast(new Version(0, 12, 8, 0))) {
             senderId = (int) Integer.toUnsignedLong(intFromArg(args.get(0)));
             byte[] blob = blobFromArg(args.get(1));
@@ -164,13 +164,13 @@ public class PacketDecoder {
                 var buf = ByteBuffer.wrap(blob).order(ByteOrder.LITTLE_ENDIAN);
                 int line = buf.getShort() & 0xFFFF;
                 isGlobal = (buf.get() & 0xFF) == 1;
-                voiceLine = gameConstants.voiceLineName(line, version, buf);
+                voiceLine = gameConstants.voiceLine(line, version, buf);
             }
         } else {
             isGlobal = intFromArg(args.get(0)) == 1;
             senderId = (int) Integer.toUnsignedLong(intFromArg(args.get(1)));
             int line = intFromArg(args.get(2));
-            voiceLine = gameConstants.voiceLineName(line, version, intFromArg(args.get(3)), longFromArg(args.get(4)));
+            voiceLine = gameConstants.voiceLine(line, version, intFromArg(args.get(3)), longFromArg(args.get(4)));
         }
         return new DecodedPayload.VoiceLinePayload(new AccountId(senderId), isGlobal, voiceLine);
     }
