@@ -16,8 +16,6 @@ import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapExtractor;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapMerger;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
-import com.shinoaki.wowsreplay.dumper.web.BattleStatsCalculator;
-import com.shinoaki.wowsreplay.dumper.web.BattleTimelineCalculator;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.EntityState;
 import com.shinoaki.wowsreplay.ingest.PlayerInfo;
@@ -31,7 +29,6 @@ import com.shinoaki.wowsreplay.merge.ReplayMerger;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.node.ObjectNode;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
@@ -323,10 +320,6 @@ public final class ReplayDumper {
         List<Map<String, Object>> players = buildPlayers(report, wowsInfo);
         JsonNode playersNode = JsonMapper.toTree(players);
         out.put("players", playersNode);
-        // 最终输出阶段：webFunction 对象收纳从 WebFunction 迁移来的计算数据
-        ObjectNode webFunction = JsonMapper.createObject();
-        webFunction.set("battle_stats", JsonMapper.toTree(
-                BattleStatsCalculator.calculate(playersNode, battleResults)));
         out.put("game_events", buildGameEvents(report, normalized, wowsInfo, constants));
         out.put("capture_points", report.capturePoints());
         out.put("buff_zones", report.buffZones());
@@ -354,13 +347,8 @@ public final class ReplayDumper {
             }
             out.put("battle_stage", mm.battleStage());
             out.put("scoring_rules", mm.scoringRules());
-            // 最终输出阶段：基于流式处理产物计算累计伤害时间线与团队差距
-            double duration = report.playedDuration() > 0 ? report.playedDuration() : report.maxDuration();
-            webFunction.set("battle_timeline", JsonMapper.toTree(
-                    BattleTimelineCalculator.calculate(playersNode, battleResults, mm, duration)));
         }
 
-        out.put("webFunction", webFunction);
         return out;
     }
 
@@ -518,14 +506,18 @@ public final class ReplayDumper {
         return m;
     }
 
-    /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat 按 clock 排序，玩家身份只用 metaId。
+    /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat/voiceline 按 clock 排序，玩家身份只用 metaId。
      *  consumable 事件的 consumable 是 consumableType 数值（onConsumableUsed b[1]，非槽位下标），经
      *  constants.json CONSUMABLE_IDS 翻译成名字，再按该玩家 shipConfig.abilities 各槽能力的
      *  params.consumableType（wowsinfo abilities.consumableType）匹配出真实能力 GameParams id
-     *  （consumable_id）与名称（consumable_name）；匹配不到时 consumable_id 直接返回原始数值。 */
+     *  （consumable_id）与名称（consumable_name）；匹配不到时 consumable_id 直接返回原始数值。
+     *  voiceline 事件的 sender 是 receive_CommonCMD args[0]（同 chat 语义 = 战斗内 meta id 空间），
+     *  line 是经 GameConstants.voiceLineName 解析好的指令名（如 QuickTactic/AttentionToSquare/Wilco…）。 */
     static List<Map<String, Object>> buildGameEvents(BattleReport report, NormalizedReplay replay,
                                                      WowsInfo wowsInfo, GameConstantsProvider constants) {
         var events = new ArrayList<Map<String, Object>>();
+        Map<Long, String> metaToUser = new HashMap<>();
+        for (var p : report.players()) metaToUser.put(p.metaId(), p.username());
         // 飞机的消耗品事件在 minimap 里；先在本体消耗品里按 filter 匹配（优先用玩家自己的），
         // 匹配不到再退回全局 consumableFindFilter。空槽(id=0)/无 vehicle 的玩家跳过。
         Map<Long, List<WowsInfo.Abilities>> metaMap = new HashMap<>();
@@ -570,6 +562,16 @@ public final class ReplayDumper {
             data.put("channel", c.channel());
             data.put("message", c.message());
             events.add(event("chat", c.clock(), data));
+        }
+
+        for (var v : replay.voiceLineLog()) {
+            long metaId = Integer.toUnsignedLong(v.senderId().value());
+            var data = new LinkedHashMap<String, Object>();
+            data.put("meta_id", metaId);
+            data.put("username", metaToUser.getOrDefault(metaId, "account " + metaId));
+            data.put("global", v.isGlobal());
+            data.put("line", v.message());
+            events.add(event("voiceline", v.clock(), data));
         }
 
         events.sort(Comparator.comparingDouble(e -> ((Number) e.get("clock")).doubleValue()));
