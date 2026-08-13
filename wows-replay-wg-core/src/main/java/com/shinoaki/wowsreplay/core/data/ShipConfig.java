@@ -17,20 +17,22 @@ import java.util.Map;
 /**
  * 玩家船只装载配置解析（对标 Rust {@code wowsunpack::data::ship_config::ShipConfig}）。
  *
- * <p>Vehicle 实体的 {@code shipConfig} 属性是二进制 blob（big-endian 头 + little-endian 各槽段）。
- * 解析出 ship_params_id / modernization / abilities(消耗品) / exteriors / units 等原始 id，
- * 以及 v13.2+ 额外字段 / supply_state / color_schemes / exp（仅解析不输出，见字段注释）。</p>
+ * <p>Vehicle 实体的 {@code shipConfig} 属性是二进制 blob（little-endian，全部 u32）。
+ * 布局来自 WG 客户端 {@code ShipConfigFullConverter}（{@code _makeBaseCompactDescription}
+ * + {@code EXTRA_DESCRIPTORS[0]}），解析出 ship_params_id / modernization / abilities(消耗品) /
+ * exteriors / units 等原始 id，以及 applied_external / supply_state / color_schemes / exp
+ * （仅解析不输出，见字段注释）。</p>
  *
  * <p>{@code commander_skills} / {@code commander_skills_id} <b>不是 blob 字段</b>——它们来自
  * 同一 Vehicle EntityCreate 的 {@code crewModifiersCompactParams} 属性（舰长参数），由装配层
  * {@code BattleReportBuilder} 在 {@link #parse} 之后通过 {@link #withCommander} 附加，
  * 保留原始值（skill-type id 数组 / paramsId 原值），不做名称解析。</p>
  *
- * <p>blob 布局（little-endian，v13.2+ 多一个 u32）：</p>
+ * <p>blob 布局（little-endian；{@code element_count} = 总 u32 数 − 3）：</p>
  * <pre>
  *   version(u32) ship_params_id(u32) element_count(u32)
  *   unit_count(u32) units[unit_count]
- *   [v13.2+ 额外 u32（源码注释 _unk；实测均为 0，非贴花）]
+ *   applied_external(u32)（外部配置 id，EMPTY_EXTERNAL_CONFIG_ID=0；v13.2+ 才有）
  *   modernization: count + ids
  *   exteriors: count + ids
  *   supply_state(u32)（实测 0/2）
@@ -40,6 +42,8 @@ import java.util.Map;
  *   ecoboosts: count + ids
  *   naval_flag(u32)
  *   is_owned(u32) exp(u32) last_boarded_crew(u32)
+ *   [可选尾部段 tail: 8×u32 = 7 槽 id + count]（仅部分船只，客户端「容忍但不读」，
+ *    疑似 battle cards / visual customization；见 {@link #tail}）
  * </pre>
  */
 @Slf4j
@@ -70,8 +74,13 @@ public record ShipConfig(
      *  非 shipConfig blob 字段——由装配层在 parse 后经 {@link #withCommander} 附加（同一 EntityCreate）。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonProperty("commander_skills_id") Long commanderSkillsId,
-    /** v13.2+ 额外 u32（units 槽之后；源码注释 _unk，非贴花——贴花在 exteriors 段编码）。仅供解析，不输出。 */
-    @JsonIgnore Long extraV132,
+    /** 尾部前向兼容段（8×u32 = 7 个槽位 id + count）。仅部分船只出现（element_count 计入）；
+     *  客户端 {@code updateShipConfigFromFullCompactDescription} 读完 base+尾后直接返回、不读此段。
+     *  疑似 battle cards / visual customization；无此段时为 null（不输出）。 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("tail") ShipConfigTail tail,
+    /** 外部配置 id（units 之后；EMPTY_EXTERNAL_CONFIG_ID=0）。仅供解析，不输出。 */
+    @JsonIgnore Long appliedExternal,
     /** 补给状态（用途未知，通常 0）。仅供解析，不输出。 */
     @JsonIgnore Long supplyState,
     /** 外观槽位配色方案：(外观/涂装物品 GameParams id, 配色方案 id) 映射表。仅供解析，不输出。 */
@@ -82,6 +91,9 @@ public record ShipConfig(
     /** 外观→配色映射：记录「哪个外观/涂装物品用了哪个配色方案」（第一值为物品 GameParams id，非槽位序号）。 */
     public record ColorScheme(long itemId, long scheme) {}
 
+    /** 尾部前向兼容段：7 个槽位 id（多数为 0，有 battle card / visual customization 时非零）+ 末尾 count。 */
+    public record ShipConfigTail(@JsonProperty("slots") List<Long> slots, @JsonProperty("count") Long count) {}
+
     /** 消耗品（对标 Rust {@code ShipConfig::abilities}）。 */
     public List<Long> consumables() { return abilities; }
 
@@ -90,7 +102,7 @@ public record ShipConfig(
     public ShipConfig withCommander(CommanderSkills commanderSkills, Long commanderSkillsId) {
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
             ensigns, ecoboosts, navalFlag, lastBoardedCrew, commanderSkills, commanderSkillsId,
-            extraV132, supplyState, colorSchemes, exp);
+            tail, appliedExternal, supplyState, colorSchemes, exp);
     }
 
     /**
@@ -102,14 +114,14 @@ public record ShipConfig(
 
         readU32(buf, 0L); // blob version
         long shipParamsId = readU32(buf, 0L);
-        readU32(buf, 0L); // element count
+        long elementCount = readU32(buf, 0L);
 
         long unitCount = readU32(buf, 0L);
         var units = readIds(buf, unitCount);
 
-        Long extraV132 = null;
+        Long appliedExternal = null;
         if (version != null && version.isAtLeast(new Version(13, 2, 0, 0))) {
-            extraV132 = readU32Opt(buf); // v13.2+ 额外字段（源码注释 _unk，非贴花）
+            appliedExternal = readU32Opt(buf); // 外部配置 id（EMPTY_EXTERNAL_CONFIG_ID=0），v13.2+ 才有
         }
 
         var modernization = readSection(buf);
@@ -132,6 +144,12 @@ public record ShipConfig(
         Long lastBoardedCrew = readU32Opt(buf);
         if (isOwned == null) lastBoardedCrew = null; // 全格式尾缺失
 
+        // 尾部前向兼容段（正好 8 个 u32）：7 槽 + count（客户端不读，仅部分船只出现）
+        ShipConfigTail tail = readTail(buf);
+
+        // element_count 校验（= 总 u32 − 3）；不一致说明布局漂移/截断，仅 WARN。
+        warnIfElementCountMismatch(blob, elementCount, shipParamsId);
+
         // 末尾检测：解析完仍有剩余字节 → 疑似 WG 新增未识别字段/布局变化，打 WARN 提示核对。
         if (buf.remaining() > 0) {
             log.warn("shipConfig blob 解析后仍有 {} 字节未识别（疑似新增字段或布局变化，ship_params_id={}, blob={}B）",
@@ -140,7 +158,26 @@ public record ShipConfig(
 
         return new ShipConfig(shipParamsId, modernization, abilities, units, exteriors,
             ensigns, ecoboosts, navalFlag, lastBoardedCrew, null, null,
-            extraV132, supplyState, colorSchemes, exp);
+            tail, appliedExternal, supplyState, colorSchemes, exp);
+    }
+
+    /** 尾部前向兼容段：仅当剩余字节正好 8 个 u32 时解析为 7 槽 + count，否则返回 null（交由上层 WARN）。 */
+    private static ShipConfigTail readTail(ByteBuffer buf) {
+        if (buf.remaining() != 32) return null;
+        var slots = new ArrayList<Long>(7);
+        for (int i = 0; i < 7; i++) slots.add(readU32(buf, 0L));
+        Long count = readU32Opt(buf);
+        return new ShipConfigTail(slots, count);
+    }
+
+    /** element_count 应等于总 u32 数 − 3；不一致时 WARN（仅诊断，不中断解析）。 */
+    private static void warnIfElementCountMismatch(byte[] blob, long elementCount, long shipParamsId) {
+        if (blob.length % 4 != 0) return;
+        long expected = blob.length / 4 - 3;
+        if (elementCount != expected) {
+            log.warn("shipConfig element_count 校验失败：header={} 但实际 {} 个 u32（期望 {}，ship_params_id={}, blob={}B）",
+                elementCount, blob.length / 4, expected, shipParamsId, blob.length);
+        }
     }
 
     /**
@@ -171,7 +208,7 @@ public record ShipConfig(
         m.put("units", readIds(buf, unitCount));
 
         if (version != null && version.isAtLeast(new Version(13, 2, 0, 0))) {
-            m.put("extra_v132", readU32(buf, 0L));
+            m.put("applied_external", readU32(buf, 0L));
         }
 
         m.put("modernization", readSection(buf));
@@ -195,7 +232,17 @@ public record ShipConfig(
         m.put("exp", readU32(buf, 0L));
         m.put("last_boarded_crew", readU32(buf, 0L));
 
+        // 尾部前向兼容段（正好 8 个 u32 时结构化输出）
+        ShipConfigTail tail = readTail(buf);
+        if (tail != null) {
+            var t = new LinkedHashMap<String, Object>();
+            t.put("slots", tail.slots());
+            t.put("count", tail.count());
+            m.put("tail", t);
+        }
+
         int consumed = blob.length - buf.remaining();
+        m.put("element_count_expected", blob.length % 4 == 0 ? blob.length / 4 - 3 : null);
         m.put("consumed_bytes", consumed);
         m.put("unparsed_size", buf.remaining());
         m.put("unparsed_hex", buf.remaining() > 0
