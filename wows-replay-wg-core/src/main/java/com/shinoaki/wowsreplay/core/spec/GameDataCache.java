@@ -64,14 +64,10 @@ public final class GameDataCache {
         return (EntitySpecProvider) store.computeIfAbsent(key, _ -> loadEntitySpecs(gd.dir));
     }
 
-    public static String getLangProvider(String key) {
-        return getLangProvider(LangProvider.DEFAULT_LANG, key);
-    }
 
     /** 指定语言查 key，未命中返回 key 本身。 */
-    public static String getLangProvider(String lang, String key) {
-        var cached = langCache;
-        return cached == null ? key : cached.provider().get(lang, key);
+    public String getLangProvider(LangProvider.Lang lang, String key) {
+        return langCache == null ? key : langCache.provider().get(lang, key);
     }
 
     /**

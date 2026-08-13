@@ -4,6 +4,7 @@ import com.shinoaki.wowsreplay.core.JsonMapper;
 import tools.jackson.databind.JsonNode;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -16,18 +17,18 @@ import java.util.Map;
 public final class LangProvider {
 
     /** 默认语言（未指定语言时）。 */
-    public static final String DEFAULT_LANG = "zh_sg";
-
-    /** 只加载的语言子集。 */
-    private static final String[] LANGS = {"en", "ja", "zh_sg"};
-
+    public static final Lang DEFAULT_LANG = Lang.ZH_SG;
     /** 空实现（lang.json 缺失/解析失败时）。 */
     public static final LangProvider EMPTY = new LangProvider(Map.of());
 
-    private final Map<String, Map<String, String>> tables; // lang -> (key -> value)
+    private final Map<Lang, Map<String, String>> tables; // lang -> (key -> value)
 
-    private LangProvider(Map<String, Map<String, String>> tables) {
+    private LangProvider(Map<Lang, Map<String, String>> tables) {
         this.tables = tables;
+    }
+
+    public enum Lang {
+        EN, JA, ZH_SG
     }
 
     /** 默认语言（zh_sg）查 key，未命中返回 key 本身。 */
@@ -36,7 +37,7 @@ public final class LangProvider {
     }
 
     /** 指定语言查 key，未命中返回 key 本身。 */
-    public String get(String lang, String key) {
+    public String get(Lang lang, String key) {
         Map<String, String> table = tables.get(lang);
         if (table == null) return key;
         return table.getOrDefault(key, key);
@@ -46,9 +47,9 @@ public final class LangProvider {
     public static LangProvider fromJson(String json) {
         try {
             JsonNode root = JsonMapper.readTree(json);
-            Map<String, Map<String, String>> tables = new HashMap<>();
-            for (String lang : LANGS) {
-                JsonNode node = root.get(lang);
+            Map<Lang, Map<String, String>> tables = new HashMap<>();
+            for (var lang : Lang.values()) {
+                JsonNode node = root.get(lang.name().toLowerCase(Locale.ROOT));
                 if (node == null || !node.isObject()) continue;
                 Map<String, String> table = new HashMap<>();
                 for (var p : node.properties()) {

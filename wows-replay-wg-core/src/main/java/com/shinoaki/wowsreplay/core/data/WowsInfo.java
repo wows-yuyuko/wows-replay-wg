@@ -13,29 +13,50 @@ import java.util.Map;
  * （各条目以内部名作键，值里带 {@code id}（GameParam id）与 {@code icon}；本类反转为 id → 名称）：</p>
  */
 public record WowsInfo(
-        Map<Long, String> shipType,
-        Map<Long, String> modernizations,
+        Map<Long, ShipConfig> shipType,
+        Map<Long, Modernizations> modernizations,
         Map<Long, Abilities> consumables,
         /** 外观：id → {icon, type}（type 如 "MSkin" 等）。 */
         Map<Long, ExteriorInfo> exteriors,
-        /** skillType id → 技能名（commander_skills 的 skill-type id 用，取条目内部名）。 */
-        Map<Long, String> skills,
-        /** 消耗品 GameParams id → consumableType 名称字符串（onConsumableUsed b[1] 经 constants.json
-         *  CONSUMABLE_IDS 翻译成名字后匹配；wowsinfo 缺该字段时为空）。 */
-        Map<Long, String> abilityConsumableType
+        /** skillType id → 技能（icon=内部名，name/description 为 IDS 键，需 lang 翻译）。 */
+        Map<Long, Skills> skills
 ) {
 
     public static final WowsInfo EMPTY =
-            new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
-    /** 外观条目：icon + type（wowsinfo exteriors 段）。 */
-    public record ExteriorInfo(String icon, String type) {
+    /** 解析 wowsinfo.json 文本。缺失/解析异常由调用方兜底。 */
+    public static WowsInfo fromJson(String json) {
+        var root = JsonMapper.readTree(json);
+
+        return new WowsInfo(
+                shipsTypeMap(root),
+                modernizationsMap(root),
+                abilitiesMap(root),
+                exteriorMap(root),
+                skillTypeMap(root));
     }
 
-    public record Abilities(String nation,String name, long id, String icon, String filter, String type) {
+    /** 外观条目：icon + type + name（wowsinfo exteriors 段）。 */
+    public record ExteriorInfo(String icon, String type, String name) {
     }
 
-    public String modernization(long id) {
+    /** 升级件：name（IDS 键，需 lang 翻译）+ icon。 */
+    public record Modernizations(String name, String icon) {
+    }
+
+    /** 舰长技能：icon=条目内部名，name/description 为 IDS 键（需 lang 翻译）。 */
+    public record Skills(String icon, String name, String description) {
+    }
+
+    /** 战舰类型条目：type（"AirCarrier"/"Battleship"/…）。 */
+    public record ShipConfig(String type) {
+    }
+
+    public record Abilities(String nation, String name, long id, String icon, String filter, String type) {
+    }
+
+    public Modernizations modernization(long id) {
         return modernizations.get(id);
     }
 
@@ -57,40 +78,15 @@ public record WowsInfo(
 
     /** 战舰类型（"AirCarrier"/"Battleship"/"Destroyer"/"Cruiser"/"Submarine"/"Auxiliary"），未知返回 null。 */
     public String shipType(long shipId) {
-        return shipType.get(shipId);
-    }
-
-    public String skill(int skillType) {
-        return skills.get((long) skillType);
-    }
-
-    /** 消耗品 consumableType 名称（abilities.consumableType 字符串）；未知返回 null。 */
-    public String consumableTypeNameOf(long abilityId) {
-        return abilityConsumableType.get(abilityId);
-    }
-
-    /** 解析 wowsinfo.json 文本。缺失/解析异常由调用方兜底。 */
-    public static WowsInfo fromJson(String json) {
-        var root = JsonMapper.readTree(json);
-
-        return new WowsInfo(
-                shipsTypeMap(root),
-                idNameMap(root, "modernizations"),
-                abilitiesMap(root),
-                exteriorMap(root),
-                skillTypeMap(root),
-                consumableTypeMap(root));
-    }
-
-    /** 内部名 → {id, name} 段落 → id → name 映射（未知 id / 空名跳过）。 */
-    private static Map<Long, String> idNameMap(JsonNode root, String section) {
-        var out = new HashMap<Long, String>();
-        for (var e : root.path(section).properties()) {
-            long id = e.getValue().path("id").asLong();
-            String name = e.getValue().path("icon").asString();
-            if (id != 0 && !name.isBlank()) out.put(id, name);
+        ShipConfig config = shipType.get(shipId);
+        if (config == null) {
+            return null;
         }
-        return out;
+        return config.type();
+    }
+
+    public Skills skill(int skillType) {
+        return skills.get((long) skillType);
     }
 
     private static Map<Long, Abilities> abilitiesMap(JsonNode root) {
@@ -109,47 +105,47 @@ public record WowsInfo(
         return out;
     }
 
-    /** skills 段：skillType → name（同 skillType 取首个非空）。 */
-    private static Map<Long, String> skillTypeMap(JsonNode root) {
-        var out = new HashMap<Long, String>();
+    /** skills 段：skillType → 技能条目（skillType=0 跳过；重复 skillType 取最后一个）。 */
+    private static Map<Long, Skills> skillTypeMap(JsonNode root) {
+        var out = new HashMap<Long, Skills>();
         for (var e : root.path("skills").properties()) {
             long type = e.getValue().path("skillType").asLong();
-            String name = e.getKey();
-            if (type > 0 && !name.isBlank()) out.putIfAbsent(type, name);
+            if (type <= 0) continue;
+            out.put(type, new Skills(e.getKey(), e.getValue().path("name").asString(),
+                    e.getValue().path("description").asString()));
         }
         return out;
     }
 
-    /** exteriors 段：id → {icon, type}（未知 id / 空 icon 跳过）。 */
+    /** exteriors 段：id → {icon, type, name}（未知 id / 空 icon 跳过）。 */
     private static Map<Long, ExteriorInfo> exteriorMap(JsonNode root) {
         var out = new HashMap<Long, ExteriorInfo>();
         for (var e : root.path("exteriors").properties()) {
             long id = e.getValue().path("id").asLong();
             String icon = e.getValue().path("icon").asString();
             String type = e.getValue().path("type").asString();
-            if (id != 0 && !icon.isBlank()) out.put(id, new ExteriorInfo(icon, type));
+            String name = e.getValue().path("name").asString();
+            if (id != 0 && !icon.isBlank()) out.put(id, new ExteriorInfo(icon, type, name));
         }
         return out;
     }
 
-    /** abilities 段：消耗品 id → consumableType 名称字符串（wowsinfo 未提供该字段时返回空表）。 */
-    private static Map<Long, String> consumableTypeMap(JsonNode root) {
-        var out = new HashMap<Long, String>();
-        for (var e : root.path("abilities").properties()) {
+    private static Map<Long, Modernizations> modernizationsMap(JsonNode root) {
+        var out = new HashMap<Long, Modernizations>();
+        for (var e : root.path("modernizations").properties()) {
             long id = e.getValue().path("id").asLong();
-            String name = e.getValue().path("consumableType").asString();
-            if (id != 0 && !name.isBlank()) out.put(id, name);
+            if (id == 0) continue;
+            out.putIfAbsent(id, new Modernizations(e.getValue().path("name").asString(), e.getValue().path("icon").asString()));
         }
         return out;
     }
 
-    private static Map<Long, String> shipsTypeMap(JsonNode root) {
-        var out = new HashMap<Long, String>();
+    private static Map<Long, ShipConfig> shipsTypeMap(JsonNode root) {
+        var out = new HashMap<Long, ShipConfig>();
         for (var e : root.path("ships").properties()) {
-
             long shipId = Long.parseLong(e.getKey());
             var type = e.getValue().path("type").asString();
-            out.putIfAbsent(shipId, type);
+            out.putIfAbsent(shipId, new ShipConfig(type));
         }
         return out;
     }

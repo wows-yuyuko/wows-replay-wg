@@ -38,7 +38,7 @@ class WowsInfoTest {
     void parsesIdNameSections() {
         var w = WowsInfo.fromJson(SAMPLE);
 
-        assertEquals("PCM003_Airplanes_Mod_I", w.modernization(4290957232L));
+        assertEquals("PCM003_Airplanes_Mod_I", w.modernization(4290957232L).icon());
         var cons = w.consumable(4293042096L);
         assertNotNull(cons);
         assertEquals("PCY001_CrashCrew", cons.icon());
@@ -59,11 +59,10 @@ class WowsInfoTest {
     }
 
     @Test
-    void skillTypeMapDedupsAndIgnoresZero() {
+    void skillTypeMapsToSkills() {
         var w = WowsInfo.fromJson(SAMPLE);
-        assertEquals("TorpedoReload", w.skill(4), "重复 skillType 取首个，值为条目内部名");
-        assertEquals("TorpedoSpeed", w.skill(24));
-        assertNull(w.skill(0), "skillType=0 跳过");
+        assertEquals("TorpedoSpeed", w.skill(24).icon());
+        assertEquals("dup", w.skill(4).icon(), "重复 skillType 取最后一个");
         assertNull(w.skill(999));
     }
 

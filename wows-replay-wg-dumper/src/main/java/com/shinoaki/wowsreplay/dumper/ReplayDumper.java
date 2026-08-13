@@ -3,6 +3,7 @@ package com.shinoaki.wowsreplay.dumper;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.ReplayVersionMismatchException;
+import com.shinoaki.wowsreplay.core.data.LangProvider;
 import com.shinoaki.wowsreplay.core.data.ShipConfig;
 import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
@@ -19,7 +20,6 @@ import com.shinoaki.wowsreplay.dumper.minimap.MinimapMerger;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 import com.shinoaki.wowsreplay.ingest.EntityState;
-import com.shinoaki.wowsreplay.ingest.PlayerInfo;
 import com.shinoaki.wowsreplay.ingest.mapped.NormalizedKill;
 import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
@@ -52,13 +52,18 @@ public final class ReplayDumper {
 
     /** 管线选项（对标 Rust {@code ParseOptions} 的 Single 子集）。 */
     public record Options(
+            LangProvider.Lang lang,
             boolean minimap,
             int minimapStep,
             boolean selfDamageStats,
             /* minimap 字段 brotli 压缩等级 0-11，null 表示不压缩。 */
             Integer compressLevel
     ) {
-        public static final Options DEFAULT = new Options(false, 7, false, null);
+        public Options {
+            if (lang == null) lang = LangProvider.DEFAULT_LANG;
+        }
+
+        public static final Options DEFAULT = new Options(LangProvider.DEFAULT_LANG, false, 7, false, null);
     }
 
     /** 全部视角回放（第 0 项为主视角）。 */
@@ -101,6 +106,8 @@ public final class ReplayDumper {
         this.cache = cache;
         this.specProvider = cache.entitySpecs(primary);
         this.constants = cache.constants(primary);
+        // 预热语言表（getLangProvider 依赖 lang 已加载），并缓存 wowsinfo。
+        cache.wowsInfo(primary);
         this.gameDataDir = resolveGameDataDir(primary);
     }
 
@@ -378,7 +385,7 @@ public final class ReplayDumper {
      * commander_skills 技能名 + commander_skills_id 舰长原始 id}。名称来自 wowsinfo.json
      * 映射（未知 id → null）；无 wowsinfo.json 时名称为 null。
      */
-    static List<Map<String, Object>> buildPlayers(BattleReport report, WowsInfo wowsInfo) {
+    List<Map<String, Object>> buildPlayers(BattleReport report, WowsInfo wowsInfo) {
         var players = new ArrayList<Map<String, Object>>();
         for (var p : report.players()) {
             var pm = new LinkedHashMap<String, Object>();
@@ -398,7 +405,7 @@ public final class ReplayDumper {
                     var sc = veh.shipConfig();
                     v.put("ship_id", sc.shipParamsId());
                     // wowsinfo.json 名称映射（ship_id/commander_skills_id 保留原始 id，名称未知 → null）
-                    v.put("modernizations", mapNames(sc.modernization(), wowsInfo::modernization));
+                    v.put("modernizations", mapModernizations(sc.modernization(), wowsInfo));
                     v.put("consumables", mapConsumable(sc.consumables(), wowsInfo));
                     v.put("exteriors", mapExteriors(sc.exteriors(), wowsInfo));
                     v.put("ensigns", sc.ensigns());
@@ -416,51 +423,70 @@ public final class ReplayDumper {
         return players;
     }
 
-    /** id 数组 → 名称数组（未知 id → null，保持与原始数组同序）。 */
-    private static List<String> mapNames(List<Long> ids, java.util.function.LongFunction<String> nameOf) {
-        var out = new ArrayList<String>(ids.size());
-        for (var id : ids) out.add(nameOf.apply(id));
-        return out;
-    }
-
-    private static List<String> mapConsumable(List<Long> ids, WowsInfo wowsInfo) {
-        var out = new ArrayList<String>(ids.size());
-        for (var id : ids) {
-            var info = wowsInfo.consumable(id);
-            if (info != null) {
-                out.add(info.icon());
-            } else {
-                out.add(id.toString());
-            }
-        }
-        return out;
-    }
-
-    /** exteriors：id 数组 → {type, icon} 对象数组（未知 id → 字段为 null，保持与原始数组同序）。 */
-    private static List<Map<String, String>> mapExteriors(List<Long> ids, WowsInfo wowsInfo) {
+    private List<Map<String, String>> mapModernizations(List<Long> ids, WowsInfo wowsInfo) {
         var out = new ArrayList<Map<String, String>>(ids.size());
         for (var id : ids) {
-            var info = wowsInfo.exterior(id);
             var m = new LinkedHashMap<String, String>();
-            m.put("type", info != null ? info.type() : null);
-            m.put("icon", info != null ? info.icon() : null);
+            m.put("id", id.toString());
+            var info = wowsInfo.modernization(id);
+            if (info != null) {
+                m.put("icon", info.icon());
+                m.put("name", this.cache.getLangProvider(this.options.lang(), info.name()));
+            } else {
+                m.put("icon", null);
+                m.put("name", null);
+            }
             out.add(m);
         }
         return out;
     }
 
-    /** 6 舰种技能 id 数组 → 名称数组（同序，未知 → null）。 */
-    private static List<String> skillNames(List<Integer> ids, WowsInfo wowsInfo) {
-        var out = new ArrayList<String>(ids.size());
-        for (var id : ids) out.add(wowsInfo.skill(id));
+    private List<Map<String, String>> mapConsumable(List<Long> ids, WowsInfo wowsInfo) {
+        var out = new ArrayList<Map<String, String>>(ids.size());
+        for (var id : ids) {
+            var m = new LinkedHashMap<String, String>();
+            m.put("id", id.toString());
+            var info = wowsInfo.consumable(id);
+            if (info != null) {
+                m.put("type", info.type());
+                m.put("icon", info.icon());
+                m.put("name", this.cache.getLangProvider(this.options.lang(), info.name()));
+            } else {
+                m.put("type", null);
+                m.put("icon", null);
+                m.put("name", null);
+            }
+            out.add(m);
+        }
+        return out;
+    }
+
+    /** exteriors：id 数组 → {type, icon} 对象数组（未知 id → 字段为 null，保持与原始数组同序）。 */
+    private List<Map<String, String>> mapExteriors(List<Long> ids, WowsInfo wowsInfo) {
+        var out = new ArrayList<Map<String, String>>(ids.size());
+        for (var id : ids) {
+            var m = new LinkedHashMap<String, String>();
+            m.put("id", id.toString());
+            var info = wowsInfo.exterior(id);
+            if (info != null) {
+                m.put("type", info.type());
+                m.put("icon", info.icon());
+                m.put("name", this.cache.getLangProvider(this.options.lang(), info.name()));
+            } else {
+                m.put("type", null);
+                m.put("icon", null);
+                m.put("name", null);
+            }
+            out.add(m);
+        }
         return out;
     }
 
     /**
-     * 按战舰类型（wowsinfo shipType）只取对应舰种的技能名数组，结构同 consumables（扁平 string 数组）。
+     * 按战舰类型（wowsinfo shipType）只取对应舰种的技能，返回对象数组（{skillType, icon, name}，同序）。
      * 未知舰种返回空数组。
      */
-    private static List<String> mapShipTypeSkills(ShipConfig sc, WowsInfo wowsInfo) {
+    private List<Map<String, String>> mapShipTypeSkills(ShipConfig sc, WowsInfo wowsInfo) {
         var skills = sc.commanderSkills();
         if (skills == null) return List.of();
         String type = wowsInfo.shipType(sc.shipParamsId());
@@ -475,6 +501,27 @@ public final class ReplayDumper {
         };
         return skillNames(ids, wowsInfo);
     }
+
+
+    /** 6 舰种技能 id 数组 → 名称数组（同序，未知 → null）。 */
+    private List<Map<String, String>> skillNames(List<Integer> ids, WowsInfo wowsInfo) {
+        var out = new ArrayList<Map<String, String>>(ids.size());
+        for (var id : ids) {
+            var m = new LinkedHashMap<String, String>();
+            var info = wowsInfo.skill(id);
+            m.put("skillType", id.toString());
+            if (info != null) {
+                m.put("icon", info.icon());
+                m.put("name", this.cache.getLangProvider(this.options.lang(), info.name()));
+            } else {
+                m.put("icon", null);
+                m.put("name", null);
+            }
+            out.add(m);
+        }
+        return out;
+    }
+
 
     /**
      * initial_state 装配（对标 Rust pipeline.rs player_json：保留具名字段 + human_properties +
@@ -514,8 +561,8 @@ public final class ReplayDumper {
      *  （consumable_id）与名称（consumable_name）；匹配不到时 consumable_id 直接返回原始数值。
      *  voiceline 事件的 sender 是 receive_CommonCMD args[0]（同 chat 语义 = 战斗内 meta id 空间），
      *  line 是经 GameConstants.voiceLineName 解析好的指令名（如 QuickTactic/AttentionToSquare/Wilco…）。 */
-    static List<Map<String, Object>> buildGameEvents(BattleReport report, NormalizedReplay replay,
-                                                     WowsInfo wowsInfo, GameConstantsProvider constants) {
+    List<Map<String, Object>> buildGameEvents(BattleReport report, NormalizedReplay replay,
+                                              WowsInfo wowsInfo, GameConstantsProvider constants) {
         var events = new ArrayList<Map<String, Object>>();
         Map<Long, String> metaToUser = new HashMap<>();
         // 实体 id → metaId 索引（Avatar 实体 id + Vehicle 实体 id，对标 ReplayMapper.metaIdOf）
@@ -554,7 +601,7 @@ public final class ReplayDumper {
                     .orElseGet(() -> wowsInfo.consumableFindFilter(ctName));
             if (optional != null) {
                 data.put("consumable_icon", optional.icon());
-                data.put("consumable_name", GameDataCache.getLangProvider(optional.name()));
+                data.put("consumable_name", this.cache.getLangProvider(this.options.lang(), optional.name()));
             } else {
                 data.put("consumable_icon", null);
                 data.put("consumable_name", null);
@@ -645,7 +692,7 @@ public final class ReplayDumper {
 
     // ── space_size（对标 Rust position::parse_space_settings）────────────
 
-    static Integer parseSpaceSize(Path gameDataBase, String mapName) {
+    public static Integer parseSpaceSize(Path gameDataBase, String mapName) {
         if (mapName == null || mapName.isBlank()) return null;
         Path[] candidates = {
                 gameDataBase.resolve(mapName).resolve("space.settings"),

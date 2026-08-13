@@ -102,17 +102,17 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
                 for (var entry : node.properties()) {
                     var v = entry.getValue();
                     var id = v.get("id");
-                    var name = v.get("name");
-                    if (id != null && id.isIntegralNumber() && name != null && name.isTextual()) {
-                        result.put(id.intValue(), name.textValue());
+                    var name = v.get("icon");
+                    if (id != null && id.isIntegralNumber() && name != null && name.isString()) {
+                        result.put(id.intValue(), name.stringValue());
                     }
                 }
             } else if (node.isArray()) {
                 for (var entry : node) {
                     var id = entry.get("id");
-                    var name = entry.get("name");
-                    if (id != null && id.isIntegralNumber() && name != null && name.isTextual()) {
-                        result.put(id.intValue(), name.textValue());
+                    var name = entry.get("icon");
+                    if (id != null && id.isIntegralNumber() && name != null && name.isString()) {
+                        result.put(id.intValue(), name.stringValue());
                     }
                 }
             }

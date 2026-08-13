@@ -2,6 +2,7 @@ package com.shinoaki.wowsreplay.dumper;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
+import com.shinoaki.wowsreplay.core.data.LangProvider;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import lombok.extern.slf4j.Slf4j;
 
@@ -82,7 +83,7 @@ public final class DumperMain {
         }
         log.info("使用游戏数据: {}", gameData);
 
-        var replayDumper = new ReplayDumper(replay, new ReplayDumper.Options(minimap, minimapStep, selfDamageStats, compressLevel));
+        var replayDumper = new ReplayDumper(replay, new ReplayDumper.Options(LangProvider.DEFAULT_LANG, minimap, minimapStep, selfDamageStats, compressLevel));
 
         // 逆向诊断模式：只输出所有玩家 shipConfig 原始 blob（含未识别尾部），不跑主装配
         if (shipConfigDump != null) {
