@@ -154,11 +154,13 @@ public final class GameConstants {
     // ── VoiceLine（快捷指令）───────────────────────────────────────────
 
     /**
-     * VoiceLine 快捷指令 id + 参数 → {@link VoiceLine}（>=0.12.8 布局，参数从 blob 中消费）。
+     * VoiceLine 快捷指令 commandType + 参数 → {@link VoiceLine}（>=0.12.8 布局，参数从 blob 中消费）。
      *
-     * <p><b>数据源说明</b>：快捷指令（AttentionToSquare / QuickTactic / Wilco …）来自客户端
-     * Python UI 代码（快速指令菜单），本地游戏数据（constants.json / constants/*.xml / scripts）
-     * 中<b>没有</b>对应常量表，因此本布局只能内部维护，无外部兜底。</p>
+     * <p><b>数据源说明</b>：快捷指令系统来自客户端 {@code CommonQuickCommands.QuickCommands}
+     * （scripts.zip，本地无源）。blob 格式 {@code commandType(H) sendToAll(?) [按命令类的参数]}：
+     * RectangleAttentionCommand→row/column(2×H)、MapPointQuickCommand→x/y(2×f)、
+     * TargetQuickCommand(tactic/need_support/good_game/thank_you/back)→targetType(H)+targetId(Q)、
+     * 其余 EmptyQuickCommand 无参数。</p>
      *
      * <p>两个布局的区别在<b>参数来源</b>：新版（>=0.12.8，本方法）参数内嵌在 blob 里逐项读取；
      * 旧版（{@code voiceLine(int, Version, int, long)}）参数由调用方作为整数传入。
@@ -166,79 +168,47 @@ public final class GameConstants {
      *
      * <p>注意：本方法<b>会消费 {@code buf}</b> 的位置（读取指令附加参数）。</p>
      *
-     * @param line    指令 id（blob 前 2 字节 LE short）
+     * @param line    commandType（blob 前 2 字节 LE short）
      * @param version 回放版本（>=0.12.8 使用本布局）
      * @param buf     指令 blob（小端），附加参数从此读取
      */
     public VoiceLine voiceLine(int line, Version version, ByteBuffer buf) {
         return switch (line) {
-            case 1 -> VoiceLine.coordinate(line, "AttentionToSquare", buf.getShort(), buf.getShort());
-            case 2 -> {
-                int tacticTypeId = buf.getShort();
-                long target = buf.getLong();
-                yield VoiceLine.tactic(line, tacticTypeId, target);
+            case 1 -> VoiceLine.rect(line, buf.getShort(), buf.getShort());
+            case 2, 3, 7, 10, 12 -> {
+                int targetType = buf.getShort();
+                long targetId = buf.getLong();
+                yield VoiceLine.target(line, targetType, targetId);
             }
-            case 3 -> VoiceLine.plain(line, "RequestingSupport");
-            case 5 -> VoiceLine.plain(line, "Wilco");
-            case 6 -> VoiceLine.plain(line, "Negative");
-            case 7 -> VoiceLine.plain(line, "WellDone");
-            case 8 -> VoiceLine.plain(line, "FairWinds");
-            case 9 -> VoiceLine.plain(line, "Curses");
-            case 10 -> VoiceLine.plain(line, "DefendTheBase");
-            case 11 -> VoiceLine.plain(line, "ProvideAntiAircraft");
-            case 12 -> {
-                buf.getShort();
-                long target = buf.getLong();
-                yield VoiceLine.retreat(line, target);
-            }
-            case 13 -> VoiceLine.plain(line, "IntelRequired");
-            case 14 -> VoiceLine.plain(line, "SetSmokeScreen");
-            case 15 -> VoiceLine.plain(line, "UsingRadar");
-            case 16 -> VoiceLine.plain(line, "UsingHydroSearch");
-            case 17 -> VoiceLine.plain(line, "FollowMe");
-            case 18 -> VoiceLine.coordinate(line, "MapPointAttention", buf.getFloat(), buf.getFloat());
-            case 19 -> VoiceLine.plain(line, "UsingSubmarineLocator");
+            case 18 -> VoiceLine.mapPoint(line, buf.getFloat(), buf.getFloat());
+            case 4, 5, 6, 8, 9, 11, 13, 14, 15, 16, 17, 19, 20 -> VoiceLine.empty(line);
             default -> {
-                log.warn("未知快捷指令 line id: {}（版本 {}，可能为 WG 新增指令，需在 GameConstants 补映射）", line, version);
+                log.warn("未知快捷指令 commandType: {}（版本 {}，可能为 WG 新增指令，需在 GameConstants 补映射）", line, version);
                 yield new VoiceLine(line, "UnknownVoiceLine", null);
             }
         };
     }
 
     /**
-     * VoiceLine 快捷指令 id + 参数 → {@link VoiceLine}（&lt;0.12.8 旧布局，参数由调用方传入）。
+     * VoiceLine 快捷指令 commandType + 参数 → {@link VoiceLine}（&lt;0.12.8 旧布局，参数由调用方传入）。
      *
-     * <p>与 {@link #voiceLine(int, Version, ByteBuffer)} 相同的 id→类型布局，仅参数来源不同：
+     * <p>与 {@link #voiceLine(int, Version, ByteBuffer)} 相同的 commandType→类型布局，仅参数来源不同：
      * 旧版 {@code receive_CommonCMD} 的参数位直接是整数（isGlobal, senderId, line, arg, arg2），
      * 无 blob 消费。见上述新版方法的布局说明。</p>
      *
-     * @param line    指令 id
+     * @param line    commandType
      * @param version 回放版本（&lt;0.12.8 使用本布局）
      * @param a       指令附加参数（短型参数位）
      * @param b       指令附加参数（长型参数位）
      */
     public VoiceLine voiceLine(int line, Version version, int a, long b) {
         return switch (line) {
-            case 1 -> VoiceLine.coordinate(line, "AttentionToSquare", a, b);
-            case 2 -> VoiceLine.tactic(line, a, b);
-            case 3 -> VoiceLine.plain(line, "RequestingSupport");
-            case 5 -> VoiceLine.plain(line, "Wilco");
-            case 6 -> VoiceLine.plain(line, "Negative");
-            case 7 -> VoiceLine.plain(line, "WellDone");
-            case 8 -> VoiceLine.plain(line, "FairWinds");
-            case 9 -> VoiceLine.plain(line, "Curses");
-            case 10 -> VoiceLine.plain(line, "DefendTheBase");
-            case 11 -> VoiceLine.plain(line, "ProvideAntiAircraft");
-            case 12 -> VoiceLine.retreat(line, b);
-            case 13 -> VoiceLine.plain(line, "IntelRequired");
-            case 14 -> VoiceLine.plain(line, "SetSmokeScreen");
-            case 15 -> VoiceLine.plain(line, "UsingRadar");
-            case 16 -> VoiceLine.plain(line, "UsingHydroSearch");
-            case 17 -> VoiceLine.plain(line, "FollowMe");
-            case 18 -> VoiceLine.coordinate(line, "MapPointAttention", a, b);
-            case 19 -> VoiceLine.plain(line, "UsingSubmarineLocator");
+            case 1 -> VoiceLine.rect(line, a, (int) b);
+            case 2, 3, 7, 10, 12 -> VoiceLine.target(line, a, b);
+            case 18 -> VoiceLine.mapPoint(line, a, b);
+            case 4, 5, 6, 8, 9, 11, 13, 14, 15, 16, 17, 19, 20 -> VoiceLine.empty(line);
             default -> {
-                log.warn("未知快捷指令 line id: {}（版本 {}，可能为 WG 新增指令，需在 GameConstants 补映射）", line, version);
+                log.warn("未知快捷指令 commandType: {}（版本 {}，可能为 WG 新增指令，需在 GameConstants 补映射）", line, version);
                 yield new VoiceLine(line, "UnknownVoiceLine", null);
             }
         };

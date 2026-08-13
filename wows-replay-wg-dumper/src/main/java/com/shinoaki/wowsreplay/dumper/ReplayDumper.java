@@ -581,20 +581,28 @@ public final class ReplayDumper {
             data.put("global", v.isGlobal());
             VoiceLine vl = v.voiceLine();
             data.put("type", vl.type());
-            // 指令参数（仅带参类型：AttentionToSquare/QuickTactic/Retreat/MapPointAttention）
+            // 指令附加参数（按命令类：rect→row/column、mapPoint→x/y、target→targetType/targetId）
             VoiceLine.VoiceLineData pd = vl.data();
             if (pd != null) {
                 var params = new LinkedHashMap<String, Object>();
+                if (pd.row() != null) {
+                    params.put("row", pd.row());
+                    params.put("column", pd.column());
+                }
                 if (pd.x() != null) {
                     params.put("x", pd.x());
-                    params.put("z", pd.z());
+                    params.put("y", pd.y());
                 }
-                if (pd.tacticTypeId() != null) {
-                    params.put("tactic_type_id", pd.tacticTypeId());
+                if (pd.targetType() != null) {
+                    params.put("target_type", pd.targetType());
+                    params.put("target_type_name", VoiceLine.entityTypeName(pd.targetType()));
                 }
-                if (pd.targetEntityId() != null) {
-                    params.put("target_entity_id", pd.targetEntityId());
-                    params.put("target_meta_id", entityToMeta.getOrDefault(pd.targetEntityId(), 0L));
+                if (pd.targetId() != null) {
+                    params.put("target_id", pd.targetId());
+                    // 仅 SHIP(0)/PLAYER(12) 类型目标才是玩家船，可映射 metaId
+                    if (pd.targetType() != null && (pd.targetType() == 0 || pd.targetType() == 12)) {
+                        params.put("target_meta_id", entityToMeta.getOrDefault(pd.targetId(), 0L));
+                    }
                 }
                 if (!params.isEmpty()) data.put("data", params);
             }
