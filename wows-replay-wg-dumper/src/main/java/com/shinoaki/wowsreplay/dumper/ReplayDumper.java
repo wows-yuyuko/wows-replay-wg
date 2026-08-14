@@ -311,6 +311,7 @@ public final class ReplayDumper {
         var out = new LinkedHashMap<String, Object>();
         out.put("battle_results", battleResults);
         out.put("arena_id", report.arenaId());
+        out.put("minimap_step", options.minimapStep());
         // 主视角用户：单 replay 为录制者(self)玩家的 meta_id
         out.put("master_meta_id", report.selfPlayer().metaId());
         out.put("date_time", replay.meta().dateTime());
