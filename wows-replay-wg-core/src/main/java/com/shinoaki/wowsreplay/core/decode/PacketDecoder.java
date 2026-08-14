@@ -494,7 +494,7 @@ public class PacketDecoder {
      *   bits 0-10:  x   (B11, 0-2047)
      *   bits 11-21: y   (B11)
      *   bits 22-29: heading (B8, convert: v/256*360 - 180)
-     *   bit 30:     unknown
+     *   bit 30:     unknown（big hunt，未使用）
      *   bit 31:     is_disappearing
      * x_norm = x/512 - 1.5, y_norm = y/512 - 1.5
      * </pre>
@@ -511,16 +511,13 @@ public class PacketDecoder {
                         int xRaw = packed & 0x7FF;
                         int yRaw = (packed >> 11) & 0x7FF;
                         int headingRaw = (packed >> 22) & 0xFF;
-                        boolean unknown = ((packed >> 30) & 1) != 0;
                         boolean disappearing = ((packed >> 31) & 1) != 0;
                         float heading = (headingRaw / 256.0f) * 360.0f - 180.0f;
                         float x = xRaw / 512.0f - 1.5f;
                         float y = yRaw / 512.0f - 1.5f;
                         boolean isSentinel = xRaw == 0 && yRaw == 0;
-                        boolean visible = !isSentinel && !disappearing;
-                        int flags = (unknown ? 1 : 0) | (disappearing ? 2 : 0);
                         entries.add(new DecodedPayload.MinimapUpdateEntry(
-                                new EntityId(vehicleId), isSentinel, disappearing, heading, x, y, visible, flags));
+                                new EntityId(vehicleId), isSentinel, disappearing, heading, x, y));
                     }
                 }
             }

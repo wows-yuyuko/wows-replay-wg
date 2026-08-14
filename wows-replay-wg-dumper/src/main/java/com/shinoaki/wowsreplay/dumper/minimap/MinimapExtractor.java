@@ -15,8 +15,11 @@ import com.shinoaki.wowsreplay.ingest.ShotHitRecord;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * Minimap 数据提取器（对标 Rust {@code replay-dumper::position::extract_minimap_data}，
@@ -52,11 +55,100 @@ public final class MinimapExtractor {
 
     /** 提取 minimap 数据（Single 模式）。 */
     public MinimapOutput extract() {
+        var frames = new ArrayList<MinimapOutput.MinimapFrame>();
+        int[] tick = {0};
+        var core = runCore((world, clock) -> {
+            // 4. 帧快照（抽稀）
+            if (tick[0] % step == 0) {
+                frames.add(snapshot(world, clock));
+            }
+            tick[0]++;
+        });
+        return new MinimapOutput(core.arenaId(), frames, core.firingEvents(), core.damageEvents(),
+            core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
+            core.finishType(), core.scoringRules(), core.capturedBuffs());
+    }
+
+    /**
+     * 压缩输出（外部程序分析用）：与 {@link #extract()} 同结构，保留每帧
+     * planes/torpedoes/smoke_screens/buildings/wards/buff_zones/weather_zones/team_scores/
+     * capture_points/time_left 及全部事件流（含可见性 spotting），仅将 frames 的
+     * {@code entities} 改为<b>移动增量</b>：每帧只列出自上次输出以来位置（归一化坐标移动
+     * ≥ {@value #MOVE_EPSILON}）或航向（≥ {@value #HEADING_EPSILON}°）或可见/血量/存活等
+     * 发生显著变化、或首次出现的船；静止/匀速直行的船不再重复输出，显著减小移动数据体积。
+     * 消费方需与上一帧状态合并（{@code movement_delta: true}）。
+     */
+    public MinimapOutput.Compressed extractCompressed() {
+        var frames = new ArrayList<MinimapOutput.MinimapFrame>();
+        var lastState = new HashMap<Long, MinimapOutput.MinimapEntity>();
+        int[] tick = {0};
+        var core = runCore((world, clock) -> {
+            // 帧快照（抽稀 + 移动增量）
+            if (tick[0] % step == 0) {
+                frames.add(snapshotDelta(world, clock, lastState));
+            }
+            tick[0]++;
+        });
+        return new MinimapOutput.Compressed(true, core.arenaId(), frames, core.firingEvents(),
+            core.damageEvents(), core.shotHits(), core.deadShips(), core.battleStage(),
+            core.winningTeam(), core.finishType(), core.scoringRules(), core.capturedBuffs());
+    }
+
+    /** 移动显著变化阈值（归一化坐标，地图范围 ±1.5）：超过才输出增量，压缩静止/匀速段。 */
+    private static final float MOVE_EPSILON = 0.01f;
+    /** 航向显著变化阈值（度）。 */
+    private static final float HEADING_EPSILON = 1.0f;
+
+    /** 两条船位状态是否算“显著变化”（位置/航向/可见/探测/隐身/血量/存活/敌我任一变）。 */
+    private static boolean entityChanged(MinimapOutput.MinimapEntity a, MinimapOutput.MinimapEntity b) {
+        if (Math.abs(a.x() - b.x()) >= MOVE_EPSILON) return true;
+        if (Math.abs(a.y() - b.y()) >= MOVE_EPSILON) return true;
+        if (Math.abs(a.heading() - b.heading()) >= HEADING_EPSILON) return true;
+        return a.visible() != b.visible()
+            || a.visibilityFlags() != b.visibilityFlags()
+            || a.isInvisible() != b.isInvisible()
+            || a.teamId() != b.teamId()
+            || a.health() != b.health()
+            || a.maxHealth() != b.maxHealth()
+            || a.isAlive() != b.isAlive()
+            || a.side() != b.side();
+    }
+
+    /** 帧快照（压缩模式）：entities 只含显著变化/首次出现的船，其余帧内状态同全量。 */
+    private static MinimapOutput.MinimapFrame snapshotDelta(BattleWorld world, float clock,
+                                                            Map<Long, MinimapOutput.MinimapEntity> lastState) {
+        var entities = new ArrayList<MinimapOutput.MinimapEntity>();
+        for (var es : world.entities().values()) {
+            // 只有收到过 minimap 更新（有归一化坐标）的实体才输出；玩家身份归一为 metaId
+            if (Float.isNaN(es.minimapX) || Float.isNaN(es.minimapZ)) continue;
+            float heading = Float.isNaN(es.minimapHeading) ? 0f : es.minimapHeading;
+            int side = es.relation >= 0 ? es.relation : 2;
+            long metaId = ReplayMapper.metaIdOf(world, es.id.value());
+            var e = new MinimapOutput.MinimapEntity(metaId, es.minimapX, es.minimapZ,
+                heading, es.visible, es.visibilityFlags, es.isInvisible,
+                es.teamId, es.health, es.maxHealth, es.isAlive, side);
+            var prev = lastState.get(metaId);
+            if (prev == null || entityChanged(prev, e)) {
+                entities.add(e);
+                lastState.put(metaId, e);
+            }
+        }
+        return frame(world, clock, entities);
+    }
+
+    /** 共享解析循环的事件流/终局结果（帧与移动增量由回调按各自策略装配）。 */
+    private record Core(Long arenaId, List<MinimapOutput.ShotEntry> firingEvents,
+                        List<MinimapOutput.DamageEntry> damageEvents,
+                        List<MinimapOutput.ShotHitEntry> shotHits, List<MinimapOutput.DeadShip> deadShips,
+                        String battleStage, Integer winningTeam, String finishType,
+                        MinimapOutput.ScoringRules scoringRules, List<MinimapOutput.CapturedBuff> capturedBuffs) {
+    }
+
+    private Core runCore(BiConsumer<BattleWorld, Float> boundary) {
         var world = new BattleWorld(replay.meta(), replay.version(), constants);
         var parser = new Parser(specProvider, replay.version());
         var decoder = new PacketDecoder(replay.version());
 
-        var frames = new ArrayList<MinimapOutput.MinimapFrame>();
         var firingEvents = new ArrayList<MinimapOutput.ShotEntry>();
         var damageEvents = new ArrayList<MinimapOutput.DamageEntry>();
         var shotHits = new ArrayList<MinimapOutput.ShotHitEntry>();
@@ -64,7 +156,6 @@ public final class MinimapExtractor {
         int lastDamageCount = 0;
         int lastHitCount = 0;
         float lastClock = Float.NaN;
-        int tick = 0;
 
         var iter = replay.packetIterator();
         while (iter.hasNext()) {
@@ -74,7 +165,7 @@ public final class MinimapExtractor {
             if (packet.packetType() == null) continue;
             world.process(decoder.decode(packet), raw.clock());
 
-            // 时钟边界：冲刷事件流 + step 抽帧（docs §4.1）
+            // 时钟边界：冲刷事件流 + 回调装配（帧抽稀或移动增量）
             float clock = world.currentClock().seconds();
             if (clock != lastClock) {
                 // 1. damage：damageEvents 条数 diff，只推新事件（玩家身份归一为 metaId）
@@ -95,7 +186,7 @@ public final class MinimapExtractor {
 
                 // 2b. shot_id → fired_at 映射（shot_hits 关联起源齐射；用 (owner,shot) 组合 key
                 //     避免不同齐射 shot_id 复用导致的覆盖误配）
-                var firedAtByShot = new java.util.HashMap<Long, Float>();
+                var firedAtByShot = new HashMap<Long, Float>();
                 for (var s : world.firedSalvos()) {
                     int owner = s.salvo().ownerId().value();
                     for (var sh : s.salvo().shots()) {
@@ -110,11 +201,7 @@ public final class MinimapExtractor {
                 }
                 lastHitCount = hits.size();
 
-                // 4. 帧快照（抽稀）
-                if (tick % step == 0) {
-                    frames.add(snapshot(world, clock));
-                }
-                tick++;
+                boundary.accept(world, clock);
                 lastClock = clock;
             }
         }
@@ -129,8 +216,7 @@ public final class MinimapExtractor {
         String finishType = world.finishType() != null ? world.finishType()
             : (world.finishTypeId() != 0 ? String.valueOf(world.finishTypeId()) : null);
 
-        return new MinimapOutput(
-            arenaId, frames, firingEvents, damageEvents, shotHits,
+        return new Core(arenaId, firingEvents, damageEvents, shotHits,
             world.deadShips().stream()
                 .map(ds -> new MinimapOutput.DeadShip(ds.clock(),
                     ReplayMapper.metaIdOf(world, ds.victimId()), ds.x(), ds.z()))
@@ -194,7 +280,8 @@ public final class MinimapExtractor {
             float heading = Float.isNaN(es.minimapHeading) ? 0f : es.minimapHeading;
             int side = es.relation >= 0 ? es.relation : 2;
             entities.add(new MinimapOutput.MinimapEntity(ReplayMapper.metaIdOf(world, es.id.value()),
-                es.minimapX, es.minimapZ, heading, es.visible, es.teamId, es.health, es.maxHealth, es.isAlive, side));
+                es.minimapX, es.minimapZ, heading, es.visible, es.visibilityFlags, es.isInvisible,
+                es.teamId, es.health, es.maxHealth, es.isAlive, side));
         }
         return frame(world, clock, entities);
     }

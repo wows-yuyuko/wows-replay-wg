@@ -110,8 +110,20 @@ public sealed interface DecodedPayload {
     // ── Minimap ────────────────────────────────────────────────────────────
 
     record MinimapUpdateEntry(EntityId entityId, boolean isSentinel, boolean disappearing,
-                              float heading, float x, float z, boolean visible,
-                              int visibilityFlags) {}
+                              float heading, float x, float z) {
+        /**
+         * 水听式一次性 ping：{@code disappearing=true} 且位置非哨兵。这类更新只表示瞬时探测
+         * 闪光（如潜艇水听），不当作持续探测（对标 Rust {@code MinimapUpdate::is_minimap_ping}）。
+         */
+        public boolean isMinimapPing() {
+            return disappearing && !isSentinel;
+        }
+
+        /** 小地图可见 = 非哨兵 且 非一次性 ping（对标 Rust positions.rs:82）。 */
+        public boolean visible() {
+            return !isSentinel && !isMinimapPing();
+        }
+    }
 
     record MinimapUpdatePayload(List<MinimapUpdateEntry> updates) implements DecodedPayload {}
 

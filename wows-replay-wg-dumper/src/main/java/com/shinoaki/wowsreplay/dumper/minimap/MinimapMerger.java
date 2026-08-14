@@ -224,7 +224,8 @@ public final class MinimapMerger {
             if (!keep) continue;
             float heading = Float.isNaN(es.minimapHeading) ? 0f : es.minimapHeading;
             out.add(new MinimapOutput.MinimapEntity(metaId, es.minimapX, es.minimapZ,
-                heading, es.visible, es.teamId, es.health, es.maxHealth, es.isAlive, side));
+                heading, es.visible, es.visibilityFlags, es.isInvisible,
+                es.teamId, es.health, es.maxHealth, es.isAlive, side));
         }
     }
 

@@ -489,11 +489,11 @@ public class BattleWorld {
     private void handleMinimapUpdate(DecodedPayload.MinimapUpdatePayload mup, float elapsed) {
         for (var entry : mup.updates()) {
             var es = getOrCreateEntity(entry.entityId().value(), null);
-            es.isInvisible = !entry.visible();
+            // 小地图可见 = 非哨兵 && 非一次性 ping（水听）。对标 Rust positions.rs:82。
             es.visible = entry.visible();
             es.lastUpdated = elapsed;
-            // 不可见/哨兵时保留上次位置与朝向（对标 Rust MinimapPlacement 保留逻辑）
-            if (entry.visible() && !entry.isSentinel()) {
+            // 不可见 / 哨兵 / 一次性 ping 时保留上次位置与朝向（对标 Rust MinimapPlacement 保留逻辑）
+            if (entry.visible()) {
                 es.minimapX = entry.x();
                 es.minimapZ = entry.z();
                 es.minimapHeading = entry.heading();

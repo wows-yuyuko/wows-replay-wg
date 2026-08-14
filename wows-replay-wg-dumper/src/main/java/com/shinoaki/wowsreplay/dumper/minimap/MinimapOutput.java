@@ -58,13 +58,17 @@ public record MinimapOutput(
     ) {}
 
     /** 归一化坐标船位（x/y ∈ [-1.5, 1.5]，heading 度）；玩家身份用全局一致 metaId。
-     *  {@code side}：敌我分类，0=自己, 1=友军, 2=敌方（单视角相对本视角录制者；合并时相对主视角）。 */
+     *  {@code side}：敌我分类，0=自己, 1=友军, 2=敌方（单视角相对本视角录制者；合并时相对主视角）。
+     *  {@code visible}：该视角小地图上是否有位点；{@code visibility_flags}：服务器权威探测原因掩码
+     *  （雷达/水听/目视等，非零=被点亮）；{@code is_invisible}：实体主动隐身态（潜艇下潜/烟雾）。 */
     public record MinimapEntity(
         @JsonProperty("meta_id") long metaId,
         @JsonProperty("x") float x,
         @JsonProperty("y") float y,
         @JsonProperty("heading") float heading,
         @JsonProperty("visible") boolean visible,
+        @JsonProperty("visibility_flags") int visibilityFlags,
+        @JsonProperty("is_invisible") boolean isInvisible,
         @JsonProperty("team_id") int teamId,
         @JsonProperty("health") float health,
         @JsonProperty("max_health") float maxHealth,
@@ -217,5 +221,28 @@ public record MinimapOutput(
         @JsonProperty("params_id") long paramsId,
         @JsonProperty("captured_by_meta_id") long capturedByMetaId,
         @JsonProperty("clock") float clock
+    ) {}
+
+    /**
+     * 压缩输出（供外部程序分析）：与 {@link MinimapOutput} 同结构（每帧 planes/torpedoes/
+     * smoke_screens/buildings/wards/buff_zones/weather_zones/team_scores/capture_points/time_left
+     * 与全部事件流均保留，含可见性 spotting），仅对 frames 的 {@code entities} 做<b>移动增量</b>
+     * 压缩：每帧只列出自上一帧以来位置/航向/可见/血量/存活发生<b>显著变化</b>或<b>首次出现</b>的船，
+     * 消费方需与上一帧状态合并。由 {@code MinimapExtractor.extractCompressed()} 产生。
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Compressed(
+        @JsonProperty("movement_delta") boolean movementDelta,
+        @JsonProperty("arena_id") Long arenaId,
+        @JsonProperty("frames") List<MinimapFrame> frames,
+        @JsonProperty("firing_events") List<ShotEntry> firingEvents,
+        @JsonProperty("damage_events") List<DamageEntry> damageEvents,
+        @JsonProperty("shot_hits") List<ShotHitEntry> shotHits,
+        @JsonProperty("dead_ships") List<DeadShip> deadShips,
+        @JsonProperty("battle_stage") String battleStage,
+        @JsonProperty("winning_team") Integer winningTeam,
+        @JsonProperty("finish_type") String finishType,
+        @JsonProperty("scoring_rules") ScoringRules scoringRules,
+        @JsonProperty("captured_buffs") List<CapturedBuff> capturedBuffs
     ) {}
 }
