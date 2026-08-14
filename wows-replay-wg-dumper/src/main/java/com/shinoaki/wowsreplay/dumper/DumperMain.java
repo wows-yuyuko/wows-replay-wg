@@ -16,7 +16,7 @@ import java.util.Arrays;
  * <p>用法：</p>
  * <pre>{@code
  * java -cp ... com.wows.replay.dumper.DumperMain <REPLAY> -b <game-data-base>
- *   [-o out.json] [--minimap [--minimap-step N]] [--compress N]
+ *   [-o out.json] [--minimap] [--compress N]
  *   [--self-damage-stats] [--vehicle-events] [--battle-results]
  *   [--ship-config-dump shipconfig.json]   ← 只输出所有玩家 shipConfig 原始 blob（逆向诊断用）
  * }</pre>
@@ -43,7 +43,6 @@ public final class DumperMain {
         Path gameDataBase = null;
         Path outFile = null;
         boolean minimap = false;
-        int minimapStep = 7;
         boolean selfDamageStats = false;
         Integer compressLevel = null;
         Path shipConfigDump = null;
@@ -55,7 +54,6 @@ public final class DumperMain {
                 case "-b", "--game-data-base" -> gameDataBase = Path.of(require(args, ++i, a));
                 case "-o", "--out-file" -> outFile = Path.of(require(args, ++i, a));
                 case "--minimap" -> minimap = true;
-                case "--minimap-step" -> minimapStep = Integer.parseInt(require(args, ++i, a));
                 case "--self-damage-stats" -> selfDamageStats = true;
                 case "--compress" -> compressLevel = Integer.parseInt(require(args, ++i, a));
                 case "--ship-config-dump" -> shipConfigDump = Path.of(require(args, ++i, a));
@@ -83,7 +81,7 @@ public final class DumperMain {
         }
         log.info("使用游戏数据: {}", gameData);
 
-        var replayDumper = new ReplayDumper(replay, new ReplayDumper.Options(LangProvider.DEFAULT_LANG, minimap, minimapStep, selfDamageStats, compressLevel));
+        var replayDumper = new ReplayDumper(replay, new ReplayDumper.Options(LangProvider.DEFAULT_LANG, minimap, selfDamageStats, compressLevel));
 
         // 逆向诊断模式：只输出所有玩家 shipConfig 原始 blob（含未识别尾部），不跑主装配
         if (shipConfigDump != null) {

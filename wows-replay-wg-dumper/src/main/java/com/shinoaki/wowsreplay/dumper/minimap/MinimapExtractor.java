@@ -26,7 +26,7 @@ import java.util.function.BiConsumer;
  * docs/replay-dumper-minimap.md §4）。
  *
  * <p><b>Single 模式</b>：仅主回放驱动一个 {@link BattleWorld}，逐时钟边界冲刷事件流
- * （damage 条数 diff / 齐射去重 / shot_hits diff），每 {@code step} 个时钟边界抽一帧快照，
+ * （damage 条数 diff / 齐射去重 / shot_hits diff），每时钟边界抽一帧全量快照，
  * 循环结束后装配终局状态。多视角合并（Full/Fast）暂不实现。</p>
  *
  * <p>坐标解码复用 {@link PacketDecoder#decodeMinimapVision(NamedArgs)}（packedData 位布局见
@@ -38,32 +38,23 @@ public final class MinimapExtractor {
     private final GameConstantsProvider constants;
     private final GameConstants gameConstants;
     private final ReplayFile replay;
-    private final int step;
 
-    public MinimapExtractor(EntitySpecProvider specProvider, ReplayFile replay, int step) {
-        this(specProvider, null, replay, step);
+    public MinimapExtractor(EntitySpecProvider specProvider, ReplayFile replay) {
+        this(specProvider, null, replay);
     }
 
     public MinimapExtractor(EntitySpecProvider specProvider, GameConstantsProvider constants,
-                            ReplayFile replay, int step) {
+                            ReplayFile replay) {
         this.specProvider = specProvider;
         this.constants = constants;
         this.gameConstants = new GameConstants(constants);
         this.replay = replay;
-        this.step = Math.max(1, step);
     }
 
     /** 提取 minimap 数据（Single 模式）。 */
     public MinimapOutput extract() {
         var frames = new ArrayList<MinimapOutput.MinimapFrame>();
-        int[] tick = {0};
-        var core = runCore((world, clock) -> {
-            // 4. 帧快照（抽稀）
-            if (tick[0] % step == 0) {
-                frames.add(snapshot(world, clock));
-            }
-            tick[0]++;
-        });
+        var core = runCore((world, clock) -> frames.add(snapshot(world, clock)));
         return new MinimapOutput(core.arenaId(), frames, core.firingEvents(), core.damageEvents(),
             core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
             core.finishType(), core.scoringRules(), core.capturedBuffs());
@@ -81,14 +72,7 @@ public final class MinimapExtractor {
     public MinimapOutput.Compressed extractCompressed() {
         var frames = new ArrayList<MinimapOutput.MinimapFrame>();
         var lastState = new HashMap<Long, MinimapOutput.MinimapEntity>();
-        int[] tick = {0};
-        var core = runCore((world, clock) -> {
-            // 帧快照（抽稀 + 移动增量）
-            if (tick[0] % step == 0) {
-                frames.add(snapshotDelta(world, clock, lastState));
-            }
-            tick[0]++;
-        });
+        var core = runCore((world, clock) -> frames.add(snapshotDelta(world, clock, lastState)));
         return new MinimapOutput.Compressed(true, core.arenaId(), frames, core.firingEvents(),
             core.damageEvents(), core.shotHits(), core.deadShips(), core.battleStage(),
             core.winningTeam(), core.finishType(), core.scoringRules(), core.capturedBuffs());

@@ -54,16 +54,15 @@ public final class ReplayDumper {
     public record Options(
             LangProvider.Lang lang,
             boolean minimap,
-            int minimapStep,
             boolean selfDamageStats,
             /* minimap 字段 brotli 压缩等级 0-11，null 表示不压缩。 */
-            Integer compressLevel
+            int compressLevel
     ) {
         public Options {
             if (lang == null) lang = LangProvider.DEFAULT_LANG;
         }
 
-        public static final Options DEFAULT = new Options(LangProvider.DEFAULT_LANG, false, 7, false, null);
+        public static final Options DEFAULT = new Options(LangProvider.DEFAULT_LANG, false, false, 0);
     }
 
     /** 全部视角回放（第 0 项为主视角）。 */
@@ -143,7 +142,7 @@ public final class ReplayDumper {
 
         JsonNode battleResults = report.battleResults();
         MinimapOutput mm = options.minimap()
-                ? new MinimapMerger(specProvider, constants, replays, options.minimapStep()).merge()
+                ? new MinimapMerger(specProvider, constants, replays).merge()
                 : null;
         return assembleFinal(primary, report, merged.replay(), mm, battleResults);
     }
@@ -299,7 +298,7 @@ public final class ReplayDumper {
         JsonNode battleResults = report.battleResults();
         NormalizedReplay normalized = ReplayMapper.map(world, report);
         MinimapOutput mm = options.minimap()
-                ? new MinimapExtractor(specProvider, constants, replay, options.minimapStep()).extract()
+                ? new MinimapExtractor(specProvider, constants, replay).extract()
                 : null;
         return assembleFinal(replay, report, normalized, mm, battleResults);
     }
@@ -311,7 +310,6 @@ public final class ReplayDumper {
         var out = new LinkedHashMap<String, Object>();
         out.put("battle_results", battleResults);
         out.put("arena_id", report.arenaId());
-        out.put("minimap_step", options.minimapStep());
         // 主视角用户：单 replay 为录制者(self)玩家的 meta_id
         out.put("master_meta_id", report.selfPlayer().metaId());
         out.put("date_time", replay.meta().dateTime());
@@ -327,8 +325,8 @@ public final class ReplayDumper {
         // 映射层：实体 id → 全局一致 metaId，事件流输出只带 metaId
         WowsInfo wowsInfo = cache.wowsInfo(primary);
         List<Map<String, Object>> players = buildPlayers(report, wowsInfo);
-        JsonNode playersNode = JsonMapper.toTree(players);
-        out.put("players", playersNode);
+//        JsonNode playersNode = JsonMapper.toTree(players);
+        out.put("players", players);
         out.put("game_events", buildGameEvents(report, normalized, wowsInfo, constants));
         out.put("capture_points", report.capturePoints());
         out.put("buff_zones", report.buffZones());
@@ -349,7 +347,7 @@ public final class ReplayDumper {
             minimap.put("damage_events", mm.damageEvents());
             minimap.put("shot_hits", mm.shotHits());
             minimap.put("dead_ships", mm.deadShips());
-            if (options.compressLevel() != null) {
+            if (options.compressLevel() > 0) {
                 out.put("minimap", compressMinimapField(minimap, Math.clamp(options.compressLevel(), 0, 11)));
             } else {
                 out.put("minimap", minimap);

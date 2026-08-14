@@ -63,7 +63,7 @@ class MinimapMergerIT {
             }
         }).toList();
 
-        var out = new MinimapMerger(specProvider, constants, replays, 7).merge();
+        var out = new MinimapMerger(specProvider, constants, replays).merge();
 
         assertNotNull(out, "应有合并输出");
         assertFalse(out.frames().isEmpty(), "应有合并帧");

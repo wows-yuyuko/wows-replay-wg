@@ -36,14 +36,14 @@ class ReplayDumperIT {
         assertNotNull(gameData, "游戏数据未找到");
     }
 
-    private static Path resolve(String path) {
+    public static Path resolve(String path) {
         return Path.of(System.getProperty("user.dir")).getParent().resolve(path);
     }
 
     @Test
     @DisplayName("ReplayDumper: 单一 JSON 装配（report+game_events+space_size+minimap）")
     void dumpSingle() throws Exception {
-        var options = new ReplayDumper.Options(LangProvider.DEFAULT_LANG, true, 7, false, 6);
+        var options = new ReplayDumper.Options(LangProvider.DEFAULT_LANG, true, false, 6);
         var replayDumper = new ReplayDumper(replay, options);
         var dumper = replayDumper.dump();
         var json = JsonMapper.toPrettyJson(dumper);

@@ -11,14 +11,14 @@ import java.util.List;
  * Minimap 数据提取输出（对标 Rust {@code replay-dumper::position::MinimapOutput}，
  * docs/replay-dumper-minimap.md §6）。
  *
- * <p>仅覆盖 Single 路径（单回放 ECS）：逐时钟边界事件流 + step 抽稀帧 + 终局状态。
+ * <p>仅覆盖 Single 路径（单回放 ECS）：逐时钟边界事件流 + 逐时钟边界全量帧 + 终局状态。
  * 多视角合并（Full/Fast）与顶层 JSON 装配（pipeline）暂不实现。</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MinimapOutput(
     /** 第一个通过校验的 arena id。 */
     @JsonProperty("arena_id") Long arenaId,
-    /** 位置时间线（step 抽稀）。 */
+    /** 位置时间线（逐时钟边界全量帧）。 */
     @JsonProperty("frames") List<MinimapFrame> frames,
     /** 齐射事件流。 */
     @JsonProperty("firing_events") List<ShotEntry> firingEvents,

@@ -47,17 +47,15 @@ public final class MinimapMerger {
     private final EntitySpecProvider specProvider;
     private final GameConstantsProvider constants;
     private final List<ReplayFile> replays;
-    private final int step;
 
     /**
      * @param replays 同场次候选回放（第 0 项默认主视角；须含敌对队伍成员才能凑齐双方移动）
      */
     public MinimapMerger(EntitySpecProvider specProvider, GameConstantsProvider constants,
-                         List<ReplayFile> replays, int step) {
+                         List<ReplayFile> replays) {
         this.specProvider = specProvider;
         this.constants = constants;
         this.replays = replays;
-        this.step = Math.max(1, step);
     }
 
     /** 主/副两份回放的合并 minimap 输出（形状与单 replay 一致）。 */
@@ -155,7 +153,7 @@ public final class MinimapMerger {
 
     /**
      * 主 replay 只保留 side∈{0,1}（本方含自己）的船位；副 replay 只保留 side==2（其本方 = 主方敌方）。
-     * 双流按 safe_clock 锁步推进，每 step 秒抽一帧并集。
+     * 双流按 safe_clock 锁步推进，每时钟边界抽一帧并集（全量帧）。
      */
     private List<MinimapOutput.MinimapFrame> mergeFrames(ParsedReplay primary, ParsedReplay secondary,
                                                          Map<Long, Integer> sideById, int primaryTeam) {
@@ -179,7 +177,7 @@ public final class MinimapMerger {
             nextS = iterS.hasNext() ? iterS.next() : null;
         }
 
-        float target = 0f;
+        float lastClock = Float.NaN;
         while (nextP != null || nextS != null) {
             float safe = Float.MAX_VALUE;
             if (nextP != null) safe = Math.min(safe, nextP.clock().seconds());
@@ -194,12 +192,13 @@ public final class MinimapMerger {
                 nextS = iterS.hasNext() ? iterS.next() : null;
             }
 
-            if (safe >= target) {
+            // 时钟边界：每边界抽一帧（全量帧）
+            if (safe != lastClock) {
                 var entities = new ArrayList<MinimapOutput.MinimapEntity>();
                 snapshotSide(worldP, sideById, true, entities);
                 if (worldS != null) snapshotSide(worldS, sideById, false, entities);
                 frames.add(MinimapExtractor.frame(worldP, safe, entities));
-                target += step;
+                lastClock = safe;
             }
         }
         return frames;

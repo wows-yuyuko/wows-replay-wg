@@ -45,7 +45,7 @@ class MinimapExtractorIT {
     @Test
     @DisplayName("MinimapExtractor: 帧/事件流/终局状态提取正确且可序列化")
     void minimapExtract() throws Exception {
-        var out = new MinimapExtractor(specProvider, replay, 7).extract();
+        var out = new MinimapExtractor(specProvider, replay).extract();
 
         assertNotNull(out.arenaId(), "arena_id 不应为 null");
         assertFalse(out.frames().isEmpty(), "应有位置帧");
@@ -92,8 +92,8 @@ class MinimapExtractorIT {
     @Test
     @DisplayName("MinimapExtractor: 压缩输出（结构同全量，entities 为移动增量，含烟雾/点亮等）")
     void minimapCompressedExtract() throws Exception {
-        var full = new MinimapExtractor(specProvider, replay, 7).extract();
-        var out = new MinimapExtractor(specProvider, replay, 7).extractCompressed();
+        var full = new MinimapExtractor(specProvider, replay).extract();
+        var out = new MinimapExtractor(specProvider, replay).extractCompressed();
 
         assertTrue(out.movementDelta(), "movement_delta 应为 true");
         assertNotNull(out.arenaId(), "arena_id 不应为 null");
