@@ -678,7 +678,7 @@ public final class ReplayDumper {
         data.put("victim", victim);
         data.put("cause", k.cause());
         // 死亡原因名（constants.json DEATH_REASONS id→name；未知 → null）
-        data.put("cause_name", constants.deathReasonName(k.cause()).orElse(null));
+        data.put("cause_icon", constants.deathReasonName(k.cause()).orElse(null));
         return data;
     }
 
