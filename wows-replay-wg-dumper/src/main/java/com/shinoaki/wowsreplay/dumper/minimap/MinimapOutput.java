@@ -217,9 +217,8 @@ public record MinimapOutput(
     ) {}
 
     public record CapturedBuff(
-        @JsonProperty("entity_id") int entityId,
         @JsonProperty("params_id") long paramsId,
-        @JsonProperty("captured_by_meta_id") long capturedByMetaId,
+        @JsonProperty("team_id") int teamId,
         @JsonProperty("clock") float clock
     ) {}
 

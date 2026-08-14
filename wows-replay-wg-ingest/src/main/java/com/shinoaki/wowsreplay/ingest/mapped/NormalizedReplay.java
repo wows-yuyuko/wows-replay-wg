@@ -20,8 +20,8 @@ import java.util.List;
  *
  * <p><b>id 策略</b>：玩家事件流（击杀/伤害/聊天/消耗品/沉船）只用 {@code metaId}；
  * 玩家信息带 {@code metaId} + {@code accountId}；非玩家实体（建筑/控制点/buff 区/天气区）
- * 保留 {@code entityId}（它们跨视角本就一致）；齐射/鱼雷/命中的身份用全局唯一的
- * {@code salvoId}/{@code shotId}（不依赖视角相关实体 id）。</p>
+ * 保留 {@code entityId}（它们跨视角本就一致）；已捕获 Buff 由队伍捕获（{@code teamId}，本就全局）；
+ * 齐射/鱼雷/命中的身份用全局唯一的 {@code salvoId}/{@code shotId}（不依赖视角相关实体 id）。</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record NormalizedReplay(

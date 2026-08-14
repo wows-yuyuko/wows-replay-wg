@@ -135,7 +135,7 @@ public final class BattleReportBuilder {
             .map(t -> new TeamScore(t.teamIndex(), t.score()))
             .toList();
         var capturedBuffs = world.capturedBuffs().stream()
-            .map(c -> new CapturedBuff(c.entityId(), c.paramsId(), c.capturedBy(), c.clock()))
+            .map(c -> new CapturedBuff(c.paramsId(), c.teamId(), c.clock()))
             .toList();
         var buildings = world.buildings().stream()
             .map(b -> new BuildingEntity(new EntityId(b.entityId()), b.x(), b.z(),

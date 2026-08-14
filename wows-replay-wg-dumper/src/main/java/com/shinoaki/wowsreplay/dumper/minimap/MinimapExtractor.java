@@ -225,8 +225,7 @@ public final class MinimapExtractor {
             new MinimapOutput.ScoringRules(world.teamWinScore(), world.holdReward(),
                 world.holdPeriod(), world.holdCpIndices()),
             world.capturedBuffs().stream()
-                .map(cb -> new MinimapOutput.CapturedBuff(cb.entityId(), cb.paramsId(),
-                    ReplayMapper.metaIdOf(world, cb.capturedBy()), cb.clock()))
+                .map(cb -> new MinimapOutput.CapturedBuff(cb.paramsId(), cb.teamId(), cb.clock()))
                 .toList());
     }
 

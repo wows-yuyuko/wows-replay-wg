@@ -1093,6 +1093,27 @@ public class BattleWorld {
             }
         }
 
+        // state.drop.picked = SetRange[{paramsId, owners: [...]}]（已捕获 Buff，队伍捕获，对标 Rust zones.rs:209）
+        if (keys.size() == 2 && keys.get(0).equals("drop") && keys.get(1).equals("picked")
+            && u instanceof NestedUpdate.SetRange sr) {
+            for (ArgValue v : sr.values()) {
+                if (v instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+                    long paramsId = d.get("paramsId") != null ? longOfArg(d.get("paramsId")) : 0;
+                    if (d.get("owners") instanceof ArgValue.ArrayVal(List<ArgValue> owners) && !owners.isEmpty()) {
+                        int ownerEid = (int) longOfArg(owners.getFirst());
+                        var link = entityToPlayer.get(ownerEid);
+                        if (link != null) {
+                            var pi = players.get(link.metaId());
+                            if (pi != null && pi.teamId >= 0) {
+                                capturedBuffs.add(new CapturedBuff(paramsId, pi.teamId, elapsed));
+                            }
+                        }
+                    }
+                }
+            }
+            handled = true;
+        }
+
         // ── Vehicle.state 子字段（识别并应用，不再当未识别丢弃）────────────────
         // state.battery.energy = v（主炮能量，FloatVal）
         if (keys.size() == 1 && keys.getFirst().equals("battery")

@@ -148,7 +148,7 @@ public class PacketDecoder {
                 log.debug("Chat extra parse failed: {}", e.getMessage());
             }
         }
-        return new DecodedPayload.ChatMessagePayload(entityId, new AccountId(senderId), audience, message, extra);
+        return new DecodedPayload.ChatMessagePayload(entityId, new MetaId(senderId), audience, message, extra);
     }
 
     // ── VoiceLine ──────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ public class PacketDecoder {
             int line = intFromArg(args.get(2));
             voiceLine = gameConstants.voiceLine(line, version, intFromArg(args.get(3)), longFromArg(args.get(4)));
         }
-        return new DecodedPayload.VoiceLinePayload(new AccountId(senderId), isGlobal, voiceLine);
+        return new DecodedPayload.VoiceLinePayload(new MetaId(senderId), isGlobal, voiceLine);
     }
 
     // ── Arena State ────────────────────────────────────────────────────

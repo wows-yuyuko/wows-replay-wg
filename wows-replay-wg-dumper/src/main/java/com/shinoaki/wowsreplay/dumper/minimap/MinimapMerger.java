@@ -91,8 +91,7 @@ public final class MinimapMerger {
             .map(d -> new MinimapOutput.DeadShip(d.clock(), d.victimMetaId(), d.x(), d.z()))
             .toList();
         var capturedBuffs = mm.capturedBuffs().stream()
-            .map(cb -> new MinimapOutput.CapturedBuff(cb.entityId(), cb.paramsId(),
-                ReplayMapper.metaIdOf(primary.world(), cb.capturedBy()), cb.clock()))
+            .map(cb -> new MinimapOutput.CapturedBuff(cb.paramsId(), cb.teamId(), cb.clock()))
             .toList();
 
         return new MinimapOutput(

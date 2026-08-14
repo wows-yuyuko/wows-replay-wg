@@ -27,7 +27,7 @@ import java.util.*;
  * <p><b>去重键（全部基于全局一致 id）</b>：击杀=victimMetaId；聊天=clock+metaId+channel+message；
  * 伤害=aggressorMetaId+victimMetaId+clock+amount；消耗品=clock+metaId+consumableId；
  * 沉船=victimMetaId（首条）；语音=clock+senderId+message；勋带=clock+ribbonId；
- * 齐射=salvoId；鱼雷=shotId；命中=shotId；已捕获 Buff=clock+entityId+capturedBy。</p>
+ * 齐射=salvoId；鱼雷=shotId；命中=shotId；已捕获 Buff=clock+paramsId+teamId。</p>
  *
  * <p>校验：所有回放必须同版本（{@link MergeException#versionMismatch}）且同竞技场
  * （{@link MergeException#arenaMismatch}），否则无法合并。</p>
@@ -239,7 +239,7 @@ public final class ReplayMerger {
         var cbSeen = new HashSet<String>();
         for (var v : views) {
             for (var c : v.capturedBuffs()) {
-                if (cbSeen.add(c.clock() + "|" + c.entityId() + "|" + c.capturedBy())) capturedBuffs.add(c);
+                if (cbSeen.add(c.clock() + "|" + c.paramsId() + "|" + c.teamId())) capturedBuffs.add(c);
             }
         }
         dedup.put("capturedBuffs", total(views, v -> v.capturedBuffs().size()) - capturedBuffs.size());

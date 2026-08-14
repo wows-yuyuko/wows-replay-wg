@@ -20,7 +20,7 @@ public sealed interface DecodedPayload {
 
     record ChatMessagePayload(
         EntityId entityId,
-        AccountId senderId,
+        MetaId senderId,
         String audience,
         String message,
         ChatExtra extraData
@@ -29,7 +29,7 @@ public sealed interface DecodedPayload {
     record ChatExtra(long preBattleSign, long preBattleId, String playerClanTag,
                      long type, EntityId playerAvatarId, String playerName) {}
 
-    record VoiceLinePayload(AccountId senderId, boolean isGlobal, VoiceLine voiceLine) implements DecodedPayload {}
+    record VoiceLinePayload(MetaId senderId, boolean isGlobal, VoiceLine voiceLine) implements DecodedPayload {}
 
     record RibbonPayload(int ribbonId) implements DecodedPayload {}
 
