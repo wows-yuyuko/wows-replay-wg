@@ -329,6 +329,11 @@ public final class MinimapExtractor {
                 b.radius(), b.teamId(), b.isActive(), b.clock(), null))
             .toList();
 
+        var fighterZones = world.fighterZones().stream()
+            .map(f -> new MinimapOutput.FighterZoneEntry(f.entityId(), f.x(), f.z(),
+                f.radius(), f.teamId(), f.ownerId(), f.leftTime(), f.clock()))
+            .toList();
+
         var weather = world.weatherZones().stream()
             .map(w -> new MinimapOutput.WeatherZoneEntry(w.name(), w.x(), w.z(),
                 w.radius(), w.paramsId(), w.entityId()))
@@ -346,7 +351,7 @@ public final class MinimapExtractor {
             .toList();
 
         return new MinimapOutput.MinimapFrame(clock, entities, planes, torpedoes, smoke, buildings,
-            wards, buffZones, weather, teamScores, cps, world.timeLeft());
+            wards, buffZones, fighterZones, weather, teamScores, cps, world.timeLeft());
     }
 
     /**
@@ -378,7 +383,7 @@ public final class MinimapExtractor {
                     b.teamId(), b.isActive(), b.clock(), paramsByZone.get(b.entityId())))
                 .toList();
             out.add(new MinimapOutput.MinimapFrame(f.clock(), f.entities(), f.planes(), f.torpedoes(),
-                f.smokeScreens(), f.buildings(), f.activeWards(), buffZones, f.weatherZones(),
+                f.smokeScreens(), f.buildings(), f.activeWards(), buffZones, f.fighterZones(), f.weatherZones(),
                 f.teamScores(), f.capturePoints(), f.timeLeft()));
         }
         return out;

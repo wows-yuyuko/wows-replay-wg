@@ -60,6 +60,8 @@ public class BattleWorld {
     final List<CapturePointState> capturePoints = new ArrayList<>();
     /** Active buff zones (despawned on EntityLeave, mirrors Rust). */
     final List<BuffZoneState> buffZones = new ArrayList<>();
+    /** 战斗机巡逻圈（InteractiveZone type=12，despawned on EntityLeave）。 */
+    final List<FighterZoneState> fighterZones = new ArrayList<>();
     /** 军备竞赛掉落计划（state.drop.data 完整条目，含 id/zoneId/paramsId/startTime）。 */
     final List<DropEvent> dropEvents = new ArrayList<>();
     /** 掉落点坐标（entityId → {x, z}），drop.data 先于 EntityCreate 到达时暂存，输出 drop_events 用。 */
@@ -279,7 +281,8 @@ public class BattleWorld {
         // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
         // buff zones are removed from the active set on EntityLeave)
         boolean removedBuffZone = buffZones.removeIf(b -> b.entityId() == eid);
-        if (smokeScreens.remove(eid) != null || removedBuffZone
+        boolean removedFighterZone = fighterZones.removeIf(fz -> fz.entityId() == eid);
+        if (smokeScreens.remove(eid) != null || removedBuffZone || removedFighterZone
             || "SmokeScreen".equals(es != null ? es.type : null)) {
             entities.remove(eid);
         }
@@ -742,28 +745,37 @@ public class BattleWorld {
         float pz = posZ(position);
         float radius = getFloatProp(props, "radius");
         int teamId = getIntProp(props, "teamId");
+        int type = getIntProp(props, "type");
 
-        if (props.get("componentsState") instanceof ArgValue.DictVal(Map<String, ArgValue> csd)) {
-            if (csd.get("controlPoint") instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
-                int idx = d.get("index") instanceof ArgValue.IntVal(long value) ? (int) value : capturePoints.size();
-                var cpState = new CapturePointState();
-                cpState.entityId = eid;
-                cpState.index = idx;
-                cpState.teamId = teamId;
-                cpState.position = new float[]{px, pz};
-                cpState.radius = radius;
+        // 占领点：componentsState.controlPoint 为 DictVal
+        if (props.get("componentsState") instanceof ArgValue.DictVal(Map<String, ArgValue> csd)
+            && csd.get("controlPoint") instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+            int idx = d.get("index") instanceof ArgValue.IntVal(long value) ? (int) value : capturePoints.size();
+            var cpState = new CapturePointState();
+            cpState.entityId = eid;
+            cpState.index = idx;
+            cpState.teamId = teamId;
+            cpState.position = new float[]{px, pz};
+            cpState.radius = radius;
 
-                if (csd.get("captureLogic") instanceof ArgValue.DictVal(Map<String, ArgValue> cld)) {
-                    applyCpDict(cpState, cld);
-                }
-                ensureCpIndex(idx);
-                capturePoints.set(idx, cpState);
-            } else {
-                // Buff zone
-                boolean active = getBoolProp(props, "isActive", true);
-                dropZonePositions.put(eid, new float[]{px, pz});
-                buffZones.add(new BuffZoneState(eid, px, pz, radius, teamId, active, elapsed));
+            if (csd.get("captureLogic") instanceof ArgValue.DictVal(Map<String, ArgValue> cld)) {
+                applyCpDict(cpState, cld);
             }
+            ensureCpIndex(idx);
+            capturePoints.set(idx, cpState);
+        } else if (type == 12) {
+            // 战斗机巡逻圈：单独输出，不再混入 buff_zones
+            int ownerId = (int) longOfArg(props.get("ownerId"));
+            float leftTime = 0f;
+            if (props.get("effectState") instanceof ArgValue.DictVal(Map<String, ArgValue> es)) {
+                leftTime = es.get("leftTime") != null ? floatFromArg(es.get("leftTime")) : 0f;
+            }
+            fighterZones.add(new FighterZoneState(eid, px, pz, radius, teamId, ownerId, leftTime, elapsed));
+        } else {
+            // buff 掉落点（type=6）
+            boolean active = getBoolProp(props, "isActive", true);
+            dropZonePositions.put(eid, new float[]{px, pz});
+            buffZones.add(new BuffZoneState(eid, px, pz, radius, teamId, active, elapsed));
         }
     }
 
@@ -1587,6 +1599,10 @@ public class BattleWorld {
 
     public List<BuffZoneState> buffZones() {
         return buffZones;
+    }
+
+    public List<FighterZoneState> fighterZones() {
+        return fighterZones;
     }
 
     public List<DropEvent> dropEvents() {

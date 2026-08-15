@@ -53,6 +53,7 @@ public record MinimapOutput(
         @JsonProperty("buildings") List<BuildingEntry> buildings,
         @JsonProperty("active_wards") List<WardEntry> activeWards,
         @JsonProperty("buff_zones") List<BuffZoneEntry> buffZones,
+        @JsonProperty("fighter_zones") List<FighterZoneEntry> fighterZones,
         @JsonProperty("weather_zones") List<WeatherZoneEntry> weatherZones,
         @JsonProperty("team_scores") List<TeamScoreEntry> teamScores,
         @JsonProperty("capture_points") List<CapturePointEntry> capturePoints,
@@ -138,8 +139,20 @@ public record MinimapOutput(
         @JsonProperty("team_id") int teamId,
         @JsonProperty("is_active") boolean isActive,
         @JsonProperty("clock") float clock,
-        /** 将掉出的 buff 类型 GameParamId（掉落点经 drop_events.zone_id 精确回填；powerup 无来源键，为 null）。 */
+        /** 将掉出的 buff 类型 GameParamId（掉落点经 drop_events.zone_id 精确回填；无来源键时为 null）。 */
         @JsonProperty("params_id") Long paramsId
+    ) {}
+
+    /** 战斗机巡逻圈（InteractiveZone type=12）。owner_id = 拥有该圈的船实体 id；left_time = 创建时剩余巡逻时间。 */
+    public record FighterZoneEntry(
+        @JsonProperty("entity_id") int entityId,
+        @JsonProperty("x") float x,
+        @JsonProperty("z") float z,
+        @JsonProperty("radius") float radius,
+        @JsonProperty("team_id") int teamId,
+        @JsonProperty("owner_id") int ownerId,
+        @JsonProperty("left_time") float leftTime,
+        @JsonProperty("clock") float clock
     ) {}
 
     public record WeatherZoneEntry(
