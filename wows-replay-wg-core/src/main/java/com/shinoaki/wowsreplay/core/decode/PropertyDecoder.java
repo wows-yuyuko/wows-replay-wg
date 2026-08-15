@@ -59,6 +59,7 @@ public final class PropertyDecoder {
         BATTLE_STAGE,   // BattleLogic: numeric battle stage (0=Waiting, 1=Battle, ...)
         TIME_LEFT,      // BattleLogic: seconds remaining
         VISIBILITY_FLAGS, // Vehicle: visibility flags (minimap entity 用)
+        ACTIVE_POINT_INDEX, // SmokeScreen: 已生成烟团索引（INT8，标记 points 活跃到哪）
         STATE,        // complex state dict (battle logic, control points, etc.)
         SHIP_CONFIG,  // ship configuration blob
         VEHICLE_ID,   // vehicle game param ID
@@ -85,6 +86,7 @@ public final class PropertyDecoder {
                 case "battleStage", "battleStage_"                 -> BATTLE_STAGE;
                 case "timeLeft"                                    -> TIME_LEFT;
                 case "visibilityFlags"                             -> VISIBILITY_FLAGS;
+                case "activePointIndex", "activePointIndex_"       -> ACTIVE_POINT_INDEX;
                 case "state", "state_"                             -> STATE;
                 case "shipConfig", "shipConfigDump"                -> SHIP_CONFIG;
                 case "vehicleID", "vehicleId"                      -> VEHICLE_ID;

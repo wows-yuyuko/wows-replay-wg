@@ -48,6 +48,8 @@ public final class EntityState {
     public float smokeRadius;
     /** 烟雾沿途烟团位置（points 属性 SetRange/RemoveRange 维护，长烟雾靠它还原形状）。 */
     public List<Vec3> smokePoints;
+    /** 烟雾已生成烟团索引（activePointIndex 属性，标记 points 活跃到哪；-1 未知）。 */
+    public int activePointIndex = -1;
 
     // ── Minimap 追踪（updateMinimapVisionInfo）──────────────────────
     /** 归一化小地图坐标 x ∈ [-1.5, 2.49] */

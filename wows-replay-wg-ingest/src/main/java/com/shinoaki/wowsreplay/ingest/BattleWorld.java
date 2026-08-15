@@ -645,6 +645,7 @@ public class BattleWorld {
             case "SmokeScreen" -> {
                 es.smokeRadius = getFloatProp(props, "radius");
                 es.smokePoints = new ArrayList<>(List.of(new Vec3(es.x, es.y, es.z)));
+                es.activePointIndex = props.containsKey("activePointIndex") ? getIntProp(props, "activePointIndex") : -1;
                 smokeScreens.put(eid, es);
             }
             case "WeatherZone", "LocalWeatherZone" -> {
@@ -904,6 +905,10 @@ public class BattleWorld {
             case VISIBILITY_FLAGS -> {
                 var es = getOrCreateEntity(eid, null);
                 es.visibilityFlags = intFromArg(val);
+            }
+            case ACTIVE_POINT_INDEX -> {
+                var es = smokeScreens.get(eid);
+                if (es != null) es.activePointIndex = intFromArg(val);
             }
             case STATE -> traverseStateDict(eid, val, elapsed);
             case SHIP_CONFIG -> {
