@@ -82,7 +82,8 @@ public record MinimapOutput(
         @JsonProperty("team_id") int teamId,
         @JsonProperty("params_id") long paramsId,
         @JsonProperty("x") float x,
-        @JsonProperty("z") float z
+        @JsonProperty("z") float z,
+        @JsonProperty("last_updated") float lastUpdated
     ) {}
 
     public record TorpedoEntry(
@@ -131,7 +132,8 @@ public record MinimapOutput(
         @JsonProperty("z") float z,
         @JsonProperty("radius") float radius,
         @JsonProperty("team_id") int teamId,
-        @JsonProperty("is_active") boolean isActive
+        @JsonProperty("is_active") boolean isActive,
+        @JsonProperty("drop_params_id") Long dropParamsId
     ) {}
 
     public record WeatherZoneEntry(

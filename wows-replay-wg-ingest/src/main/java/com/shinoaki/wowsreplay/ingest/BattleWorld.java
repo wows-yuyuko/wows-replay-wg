@@ -60,6 +60,8 @@ public class BattleWorld {
     final List<CapturePointState> capturePoints = new ArrayList<>();
     /** Active buff zones keyed by entity id (despawned on EntityLeave, mirrors Rust). */
     final Map<Integer, BuffZoneState> buffZones = new LinkedHashMap<>();
+    /** BuffZone 掉落物 paramsId（state.drop.data 先于实体创建到达时暂存，对标 Rust PendingDropParams）。 */
+    final Map<Integer, Long> pendingDropParams = new LinkedHashMap<>();
     final List<WeatherZoneState> weatherZones = new ArrayList<>();
     final List<BuildingState> buildings = new ArrayList<>();
     final List<DeadShipRecord> deadShips = new ArrayList<>();
@@ -659,7 +661,7 @@ public class BattleWorld {
                 float bfr = getFloatProp(props, "radius");
                 int bfTeam = getIntProp(props, "teamId");
                 boolean bfActive = getBoolProp(props, "isActive", true);
-                buffZones.put(eid, new BuffZoneState(eid, bfx, bfz, bfr, bfTeam, bfActive, null));
+                buffZones.put(eid, new BuffZoneState(eid, bfx, bfz, bfr, bfTeam, bfActive, pendingDropParams.get(eid)));
             }
         }
     }
@@ -752,7 +754,7 @@ public class BattleWorld {
             } else {
                 // Buff zone
                 boolean active = getBoolProp(props, "isActive", true);
-                buffZones.put(eid, new BuffZoneState(eid, px, pz, radius, teamId, active, null));
+                buffZones.put(eid, new BuffZoneState(eid, px, pz, radius, teamId, active, pendingDropParams.get(eid)));
             }
         }
     }
@@ -1091,6 +1093,27 @@ public class BattleWorld {
                 weatherZones.set(idx, new WeatherZoneState(name, x, z, r, pid, wz.entityId()));
                 handled = true;
             }
+        }
+
+        // state.drop.data = SetRange[{zoneId, paramsId, ...}]（掉落区将掉落的 Buff paramsId，对标 Rust zones.rs:182）
+        if (keys.size() == 2 && keys.get(0).equals("drop") && keys.get(1).equals("data")
+            && u instanceof NestedUpdate.SetRange sr) {
+            for (ArgValue v : sr.values()) {
+                if (v instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+                    int zoneId = d.get("zoneId") != null ? (int) longOfArg(d.get("zoneId")) : 0;
+                    long paramsId = d.get("paramsId") != null ? longOfArg(d.get("paramsId")) : 0;
+                    if (zoneId != 0) {
+                        // drop 数据可能先于 BuffZone 实体创建到达，先暂存；实体已存在则直接填充。
+                        pendingDropParams.put(zoneId, paramsId);
+                        var bz = buffZones.get(zoneId);
+                        if (bz != null) {
+                            buffZones.put(zoneId, new BuffZoneState(bz.entityId(), bz.x(), bz.z(), bz.radius(),
+                                bz.teamId(), bz.isActive(), paramsId));
+                        }
+                    }
+                }
+            }
+            handled = true;
         }
 
         // state.drop.picked = SetRange[{paramsId, owners: [...]}]（已捕获 Buff，队伍捕获，对标 Rust zones.rs:209）

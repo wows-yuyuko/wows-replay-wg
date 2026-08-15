@@ -279,7 +279,7 @@ public final class MinimapExtractor {
                                                    List<MinimapOutput.MinimapEntity> entities) {
         var planes = world.activePlanes().values().stream()
             .map(p -> new MinimapOutput.PlaneEntry(p.planeId(), ReplayMapper.metaIdOf(world, p.ownerEntityId()),
-                p.teamId(), p.paramsId().value(), p.x(), p.z()))
+                p.teamId(), p.paramsId().value(), p.x(), p.z(), p.lastUpdateAt()))
             .toList();
 
         var torpedoes = world.activeTorpedoes().values().stream()
@@ -311,7 +311,7 @@ public final class MinimapExtractor {
 
         var buffZones = world.buffZones().values().stream()
             .map(b -> new MinimapOutput.BuffZoneEntry(b.entityId(), b.x(), b.z(),
-                b.radius(), b.teamId(), b.isActive()))
+                b.radius(), b.teamId(), b.isActive(), b.dropParamsId()))
             .toList();
 
         var weather = world.weatherZones().stream()
