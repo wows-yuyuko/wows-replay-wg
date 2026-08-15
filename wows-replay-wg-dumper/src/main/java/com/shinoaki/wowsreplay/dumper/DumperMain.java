@@ -44,7 +44,7 @@ public final class DumperMain {
         Path outFile = null;
         boolean minimap = false;
         boolean selfDamageStats = false;
-        Integer compressLevel = null;
+        int compressLevel = 0;
         Path shipConfigDump = null;
 
         int i = 0;

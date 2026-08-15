@@ -137,7 +137,9 @@ public record MinimapOutput(
         @JsonProperty("radius") float radius,
         @JsonProperty("team_id") int teamId,
         @JsonProperty("is_active") boolean isActive,
-        @JsonProperty("clock") float clock
+        @JsonProperty("clock") float clock,
+        /** 将掉出的 buff 类型 GameParamId（掉落点经 drop_events.zone_id 精确回填；powerup 无来源键，为 null）。 */
+        @JsonProperty("params_id") Long paramsId
     ) {}
 
     public record WeatherZoneEntry(
@@ -233,6 +235,7 @@ public record MinimapOutput(
         @JsonProperty("id") long id,
         @JsonProperty("zone_id") int zoneId,
         @JsonProperty("params_id") long paramsId,
+        @JsonProperty("is_contested") boolean isContested,
         @JsonProperty("start_time") float startTime,
         @JsonProperty("x") Float x,
         @JsonProperty("z") Float z,

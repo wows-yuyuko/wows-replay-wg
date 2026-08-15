@@ -73,7 +73,8 @@ public final class MinimapExtractor {
         var lastState = new HashMap<Long, MinimapOutput.MinimapEntity>();
         var collector = new Collector(gameConstants, replay.version(), (world, clock) -> frames.add(snapshotDelta(world, clock, lastState)));
         var core = runCore(collector);
-        return new MinimapOutput.Compressed(true, core.arenaId(), frames, core.firingEvents(),
+        var enriched = enrichBuffZones(frames, core.dropEvents());
+        return new MinimapOutput.Compressed(true, core.arenaId(), enriched, core.firingEvents(),
             core.damageEvents(), core.shotHits(), core.deadShips(), core.battleStage(),
             core.winningTeam(), core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents());
     }
@@ -210,7 +211,7 @@ public final class MinimapExtractor {
                 world.dropEvents().stream()
                     .map(d -> {
                         var pos = world.dropZonePositions().get(d.zoneId());
-                        return new MinimapOutput.DropEventEntry(d.id(), d.zoneId(), d.paramsId(), d.startTime(),
+                        return new MinimapOutput.DropEventEntry(d.id(), d.zoneId(), d.paramsId(), d.isContested(), d.startTime(),
                             pos != null ? pos[0] : null, pos != null ? pos[1] : null, d.clock());
                     })
                     .toList());
@@ -325,7 +326,7 @@ public final class MinimapExtractor {
 
         var buffZones = world.buffZones().stream()
             .map(b -> new MinimapOutput.BuffZoneEntry(b.entityId(), b.x(), b.z(),
-                b.radius(), b.teamId(), b.isActive(), b.clock()))
+                b.radius(), b.teamId(), b.isActive(), b.clock(), null))
             .toList();
 
         var weather = world.weatherZones().stream()
@@ -346,5 +347,40 @@ public final class MinimapExtractor {
 
         return new MinimapOutput.MinimapFrame(clock, entities, planes, torpedoes, smoke, buildings,
             wards, buffZones, weather, teamScores, cps, world.timeLeft());
+    }
+
+    /**
+     * 用 drop_events（zone_id → params_id）给每帧 buff_zones 的掉落点回填 buff 类型资源 id，
+     * 使渲染方无需再自行 join drop_events 才能查图标。powerup（radius=116.667）是掉出后的全新
+     * 实体，服务器未下发来源掉落点键，故其 params_id 保持 null（前端仍可用 drop_events 启发式）。
+     *
+     * @param frames     逐时钟边界帧（其 buff_zones 中 params_id 尚未回填）
+     * @param dropEvents 已装配（含 x/z 回填）的掉落计划
+     * @return 回填 params_id 后的帧列表
+     */
+    public static List<MinimapOutput.MinimapFrame> enrichBuffZones(
+            List<MinimapOutput.MinimapFrame> frames, List<MinimapOutput.DropEventEntry> dropEvents) {
+        if (frames == null || frames.isEmpty() || dropEvents == null || dropEvents.isEmpty()) {
+            return frames;
+        }
+        var paramsByZone = new HashMap<Integer, Long>();
+        for (var d : dropEvents) {
+            paramsByZone.putIfAbsent(d.zoneId(), d.paramsId());
+        }
+        var out = new ArrayList<MinimapOutput.MinimapFrame>(frames.size());
+        for (var f : frames) {
+            if (f.buffZones() == null || f.buffZones().isEmpty()) {
+                out.add(f);
+                continue;
+            }
+            var buffZones = f.buffZones().stream()
+                .map(b -> new MinimapOutput.BuffZoneEntry(b.entityId(), b.x(), b.z(), b.radius(),
+                    b.teamId(), b.isActive(), b.clock(), paramsByZone.get(b.entityId())))
+                .toList();
+            out.add(new MinimapOutput.MinimapFrame(f.clock(), f.entities(), f.planes(), f.torpedoes(),
+                f.smokeScreens(), f.buildings(), f.activeWards(), buffZones, f.weatherZones(),
+                f.teamScores(), f.capturePoints(), f.timeLeft()));
+        }
+        return out;
     }
 }

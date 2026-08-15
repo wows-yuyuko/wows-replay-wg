@@ -93,18 +93,20 @@ public final class MinimapMerger {
             .map(cb -> new MinimapOutput.CapturedBuff(cb.paramsId(), cb.teamId(), cb.clock()))
             .toList();
 
+        var dropEvents = primary.world().dropEvents().stream()
+            .map(d -> {
+                var pos = primary.world().dropZonePositions().get(d.zoneId());
+                return new MinimapOutput.DropEventEntry(d.id(), d.zoneId(), d.paramsId(), d.isContested(), d.startTime(),
+                    pos != null ? pos[0] : null, pos != null ? pos[1] : null, d.clock());
+            })
+            .toList();
+        frames = MinimapExtractor.enrichBuffZones(frames, dropEvents);
+
         return new MinimapOutput(
             parseArenaId(primary.world()), frames, firing, damage, shotHits, deadShips,
             battleStageName(primary.world().battleStageId(), primary.replay().version()),
             primary.world().winningTeam(), finishType(primary.world()),
-            scoringRules(primary.world()), capturedBuffs,
-            primary.world().dropEvents().stream()
-                .map(d -> {
-                    var pos = primary.world().dropZonePositions().get(d.zoneId());
-                    return new MinimapOutput.DropEventEntry(d.id(), d.zoneId(), d.paramsId(), d.startTime(),
-                        pos != null ? pos[0] : null, pos != null ? pos[1] : null, d.clock());
-                })
-                .toList());
+            scoringRules(primary.world()), capturedBuffs, dropEvents);
     }
 
     // ── 主/副选择 + battle_result 检测 ───────────────────────────────────

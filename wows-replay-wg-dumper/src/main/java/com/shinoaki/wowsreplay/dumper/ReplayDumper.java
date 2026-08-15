@@ -55,7 +55,7 @@ public final class ReplayDumper {
             LangProvider.Lang lang,
             boolean minimap,
             boolean selfDamageStats,
-            /* minimap 字段 brotli 压缩等级 0-11，null 表示不压缩。 */
+            /* minimap 字段 brotli 压缩等级 0-11，0 表示不压缩。 */
             int compressLevel
     ) {
         public Options {
@@ -129,7 +129,8 @@ public final class ReplayDumper {
         var report = new BattleReportBuilder(world, primary.meta()).build();
         if (options.minimap()) {
             var core = collector.end(world);
-            mm = new MinimapOutput(core.arenaId(), mmFrames, core.firingEvents(), core.damageEvents(),
+            var frames = MinimapExtractor.enrichBuffZones(mmFrames, core.dropEvents());
+            mm = new MinimapOutput(core.arenaId(), frames, core.firingEvents(), core.damageEvents(),
                 core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
                 core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents());
         }
