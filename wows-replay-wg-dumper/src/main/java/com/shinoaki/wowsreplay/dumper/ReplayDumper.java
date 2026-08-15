@@ -325,8 +325,7 @@ public final class ReplayDumper {
         // 映射层：实体 id → 全局一致 metaId，事件流输出只带 metaId
         WowsInfo wowsInfo = cache.wowsInfo(primary);
         List<Map<String, Object>> players = buildPlayers(report, wowsInfo);
-//        JsonNode playersNode = JsonMapper.toTree(players);
-        out.put("players", players);
+        out.put("players", JsonMapper.toTree(players));
         out.put("game_events", buildGameEvents(report, normalized, wowsInfo, constants));
         out.put("capture_points", report.capturePoints());
         out.put("buff_zones", report.buffZones());
