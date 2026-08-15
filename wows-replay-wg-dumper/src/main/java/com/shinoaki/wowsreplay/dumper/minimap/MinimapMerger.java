@@ -102,7 +102,7 @@ public final class MinimapMerger {
                 .map(d -> {
                     var pos = primary.world().dropZonePositions().get(d.zoneId());
                     return new MinimapOutput.DropEventEntry(d.id(), d.zoneId(), d.paramsId(), d.startTime(),
-                        pos != null ? pos[0] : null, pos != null ? pos[1] : null);
+                        pos != null ? pos[0] : null, pos != null ? pos[1] : null, d.clock());
                 })
                 .toList());
     }

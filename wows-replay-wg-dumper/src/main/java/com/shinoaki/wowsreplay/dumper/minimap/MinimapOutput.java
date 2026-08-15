@@ -228,14 +228,15 @@ public record MinimapOutput(
         @JsonProperty("clock") float clock
     ) {}
 
-    /** 军备竞赛掉落计划条目（state.drop.data 的 SetRange 元素；x/z 为掉落点坐标，经 zoneId 关联 buff_zones）。 */
+    /** 军备竞赛掉落计划条目（state.drop.data 的 SetRange 元素；x/z 为掉落点坐标，clock 为 raw clock）。 */
     public record DropEventEntry(
         @JsonProperty("id") long id,
         @JsonProperty("zone_id") int zoneId,
         @JsonProperty("params_id") long paramsId,
         @JsonProperty("start_time") float startTime,
         @JsonProperty("x") Float x,
-        @JsonProperty("z") Float z
+        @JsonProperty("z") Float z,
+        @JsonProperty("clock") float clock
     ) {}
 
     /**

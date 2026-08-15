@@ -1147,7 +1147,7 @@ public class BattleWorld {
                     long paramsId = d.get("paramsId") != null ? longOfArg(d.get("paramsId")) : 0;
                     float startTime = d.get("startTime") != null ? floatFromArg(d.get("startTime")) : 0f;
                     if (zoneId != 0) {
-                        dropEvents.add(new DropEvent(id, zoneId, paramsId, startTime));
+                        dropEvents.add(new DropEvent(id, zoneId, paramsId, startTime, elapsed));
                     }
                 }
             }
