@@ -135,7 +135,8 @@ public record MinimapOutput(
         @JsonProperty("radius") float radius,
         @JsonProperty("team_id") int teamId,
         @JsonProperty("is_active") boolean isActive,
-        @JsonProperty("drop_params_id") Long dropParamsId
+        @JsonProperty("drop_params_id") Long dropParamsId,
+        @JsonProperty("clock") float clock
     ) {}
 
     public record WeatherZoneEntry(

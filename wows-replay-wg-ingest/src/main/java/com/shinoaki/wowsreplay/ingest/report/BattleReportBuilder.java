@@ -145,10 +145,9 @@ public final class BattleReportBuilder {
             .map(w -> new LocalWeatherZone(w.name(), w.x(), w.z(), w.radius(), w.paramsId(), w.entityId()))
             .toList();
         Map<EntityId, BuffZoneState> buffZones = new LinkedHashMap<>();
-        for (var e : world.buffZones().entrySet()) {
-            var b = e.getValue();
+        for (var b : world.buffZones()) {
             buffZones.put(new EntityId(b.entityId()),
-                new BuffZoneState(b.entityId(), b.x(), b.z(), b.radius(), b.teamId(), b.isActive(), b.dropParamsId()));
+                new BuffZoneState(b.entityId(), b.x(), b.z(), b.radius(), b.teamId(), b.isActive(), b.dropParamsId(), b.clock()));
         }
         Map<EntityId, List<ActiveConsumable>> activeConsumables = new LinkedHashMap<>();
         for (var c : world.consumableLog()) {

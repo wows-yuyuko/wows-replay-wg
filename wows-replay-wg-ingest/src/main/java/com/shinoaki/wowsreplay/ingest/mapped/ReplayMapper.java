@@ -64,7 +64,7 @@ public final class ReplayMapper {
             world.shotHits(),
             world.teamScores(),
             world.capturePoints(),
-            world.buffZones().values().stream().toList(),
+            world.buffZones(),
             world.capturedBuffs(),
             world.weatherZones(),
             world.buildings());

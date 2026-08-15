@@ -58,8 +58,8 @@ public class BattleWorld {
     final List<ChatEvent> chatLog = new ArrayList<>();
     final List<ConsumableEvent> consumableLog = new ArrayList<>();
     final List<CapturePointState> capturePoints = new ArrayList<>();
-    /** Active buff zones keyed by entity id (despawned on EntityLeave, mirrors Rust). */
-    final Map<Integer, BuffZoneState> buffZones = new LinkedHashMap<>();
+    /** Active buff zones (despawned on EntityLeave, mirrors Rust). */
+    final List<BuffZoneState> buffZones = new ArrayList<>();
     /** BuffZone 掉落物 paramsId（state.drop.data 先于实体创建到达时暂存，对标 Rust PendingDropParams）。 */
     final Map<Integer, Long> pendingDropParams = new LinkedHashMap<>();
     final List<WeatherZoneState> weatherZones = new ArrayList<>();
@@ -274,9 +274,9 @@ public class BattleWorld {
         int eid = el.packet().entityId().value();
         var es = entities.get(eid);
         if (es != null) es.isAlive = false;
-        // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
-        // buff zones are removed from the active set on EntityLeave)
-        if (smokeScreens.remove(eid) != null || buffZones.remove(eid) != null
+        // 掉落区保留历史（buffZones 累积不删），其 EntityState 仍清理；烟雾照旧移除。
+        boolean isBuffZone = buffZones.stream().anyMatch(b -> b.entityId() == eid);
+        if (smokeScreens.remove(eid) != null || isBuffZone
             || "SmokeScreen".equals(es != null ? es.type : null)) {
             entities.remove(eid);
         }
@@ -328,7 +328,8 @@ public class BattleWorld {
         killLog.add(new KillRecord(elapsed, killerEid, victimEid,
                 kl != null ? kl.metaId() : 0, kl != null ? kl.username() : "",
                 vl != null ? vl.metaId() : 0, vl != null ? vl.username() : "",
-                sd.cause()));        var es = entities.get(sd.victim().value());
+                sd.cause()));
+        var es = entities.get(sd.victim().value());
         if (es != null) es.isAlive = false;
         deadShips.add(new DeadShipRecord(elapsed, sd.victim().value(),
                 es != null ? es.x : 0, es != null ? es.z : 0));
@@ -342,9 +343,9 @@ public class BattleWorld {
         if (senderMetaId == 0) return;
         var pl = players.get(senderMetaId);
         chatLog.add(new ChatEvent(elapsed, chat.entityId().value(),
-            senderMetaId,
-            pl != null ? pl.username : "account " + senderMetaId,
-            chat.audience(), chat.message()));
+                senderMetaId,
+                pl != null ? pl.username : "account " + senderMetaId,
+                chat.audience(), chat.message()));
     }
 
     private void handleConsumable(DecodedPayload.ConsumablePayload cons, float elapsed) {
@@ -632,7 +633,7 @@ public class BattleWorld {
                 ingestBattleLogic(props);
             }
             case "InteractiveZone" -> {
-                ingestInteractiveZone(eid, props, ec.position());
+                ingestInteractiveZone(eid, props, ec.position(), elapsed);
             }
             case "Building" -> {
                 float bx = posX(ec.position());
@@ -663,7 +664,7 @@ public class BattleWorld {
                 float bfr = getFloatProp(props, "radius");
                 int bfTeam = getIntProp(props, "teamId");
                 boolean bfActive = getBoolProp(props, "isActive", true);
-                buffZones.put(eid, new BuffZoneState(eid, bfx, bfz, bfr, bfTeam, bfActive, pendingDropParams.get(eid)));
+                buffZones.add(new BuffZoneState(eid, bfx, bfz, bfr, bfTeam, bfActive, pendingDropParams.get(eid), elapsed));
             }
         }
     }
@@ -690,7 +691,7 @@ public class BattleWorld {
             }
 
             // Scoring rules
-            teamWinScore =  entries1.get("teamWinScore") instanceof ArgValue.IntVal(long value) ? value : 1000;
+            teamWinScore = entries1.get("teamWinScore") instanceof ArgValue.IntVal(long value) ? value : 1000;
 
             // hold: [{ reward, period, cpIndices }] → scoring_rules
             if (entries1.get("hold") instanceof ArgValue.ArrayVal(List<ArgValue> holdElements)
@@ -732,7 +733,7 @@ public class BattleWorld {
         }
     }
 
-    private void ingestInteractiveZone(int eid, Map<String, ArgValue> props, Vec3 position) {
+    private void ingestInteractiveZone(int eid, Map<String, ArgValue> props, Vec3 position, float elapsed) {
         float px = posX(position);
         float pz = posZ(position);
         float radius = getFloatProp(props, "radius");
@@ -756,7 +757,7 @@ public class BattleWorld {
             } else {
                 // Buff zone
                 boolean active = getBoolProp(props, "isActive", true);
-                buffZones.put(eid, new BuffZoneState(eid, px, pz, radius, teamId, active, pendingDropParams.get(eid)));
+                buffZones.add(new BuffZoneState(eid, px, pz, radius, teamId, active, pendingDropParams.get(eid), elapsed));
             }
         }
     }
@@ -1141,10 +1142,13 @@ public class BattleWorld {
                     if (zoneId != 0) {
                         // drop 数据可能先于 BuffZone 实体创建到达，先暂存；实体已存在则直接填充。
                         pendingDropParams.put(zoneId, paramsId);
-                        var bz = buffZones.get(zoneId);
-                        if (bz != null) {
-                            buffZones.put(zoneId, new BuffZoneState(bz.entityId(), bz.x(), bz.z(), bz.radius(),
-                                bz.teamId(), bz.isActive(), paramsId));
+                        for (int i = 0; i < buffZones.size(); i++) {
+                            var bz = buffZones.get(i);
+                            if (bz.entityId() == zoneId) {
+                                buffZones.set(i, new BuffZoneState(bz.entityId(), bz.x(), bz.z(), bz.radius(),
+                                    bz.teamId(), bz.isActive(), paramsId, bz.clock()));
+                                break;
+                            }
                         }
                     }
                 }
@@ -1246,9 +1250,9 @@ public class BattleWorld {
             switch (key) {
                 case "hasInvaders" -> target.hasInvaders = longOfArg(value) != 0;
                 case "invaderTeam" -> target.invaderTeam = longOfArg(value);
-                case "progress"    -> target.progress = progressOfArg(value);
-                case "bothInside"  -> target.bothInside = longOfArg(value) != 0;
-                case "isEnabled"   -> target.isEnabled = longOfArg(value) != 0;
+                case "progress" -> target.progress = progressOfArg(value);
+                case "bothInside" -> target.bothInside = longOfArg(value) != 0;
+                case "isEnabled" -> target.isEnabled = longOfArg(value) != 0;
                 case "captureSpeed" -> target.captureSpeed = floatFromArg(value);
                 default -> log.debug("componentsState captureLogic 更新未处理: key={} value={}", key, value);
             }
@@ -1582,7 +1586,7 @@ public class BattleWorld {
         return capturePoints;
     }
 
-    public Map<Integer, BuffZoneState> buffZones() {
+    public List<BuffZoneState> buffZones() {
         return buffZones;
     }
 
@@ -1742,8 +1746,8 @@ public class BattleWorld {
     private static CommanderSkills parseLearnedSkills(ArgValue learnedSkills) {
         if (learnedSkills instanceof ArgValue.ArrayVal(List<ArgValue> species) && species.size() >= 6) {
             return new CommanderSkills(
-                skillTypeIds(species.get(0)), skillTypeIds(species.get(1)), skillTypeIds(species.get(2)),
-                skillTypeIds(species.get(3)), skillTypeIds(species.get(4)), skillTypeIds(species.get(5)));
+                    skillTypeIds(species.get(0)), skillTypeIds(species.get(1)), skillTypeIds(species.get(2)),
+                    skillTypeIds(species.get(3)), skillTypeIds(species.get(4)), skillTypeIds(species.get(5)));
         }
         if (learnedSkills instanceof ArgValue.IntVal(long mask)) {
             var ids = new ArrayList<Integer>();
@@ -1784,10 +1788,14 @@ public class BattleWorld {
     // ── Static helpers ─────────────────────────────────────────────────
 
     /** 位置 x，null 安全（无位置视为 0）。 */
-    static float posX(Vec3 p) { return p != null ? p.x() : 0f; }
+    static float posX(Vec3 p) {
+        return p != null ? p.x() : 0f;
+    }
 
     /** 位置 z，null 安全（无位置视为 0）。 */
-    static float posZ(Vec3 p) { return p != null ? p.z() : 0f; }
+    static float posZ(Vec3 p) {
+        return p != null ? p.z() : 0f;
+    }
 
     static int intFromArg(ArgValue v) {
         return switch (v) {
