@@ -1794,18 +1794,18 @@ public class BattleWorld {
     private void applyCpDict(CapturePointState s, Map<String, ArgValue> dict) {
         ArgValue v;
         v = dict.get("hasInvaders");
-        if (v instanceof ArgValue.IntVal(long value4)) s.hasInvaders = value4 != 0;
+        if (v != null) s.hasInvaders = longOfArg(v) != 0;
         v = dict.get("invaderTeam");
-        if (v instanceof ArgValue.IntVal(long value3)) s.invaderTeam = (int) value3;
+        if (v != null) s.invaderTeam = longOfArg(v);
         v = dict.get("progress");
         if (v instanceof ArgValue.FloatVal(double value2)) s.progress = (float) value2;
         else if (v instanceof ArgValue.ArrayVal(List<ArgValue> elements) && elements.size() >= 2) {
             s.progress = floatFromArg(elements.getFirst());
         }
         v = dict.get("bothInside");
-        if (v instanceof ArgValue.IntVal(long value1)) s.bothInside = value1 != 0;
+        if (v != null) s.bothInside = longOfArg(v) != 0;
         v = dict.get("isEnabled");
-        if (v instanceof ArgValue.IntVal(long value)) s.isEnabled = value != 0;
+        if (v != null) s.isEnabled = longOfArg(v) != 0;
     }
 
     // ── Static helpers ─────────────────────────────────────────────────
