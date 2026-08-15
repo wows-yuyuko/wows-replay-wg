@@ -42,16 +42,11 @@ public class ReplayDumperMeTest {
         var replayDumper = new ReplayDumper(replay, options);
         var dumper = replayDumper.dump();
         long accountId = 2022515210;
-        var playerList = (List<Map<String, Object>>) dumper.getOrDefault("players", null);
-        playerList.removeIf(f -> !String.valueOf(f.getOrDefault("account_id", "0")).contentEquals(String.valueOf(accountId)));
-        var player = playerList.getFirst();
-        var metaId = (long) player.get("meta_id");
-        dumper.put("players", playerList);
         Map<String, Object> minimap = (Map<String, Object>) dumper.get("minimap");
         List<MinimapOutput.MinimapFrame> tempFrames = (List<MinimapOutput.MinimapFrame>) minimap.get("frames");
         List<MinimapOutput.MinimapFrame> frames = new ArrayList<>();
         for (var temp : tempFrames) {
-            if (temp.smokeScreens().size() > 0) {
+            if (temp.smokeScreens().size() > 2) {
                 frames.add(temp);
             }
         }

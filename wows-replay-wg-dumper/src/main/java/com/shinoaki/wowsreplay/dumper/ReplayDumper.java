@@ -341,7 +341,6 @@ public final class ReplayDumper {
         out.put("players", JsonMapper.toTree(players));
         out.put("game_events", buildGameEvents(report, normalized, wowsInfo, constants));
         out.put("capture_points", report.capturePoints());
-        out.put("buff_zones", report.buffZones());
         out.put("captured_buffs", report.capturedBuffs());
         out.put("team_scores", report.teamScores());
         out.put("buildings", report.buildings());

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -31,7 +32,8 @@ class ReplayDumperIT {
     @BeforeAll
     static void setUp() throws Exception {
         var base = resolve(WOWS_DATA_BASE);
-        replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
+//        replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
+        replay = ReplayFile.fromFile(new File("C:\\Users\\uuz\\Desktop\\test\\20260815_133529_PRSB729-Respublika_45_Zigzag.wowsreplay").toPath(), base);
         gameData = GameDataCache.resolveGameDataDir(replay);
         assertNotNull(gameData, "游戏数据未找到");
     }
