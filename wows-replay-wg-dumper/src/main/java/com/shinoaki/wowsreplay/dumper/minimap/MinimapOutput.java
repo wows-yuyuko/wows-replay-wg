@@ -37,7 +37,9 @@ public record MinimapOutput(
     /** 分数规则。 */
     @JsonProperty("scoring_rules") ScoringRules scoringRules,
     /** 军备竞赛 Buff（到达顺序）。 */
-    @JsonProperty("captured_buffs") List<CapturedBuff> capturedBuffs
+    @JsonProperty("captured_buffs") List<CapturedBuff> capturedBuffs,
+    /** 军备竞赛掉落计划（state.drop.data：哪个掉落点何时掉什么 buff）。 */
+    @JsonProperty("drop_events") List<DropEventEntry> dropEvents
 ) {
 
     /** 单帧快照（docs §4.2）。 */
@@ -135,7 +137,6 @@ public record MinimapOutput(
         @JsonProperty("radius") float radius,
         @JsonProperty("team_id") int teamId,
         @JsonProperty("is_active") boolean isActive,
-        @JsonProperty("drop_params_id") Long dropParamsId,
         @JsonProperty("clock") float clock
     ) {}
 
@@ -227,6 +228,16 @@ public record MinimapOutput(
         @JsonProperty("clock") float clock
     ) {}
 
+    /** 军备竞赛掉落计划条目（state.drop.data 的 SetRange 元素；x/z 为掉落点坐标，经 zoneId 关联 buff_zones）。 */
+    public record DropEventEntry(
+        @JsonProperty("id") long id,
+        @JsonProperty("zone_id") int zoneId,
+        @JsonProperty("params_id") long paramsId,
+        @JsonProperty("start_time") float startTime,
+        @JsonProperty("x") Float x,
+        @JsonProperty("z") Float z
+    ) {}
+
     /**
      * 压缩输出（供外部程序分析）：与 {@link MinimapOutput} 同结构（每帧 planes/torpedoes/
      * smoke_screens/buildings/wards/buff_zones/weather_zones/team_scores/capture_points/time_left
@@ -247,6 +258,7 @@ public record MinimapOutput(
         @JsonProperty("winning_team") Integer winningTeam,
         @JsonProperty("finish_type") String finishType,
         @JsonProperty("scoring_rules") ScoringRules scoringRules,
-        @JsonProperty("captured_buffs") List<CapturedBuff> capturedBuffs
+        @JsonProperty("captured_buffs") List<CapturedBuff> capturedBuffs,
+        @JsonProperty("drop_events") List<DropEventEntry> dropEvents
     ) {}
 }

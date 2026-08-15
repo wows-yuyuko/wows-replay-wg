@@ -60,8 +60,10 @@ public class BattleWorld {
     final List<CapturePointState> capturePoints = new ArrayList<>();
     /** Active buff zones (despawned on EntityLeave, mirrors Rust). */
     final List<BuffZoneState> buffZones = new ArrayList<>();
-    /** BuffZone 掉落物 paramsId（state.drop.data 先于实体创建到达时暂存，对标 Rust PendingDropParams）。 */
-    final Map<Integer, Long> pendingDropParams = new LinkedHashMap<>();
+    /** 军备竞赛掉落计划（state.drop.data 完整条目，含 id/zoneId/paramsId/startTime）。 */
+    final List<DropEvent> dropEvents = new ArrayList<>();
+    /** 掉落点坐标（entityId → {x, z}），drop.data 先于 EntityCreate 到达时暂存，输出 drop_events 用。 */
+    final Map<Integer, float[]> dropZonePositions = new LinkedHashMap<>();
     final List<WeatherZoneState> weatherZones = new ArrayList<>();
     final List<BuildingState> buildings = new ArrayList<>();
     final List<DeadShipRecord> deadShips = new ArrayList<>();
@@ -274,9 +276,10 @@ public class BattleWorld {
         int eid = el.packet().entityId().value();
         var es = entities.get(eid);
         if (es != null) es.isAlive = false;
-        // 掉落区保留历史（buffZones 累积不删），其 EntityState 仍清理；烟雾照旧移除。
-        boolean isBuffZone = buffZones.stream().anyMatch(b -> b.entityId() == eid);
-        if (smokeScreens.remove(eid) != null || isBuffZone
+        // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
+        // buff zones are removed from the active set on EntityLeave)
+        boolean removedBuffZone = buffZones.removeIf(b -> b.entityId() == eid);
+        if (smokeScreens.remove(eid) != null || removedBuffZone
             || "SmokeScreen".equals(es != null ? es.type : null)) {
             entities.remove(eid);
         }
@@ -664,7 +667,8 @@ public class BattleWorld {
                 float bfr = getFloatProp(props, "radius");
                 int bfTeam = getIntProp(props, "teamId");
                 boolean bfActive = getBoolProp(props, "isActive", true);
-                buffZones.add(new BuffZoneState(eid, bfx, bfz, bfr, bfTeam, bfActive, pendingDropParams.get(eid), elapsed));
+                dropZonePositions.put(eid, new float[]{bfx, bfz});
+                buffZones.add(new BuffZoneState(eid, bfx, bfz, bfr, bfTeam, bfActive, elapsed));
             }
         }
     }
@@ -757,7 +761,8 @@ public class BattleWorld {
             } else {
                 // Buff zone
                 boolean active = getBoolProp(props, "isActive", true);
-                buffZones.add(new BuffZoneState(eid, px, pz, radius, teamId, active, pendingDropParams.get(eid), elapsed));
+                dropZonePositions.put(eid, new float[]{px, pz});
+                buffZones.add(new BuffZoneState(eid, px, pz, radius, teamId, active, elapsed));
             }
         }
     }
@@ -1137,19 +1142,12 @@ public class BattleWorld {
             && u instanceof NestedUpdate.SetRange sr) {
             for (ArgValue v : sr.values()) {
                 if (v instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+                    long id = d.get("id") != null ? longOfArg(d.get("id")) : 0;
                     int zoneId = d.get("zoneId") != null ? (int) longOfArg(d.get("zoneId")) : 0;
                     long paramsId = d.get("paramsId") != null ? longOfArg(d.get("paramsId")) : 0;
+                    float startTime = d.get("startTime") != null ? floatFromArg(d.get("startTime")) : 0f;
                     if (zoneId != 0) {
-                        // drop 数据可能先于 BuffZone 实体创建到达，先暂存；实体已存在则直接填充。
-                        pendingDropParams.put(zoneId, paramsId);
-                        for (int i = 0; i < buffZones.size(); i++) {
-                            var bz = buffZones.get(i);
-                            if (bz.entityId() == zoneId) {
-                                buffZones.set(i, new BuffZoneState(bz.entityId(), bz.x(), bz.z(), bz.radius(),
-                                    bz.teamId(), bz.isActive(), paramsId, bz.clock()));
-                                break;
-                            }
-                        }
+                        dropEvents.add(new DropEvent(id, zoneId, paramsId, startTime));
                     }
                 }
             }
@@ -1588,6 +1586,14 @@ public class BattleWorld {
 
     public List<BuffZoneState> buffZones() {
         return buffZones;
+    }
+
+    public List<DropEvent> dropEvents() {
+        return dropEvents;
+    }
+
+    public Map<Integer, float[]> dropZonePositions() {
+        return dropZonePositions;
     }
 
     public List<WeatherZoneState> weatherZones() {

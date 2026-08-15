@@ -147,7 +147,7 @@ public final class BattleReportBuilder {
         Map<EntityId, BuffZoneState> buffZones = new LinkedHashMap<>();
         for (var b : world.buffZones()) {
             buffZones.put(new EntityId(b.entityId()),
-                new BuffZoneState(b.entityId(), b.x(), b.z(), b.radius(), b.teamId(), b.isActive(), b.dropParamsId(), b.clock()));
+                new BuffZoneState(b.entityId(), b.x(), b.z(), b.radius(), b.teamId(), b.isActive(), b.clock()));
         }
         Map<EntityId, List<ActiveConsumable>> activeConsumables = new LinkedHashMap<>();
         for (var c : world.consumableLog()) {

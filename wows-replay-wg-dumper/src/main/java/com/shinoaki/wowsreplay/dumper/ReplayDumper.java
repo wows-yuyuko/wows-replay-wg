@@ -119,9 +119,8 @@ public final class ReplayDumper {
         verifyVersion(primary);
         MinimapOutput mm = null;
         MinimapExtractor.Collector collector = null;
-        List<MinimapOutput.MinimapFrame> mmFrames = null;
+        List<MinimapOutput.MinimapFrame> mmFrames = new ArrayList<>();;
         if (options.minimap()) {
-            mmFrames = new ArrayList<>();
             var extractor = new MinimapExtractor(specProvider, constants, primary);
             collector = extractor.newCollector((world, clock) -> mmFrames.add(MinimapExtractor.snapshot(world, clock)));
         }
@@ -132,7 +131,7 @@ public final class ReplayDumper {
             var core = collector.end(world);
             mm = new MinimapOutput(core.arenaId(), mmFrames, core.firingEvents(), core.damageEvents(),
                 core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
-                core.finishType(), core.scoringRules(), core.capturedBuffs());
+                core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents());
         }
         return assemble(primary, world, report, mm);
     }
@@ -366,6 +365,7 @@ public final class ReplayDumper {
             }
             out.put("battle_stage", mm.battleStage());
             out.put("scoring_rules", mm.scoringRules());
+            out.put("drop_events", mm.dropEvents());
         }
 
         return out;

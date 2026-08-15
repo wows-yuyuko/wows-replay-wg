@@ -12,6 +12,7 @@ import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.ingest.ArtillerySalvo;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
+import com.shinoaki.wowsreplay.ingest.DropEvent;
 import com.shinoaki.wowsreplay.ingest.ShotHitRecord;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
 
@@ -74,7 +75,7 @@ public final class MinimapExtractor {
         var core = runCore(collector);
         return new MinimapOutput.Compressed(true, core.arenaId(), frames, core.firingEvents(),
             core.damageEvents(), core.shotHits(), core.deadShips(), core.battleStage(),
-            core.winningTeam(), core.finishType(), core.scoringRules(), core.capturedBuffs());
+            core.winningTeam(), core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents());
     }
 
     /** 移动显著变化阈值（归一化坐标，地图范围 ±1.5）：超过才输出增量，压缩静止/匀速段。 */
@@ -124,7 +125,8 @@ public final class MinimapExtractor {
                        List<MinimapOutput.DamageEntry> damageEvents,
                        List<MinimapOutput.ShotHitEntry> shotHits, List<MinimapOutput.DeadShip> deadShips,
                        String battleStage, Integer winningTeam, String finishType,
-                       MinimapOutput.ScoringRules scoringRules, List<MinimapOutput.CapturedBuff> capturedBuffs) {
+                       MinimapOutput.ScoringRules scoringRules, List<MinimapOutput.CapturedBuff> capturedBuffs,
+                       List<MinimapOutput.DropEventEntry> dropEvents) {
     }
 
     /**
@@ -204,6 +206,13 @@ public final class MinimapExtractor {
                     world.holdPeriod(), world.holdCpIndices()),
                 world.capturedBuffs().stream()
                     .map(cb -> new MinimapOutput.CapturedBuff(cb.paramsId(), cb.teamId(), cb.clock()))
+                    .toList(),
+                world.dropEvents().stream()
+                    .map(d -> {
+                        var pos = world.dropZonePositions().get(d.zoneId());
+                        return new MinimapOutput.DropEventEntry(d.id(), d.zoneId(), d.paramsId(), d.startTime(),
+                            pos != null ? pos[0] : null, pos != null ? pos[1] : null);
+                    })
                     .toList());
         }
     }
@@ -316,7 +325,7 @@ public final class MinimapExtractor {
 
         var buffZones = world.buffZones().stream()
             .map(b -> new MinimapOutput.BuffZoneEntry(b.entityId(), b.x(), b.z(),
-                b.radius(), b.teamId(), b.isActive(), b.dropParamsId(), b.clock()))
+                b.radius(), b.teamId(), b.isActive(), b.clock()))
             .toList();
 
         var weather = world.weatherZones().stream()

@@ -11,6 +11,7 @@ import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.ingest.ArtillerySalvo;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
+import com.shinoaki.wowsreplay.ingest.DropEvent;
 import com.shinoaki.wowsreplay.ingest.ShotHitRecord;
 import com.shinoaki.wowsreplay.ingest.mapped.NormalizedReplay;
 import com.shinoaki.wowsreplay.ingest.mapped.ReplayMapper;
@@ -96,7 +97,14 @@ public final class MinimapMerger {
             parseArenaId(primary.world()), frames, firing, damage, shotHits, deadShips,
             battleStageName(primary.world().battleStageId(), primary.replay().version()),
             primary.world().winningTeam(), finishType(primary.world()),
-            scoringRules(primary.world()), capturedBuffs);
+            scoringRules(primary.world()), capturedBuffs,
+            primary.world().dropEvents().stream()
+                .map(d -> {
+                    var pos = primary.world().dropZonePositions().get(d.zoneId());
+                    return new MinimapOutput.DropEventEntry(d.id(), d.zoneId(), d.paramsId(), d.startTime(),
+                        pos != null ? pos[0] : null, pos != null ? pos[1] : null);
+                })
+                .toList());
     }
 
     // ── 主/副选择 + battle_result 检测 ───────────────────────────────────
