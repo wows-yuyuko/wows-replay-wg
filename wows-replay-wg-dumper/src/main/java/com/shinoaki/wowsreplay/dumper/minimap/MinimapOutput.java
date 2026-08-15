@@ -104,7 +104,8 @@ public record MinimapOutput(
         @JsonProperty("entity_id") int entityId,
         @JsonProperty("x") float x,
         @JsonProperty("z") float z,
-        @JsonProperty("radius") float radius
+        @JsonProperty("radius") float radius,
+        @JsonProperty("points") List<Vec3> points
     ) {}
 
     public record BuildingEntry(

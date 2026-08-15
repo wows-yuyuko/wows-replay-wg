@@ -644,6 +644,7 @@ public class BattleWorld {
             }
             case "SmokeScreen" -> {
                 es.smokeRadius = getFloatProp(props, "radius");
+                es.smokePoints = new ArrayList<>(List.of(new Vec3(es.x, es.y, es.z)));
                 smokeScreens.put(eid, es);
             }
             case "WeatherZone", "LocalWeatherZone" -> {
@@ -1000,9 +1001,39 @@ public class BattleWorld {
         switch (prop) {
             case "state" -> ingestStatePropertyUpdate(eid, pu.path(), u, elapsed);
             case "componentsState" -> ingestComponentsStateUpdate(eid, pu.path(), u);
-            case "points" -> log.debug("SmokeScreen points update: entity={} path={} update={}", eid, pu.path(), u);
+            case "points" -> applySmokePoints(eid, u);
             default -> log.debug("PropertyUpdate: entity={} property={} path={} update={}", eid, prop, pu.path(), u);
         }
+    }
+
+    /** 烟雾 points 属性更新（对标 Rust apply_smoke_points_update，zones.rs:498）。 */
+    private void applySmokePoints(int eid, NestedUpdate u) {
+        var es = smokeScreens.get(eid);
+        if (es == null) return;
+        if (u instanceof NestedUpdate.SetRange sr) {
+            if (es.smokePoints == null) es.smokePoints = new ArrayList<>();
+            while (es.smokePoints.size() < sr.start() + sr.values().size()) {
+                es.smokePoints.add(Vec3.ZERO);
+            }
+            for (int i = 0; i < sr.values().size(); i++) {
+                Vec3 pos = smokePoint(sr.values().get(i));
+                if (pos != null) es.smokePoints.set(sr.start() + i, pos);
+            }
+        } else if (u instanceof NestedUpdate.RemoveRange rr) {
+            if (es.smokePoints == null) return;
+            int end = Math.min(rr.stop(), es.smokePoints.size());
+            if (rr.start() < end) es.smokePoints.subList(rr.start(), end).clear();
+        }
+    }
+
+    /** 单个烟团位置（Vector3/Vector2/Array[2]），无法解析返回 null。 */
+    private static Vec3 smokePoint(ArgValue v) {
+        if (v instanceof ArgValue.Vec3Val(float x, float y, float z)) return new Vec3(x, y, z);
+        if (v instanceof ArgValue.Vec2Val(float x, float z)) return new Vec3(x, 0f, z);
+        if (v instanceof ArgValue.ArrayVal(List<ArgValue> arr) && arr.size() >= 2) {
+            return new Vec3(floatFromArg(arr.get(0)), 0f, floatFromArg(arr.get(1)));
+        }
+        return null;
     }
 
     /** 按解码后的 path/action 直接应用 state 的子字段更新（BattleLogic 与 Vehicle.state 共用）。 */

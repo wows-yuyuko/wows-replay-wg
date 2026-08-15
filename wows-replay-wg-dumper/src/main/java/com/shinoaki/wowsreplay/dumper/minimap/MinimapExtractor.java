@@ -292,7 +292,7 @@ public final class MinimapExtractor {
             .toList();
 
         var smoke = world.smokeScreens().values().stream()
-            .map(e -> new MinimapOutput.SmokeEntry(e.id.value(), e.x, e.z, e.smokeRadius))
+            .map(e -> new MinimapOutput.SmokeEntry(e.id.value(), e.x, e.z, e.smokeRadius, e.smokePoints))
             .toList();
 
         var buildings = world.buildings().stream()

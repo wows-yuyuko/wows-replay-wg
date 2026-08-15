@@ -2,6 +2,7 @@ package com.shinoaki.wowsreplay.ingest;
 
 import com.shinoaki.wowsreplay.core.model.EntityId;
 import com.shinoaki.wowsreplay.core.model.GameParamId;
+import com.shinoaki.wowsreplay.core.model.Vec3;
 import com.shinoaki.wowsreplay.core.data.CommanderSkills;
 
 import java.util.LinkedHashMap;
@@ -45,6 +46,8 @@ public final class EntityState {
     public byte[] shipConfig;
     /** Smoke screen radius (for SmokeScreen entities) */
     public float smokeRadius;
+    /** 烟雾沿途烟团位置（points 属性 SetRange/RemoveRange 维护，长烟雾靠它还原形状）。 */
+    public List<Vec3> smokePoints;
 
     // ── Minimap 追踪（updateMinimapVisionInfo）──────────────────────
     /** 归一化小地图坐标 x ∈ [-1.5, 2.49] */
