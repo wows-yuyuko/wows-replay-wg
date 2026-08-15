@@ -117,9 +117,24 @@ public final class ReplayDumper {
 
     public Map<String, Object> dump() throws ReplayVersionMismatchException {
         verifyVersion(primary);
-        var world = parseWorld(primary);
+        MinimapOutput mm = null;
+        MinimapExtractor.Collector collector = null;
+        List<MinimapOutput.MinimapFrame> mmFrames = null;
+        if (options.minimap()) {
+            mmFrames = new ArrayList<>();
+            var extractor = new MinimapExtractor(specProvider, constants, primary);
+            collector = extractor.newCollector((world, clock) -> mmFrames.add(MinimapExtractor.snapshot(world, clock)));
+        }
+        // 单遍解析：战报装配与 minimap 提取共享同一 BattleWorld。
+        var world = parseWorld(primary, collector);
         var report = new BattleReportBuilder(world, primary.meta()).build();
-        return assemble(primary, world, report);
+        if (options.minimap()) {
+            var core = collector.end(world);
+            mm = new MinimapOutput(core.arenaId(), mmFrames, core.firingEvents(), core.damageEvents(),
+                core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
+                core.finishType(), core.scoringRules(), core.capturedBuffs());
+        }
+        return assemble(primary, world, report, mm);
     }
 
     public String dumpPrettyJson() throws ReplayVersionMismatchException {
@@ -164,7 +179,7 @@ public final class ReplayDumper {
      */
     public Map<String, Object> dumpShipConfigs() throws ReplayVersionMismatchException {
         verifyVersion(primary);
-        var world = parseWorld(primary);
+        var world = parseWorld(primary, null);
         return buildShipConfigDump(primary, world);
     }
 
@@ -274,7 +289,7 @@ public final class ReplayDumper {
 
     // ── 解析 ──────────────────────────────────────────────────────────────
 
-    private BattleWorld parseWorld(ReplayFile replay) {
+    private BattleWorld parseWorld(ReplayFile replay, MinimapExtractor.Collector collector) {
         var parser = new Parser(specProvider, replay.version());
         var world = new BattleWorld(replay.meta(), replay.version(), constants);
         var decoder = new PacketDecoder(replay.version());
@@ -286,6 +301,7 @@ public final class ReplayDumper {
             if (packet == null || packet.payload() instanceof Packet.InvalidPayload) continue;
             if (packet.packetType() == null) continue;
             world.process(decoder.decode(packet), raw.clock());
+            if (collector != null) collector.onClockBoundary(world, world.currentClock().seconds());
         }
         world.finish();
         return world;
@@ -293,13 +309,10 @@ public final class ReplayDumper {
 
     // ── 装配（对标 Rust build_json_output）────────────────────────────────
 
-    private Map<String, Object> assemble(ReplayFile replay, BattleWorld world, BattleReport report) {
+    private Map<String, Object> assemble(ReplayFile replay, BattleWorld world, BattleReport report, MinimapOutput mm) {
         // battle_results 已由 BattleReportBuilder 用 constants.json 解析为具名对象，原样输出。
         JsonNode battleResults = report.battleResults();
         NormalizedReplay normalized = ReplayMapper.map(world, report);
-        MinimapOutput mm = options.minimap()
-                ? new MinimapExtractor(specProvider, constants, replay).extract()
-                : null;
         return assembleFinal(replay, report, normalized, mm, battleResults);
     }
 

@@ -4,6 +4,7 @@ import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.constant.GameConstants;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.model.Vec3;
+import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.packet.NamedArgs;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
@@ -51,17 +53,13 @@ public final class MinimapExtractor {
         this.replay = replay;
     }
 
-    /** 提取 minimap 数据（Single 模式）。 */
-    public MinimapOutput extract() {
-        var frames = new ArrayList<MinimapOutput.MinimapFrame>();
-        var core = runCore((world, clock) -> frames.add(snapshot(world, clock)));
-        return new MinimapOutput(core.arenaId(), frames, core.firingEvents(), core.damageEvents(),
-            core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
-            core.finishType(), core.scoringRules(), core.capturedBuffs());
+    /** 构造事件流收集器（供外部复用同一 {@link BattleWorld} 单遍解析时驱动 minimap 提取）。 */
+    public Collector newCollector(BiConsumer<BattleWorld, Float> boundary) {
+        return new Collector(gameConstants, replay.version(), boundary);
     }
 
     /**
-     * 压缩输出（外部程序分析用）：与 {@link #extract()} 同结构，保留每帧
+     * 压缩输出（外部程序分析用）：保留每帧
      * planes/torpedoes/smoke_screens/buildings/wards/buff_zones/weather_zones/team_scores/
      * capture_points/time_left 及全部事件流（含可见性 spotting），仅将 frames 的
      * {@code entities} 改为<b>移动增量</b>：每帧只列出自上次输出以来位置（归一化坐标移动
@@ -72,7 +70,8 @@ public final class MinimapExtractor {
     public MinimapOutput.Compressed extractCompressed() {
         var frames = new ArrayList<MinimapOutput.MinimapFrame>();
         var lastState = new HashMap<Long, MinimapOutput.MinimapEntity>();
-        var core = runCore((world, clock) -> frames.add(snapshotDelta(world, clock, lastState)));
+        var collector = new Collector(gameConstants, replay.version(), (world, clock) -> frames.add(snapshotDelta(world, clock, lastState)));
+        var core = runCore(collector);
         return new MinimapOutput.Compressed(true, core.arenaId(), frames, core.firingEvents(),
             core.damageEvents(), core.shotHits(), core.deadShips(), core.battleStage(),
             core.winningTeam(), core.finishType(), core.scoringRules(), core.capturedBuffs());
@@ -121,25 +120,98 @@ public final class MinimapExtractor {
     }
 
     /** 共享解析循环的事件流/终局结果（帧与移动增量由回调按各自策略装配）。 */
-    private record Core(Long arenaId, List<MinimapOutput.ShotEntry> firingEvents,
-                        List<MinimapOutput.DamageEntry> damageEvents,
-                        List<MinimapOutput.ShotHitEntry> shotHits, List<MinimapOutput.DeadShip> deadShips,
-                        String battleStage, Integer winningTeam, String finishType,
-                        MinimapOutput.ScoringRules scoringRules, List<MinimapOutput.CapturedBuff> capturedBuffs) {
+    public record Core(Long arenaId, List<MinimapOutput.ShotEntry> firingEvents,
+                       List<MinimapOutput.DamageEntry> damageEvents,
+                       List<MinimapOutput.ShotHitEntry> shotHits, List<MinimapOutput.DeadShip> deadShips,
+                       String battleStage, Integer winningTeam, String finishType,
+                       MinimapOutput.ScoringRules scoringRules, List<MinimapOutput.CapturedBuff> capturedBuffs) {
     }
 
-    private Core runCore(BiConsumer<BattleWorld, Float> boundary) {
+    /**
+     * 逐时钟边界的事件流收集器：供外部复用同一 {@link BattleWorld} 单遍解析时驱动 minimap 提取。
+     * 帧快照由 {@code boundary} 回调按各自策略装配；事件流与终局结果在 {@link #end} 汇总。
+     */
+    public static final class Collector {
+        private final GameConstants gameConstants;
+        private final Version version;
+        private final BiConsumer<BattleWorld, Float> boundary;
+        private final List<MinimapOutput.ShotEntry> firingEvents = new ArrayList<>();
+        private final List<MinimapOutput.DamageEntry> damageEvents = new ArrayList<>();
+        private final List<MinimapOutput.ShotHitEntry> shotHits = new ArrayList<>();
+        private final Set<Long> seenSalvos = new HashSet<>();
+        private int lastDamageCount = 0;
+        private int lastHitCount = 0;
+        private float lastClock = Float.NaN;
+
+        public Collector(GameConstants gameConstants, Version version, BiConsumer<BattleWorld, Float> boundary) {
+            this.gameConstants = gameConstants;
+            this.version = version;
+            this.boundary = boundary;
+        }
+
+        /** 每个包处理后调用；内部按时钟边界去重，只在边界冲刷事件流 + 帧快照。 */
+        public void onClockBoundary(BattleWorld world, float clock) {
+            if (clock == lastClock) return;
+            var dmg = world.damageEvents();
+            for (int i = lastDamageCount; i < dmg.size(); i++) {
+                var d = dmg.get(i);
+                damageEvents.add(new MinimapOutput.DamageEntry(d.clock(),
+                    ReplayMapper.metaIdOf(world, d.aggressorId()),
+                    ReplayMapper.metaIdOf(world, d.victimId()), d.amount()));
+            }
+            lastDamageCount = dmg.size();
+
+            for (var s : world.firedSalvos()) {
+                long key = ((long) s.avatarId() << 32) | (s.salvo().salvoId() & 0xFFFFFFFFL);
+                if (seenSalvos.add(key)) firingEvents.add(toShotEntry(s, world));
+            }
+
+            var firedAtByShot = new HashMap<Long, Float>();
+            for (var s : world.firedSalvos()) {
+                int owner = s.salvo().ownerId().value();
+                for (var sh : s.salvo().shots()) {
+                    firedAtByShot.put(((long) owner << 32) | (sh.shotId() & 0xFFFFFFFFL), s.clock());
+                }
+            }
+
+            var hits = world.shotHits();
+            for (int i = lastHitCount; i < hits.size(); i++) {
+                shotHits.add(toShotHitEntry(hits.get(i), firedAtByShot, world));
+            }
+            lastHitCount = hits.size();
+
+            boundary.accept(world, clock);
+            lastClock = clock;
+        }
+
+        /** world.finish() 后调用：汇总终局状态与事件流。 */
+        public Core end(BattleWorld world) {
+            Long arenaId = null;
+            if (world.arenaId() != null) {
+                try {
+                    arenaId = Long.parseLong(world.arenaId());
+                } catch (NumberFormatException ignored) {}
+            }
+            String finishType = world.finishType() != null ? world.finishType()
+                : (world.finishTypeId() != 0 ? String.valueOf(world.finishTypeId()) : null);
+            return new Core(arenaId, firingEvents, damageEvents, shotHits,
+                world.deadShips().stream()
+                    .map(ds -> new MinimapOutput.DeadShip(ds.clock(),
+                        ReplayMapper.metaIdOf(world, ds.victimId()), ds.x(), ds.z()))
+                    .toList(),
+                gameConstants.battleStageName(world.battleStageId(), version), world.winningTeam(), finishType,
+                new MinimapOutput.ScoringRules(world.teamWinScore(), world.holdReward(),
+                    world.holdPeriod(), world.holdCpIndices()),
+                world.capturedBuffs().stream()
+                    .map(cb -> new MinimapOutput.CapturedBuff(cb.paramsId(), cb.teamId(), cb.clock()))
+                    .toList());
+        }
+    }
+
+    private Core runCore(Collector collector) {
         var world = new BattleWorld(replay.meta(), replay.version(), constants);
         var parser = new Parser(specProvider, replay.version());
         var decoder = new PacketDecoder(replay.version());
-
-        var firingEvents = new ArrayList<MinimapOutput.ShotEntry>();
-        var damageEvents = new ArrayList<MinimapOutput.DamageEntry>();
-        var shotHits = new ArrayList<MinimapOutput.ShotHitEntry>();
-        var seenSalvos = new HashSet<Long>();
-        int lastDamageCount = 0;
-        int lastHitCount = 0;
-        float lastClock = Float.NaN;
 
         var iter = replay.packetIterator();
         while (iter.hasNext()) {
@@ -148,77 +220,10 @@ public final class MinimapExtractor {
             if (packet == null || packet.payload() instanceof Packet.InvalidPayload) continue;
             if (packet.packetType() == null) continue;
             world.process(decoder.decode(packet), raw.clock());
-
-            // 时钟边界：冲刷事件流 + 回调装配（帧抽稀或移动增量）
-            float clock = world.currentClock().seconds();
-            if (clock != lastClock) {
-                // 1. damage：damageEvents 条数 diff，只推新事件（玩家身份归一为 metaId）
-                var dmg = world.damageEvents();
-                for (int i = lastDamageCount; i < dmg.size(); i++) {
-                    var d = dmg.get(i);
-                    damageEvents.add(new MinimapOutput.DamageEntry(d.clock(),
-                        ReplayMapper.metaIdOf(world, d.aggressorId()),
-                        ReplayMapper.metaIdOf(world, d.victimId()), d.amount()));
-                }
-                lastDamageCount = dmg.size();
-
-                // 2. firing：(avatar_id, salvo_id) 去重，新齐射才输出（玩家身份归一为 metaId）
-                for (var s : world.firedSalvos()) {
-                    long key = ((long) s.avatarId() << 32) | (s.salvo().salvoId() & 0xFFFFFFFFL);
-                    if (seenSalvos.add(key)) firingEvents.add(toShotEntry(s, world));
-                }
-
-                // 2b. shot_id → fired_at 映射（shot_hits 关联起源齐射；用 (owner,shot) 组合 key
-                //     避免不同齐射 shot_id 复用导致的覆盖误配）
-                var firedAtByShot = new HashMap<Long, Float>();
-                for (var s : world.firedSalvos()) {
-                    int owner = s.salvo().ownerId().value();
-                    for (var sh : s.salvo().shots()) {
-                        firedAtByShot.put(((long) owner << 32) | (sh.shotId() & 0xFFFFFFFFL), s.clock());
-                    }
-                }
-
-                // 3. shot_hits：条数 diff
-                var hits = world.shotHits();
-                for (int i = lastHitCount; i < hits.size(); i++) {
-                    shotHits.add(toShotHitEntry(hits.get(i), firedAtByShot, world));
-                }
-                lastHitCount = hits.size();
-
-                boundary.accept(world, clock);
-                lastClock = clock;
-            }
+            collector.onClockBoundary(world, world.currentClock().seconds());
         }
         world.finish();
-
-        Long arenaId = null;
-        if (world.arenaId() != null) {
-            try {
-                arenaId = Long.parseLong(world.arenaId());
-            } catch (NumberFormatException ignored) {}
-        }
-        String finishType = world.finishType() != null ? world.finishType()
-            : (world.finishTypeId() != 0 ? String.valueOf(world.finishTypeId()) : null);
-
-        return new Core(arenaId, firingEvents, damageEvents, shotHits,
-            world.deadShips().stream()
-                .map(ds -> new MinimapOutput.DeadShip(ds.clock(),
-                    ReplayMapper.metaIdOf(world, ds.victimId()), ds.x(), ds.z()))
-                .toList(),
-            battleStageName(world.battleStageId()), world.winningTeam(), finishType,
-            new MinimapOutput.ScoringRules(world.teamWinScore(), world.holdReward(),
-                world.holdPeriod(), world.holdCpIndices()),
-            world.capturedBuffs().stream()
-                .map(cb -> new MinimapOutput.CapturedBuff(cb.paramsId(), cb.teamId(), cb.clock()))
-                .toList());
-    }
-
-    /**
-     * 战斗阶段 id → 阶段名（对齐 Rust BattleStage Debug，0=Waiting..4=Ended）。
-     * 委托统一布局管理器 {@link GameConstants#battleStageName}。
-     */
-    private String battleStageName(int id) {
-        return gameConstants.battleStageName(id, replay.version());
+        return collector.end(world);
     }
 
     // ── 事件装配 ──────────────────────────────────────────────────────
@@ -255,7 +260,7 @@ public final class MinimapExtractor {
 
     // ── 帧快照（docs §4.2）────────────────────────────────────────────
 
-    private static MinimapOutput.MinimapFrame snapshot(BattleWorld world, float clock) {
+    public static MinimapOutput.MinimapFrame snapshot(BattleWorld world, float clock) {
         var entities = new ArrayList<MinimapOutput.MinimapEntity>();
         for (var es : world.entities().values()) {
             // 只有收到过 minimap 更新（有归一化坐标）的实体才输出；玩家身份归一为 metaId
@@ -309,9 +314,9 @@ public final class MinimapExtractor {
             })
             .toList();
 
-        var buffZones = world.buffZones().values().stream()
+        var buffZones = world.buffZones().stream()
             .map(b -> new MinimapOutput.BuffZoneEntry(b.entityId(), b.x(), b.z(),
-                b.radius(), b.teamId(), b.isActive(), b.dropParamsId()))
+                b.radius(), b.teamId(), b.isActive(), b.dropParamsId(), b.clock()))
             .toList();
 
         var weather = world.weatherZones().stream()
