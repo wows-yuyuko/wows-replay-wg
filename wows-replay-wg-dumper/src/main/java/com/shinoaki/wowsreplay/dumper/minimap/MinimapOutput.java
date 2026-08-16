@@ -104,15 +104,18 @@ public record MinimapOutput(
     ) {
     }
 
-    /** 飞机 params_id → type 汇总（type 如 Fighter/Bomber/Dive/Skip，未知为 null）。 */
+    /** 飞机 params_id → type/武器 汇总（未知为 null）。 */
     public record PlaneType(
             @JsonProperty("params_id") long paramsId,
             @JsonProperty("type") String type,
-            @JsonProperty("ammoType") String ammoType
+            @JsonProperty("ammoType") String ammoType,
+            @JsonProperty("nation") String nation,
+            @JsonProperty("bombName") String bombName,
+            @JsonProperty("weapon") String weapon
     ) {
     }
 
-    /** 把对局出现过的飞机 params_id 集合解析成 {@code {params_id, type}} 列表（按 id 升序）。 */
+    /** 把对局出现过的飞机 params_id 集合解析成 {@code {params_id, type, weapon, ...}} 列表（按 id 升序）。 */
     public static List<PlaneType> resolvePlaneTypes(Collection<Long> paramsIds, WowsInfo wowsInfo) {
         if (paramsIds == null || paramsIds.isEmpty()) return List.of();
         return paramsIds.stream()
@@ -120,15 +123,20 @@ public record MinimapOutput(
                 .map(id -> {
                     var aircraft = wowsInfo.aircrafts().getOrDefault(id, null);
                     if (aircraft != null) {
+                        String weapon = weaponCode(aircraft.bomName());
                         var p = wowsInfo.projectiles().getOrDefault(aircraft.bomName(), null);
-                        if (p != null) {
-                            return new PlaneType(id, aircraft.type(), p.path("ammoType").asString(""));
-                        }
-                        return new PlaneType(id, aircraft.type(), null);
+                        String ammoType = p != null ? p.path("ammoType").asString("") : null;
+                        return new PlaneType(id, aircraft.type(), ammoType, aircraft.nation(), aircraft.bomName(), weapon);
                     }
-                    return new PlaneType(id, null, null);
+                    return new PlaneType(id, null, null, null, null, null);
                 })
                 .toList();
+    }
+
+    /** 从 bombName 提取武器代码（命名规律 P+国家2位+武器2位+…）：PT=鱼雷, PB=炸弹, PS=跳弹, PR=火箭/机炮, PD=深弹。 */
+    private static String weaponCode(String bombName) {
+        if (bombName == null || bombName.length() < 4) return null;
+        return bombName.substring(2, 4);
     }
 
     public record TorpedoEntry(

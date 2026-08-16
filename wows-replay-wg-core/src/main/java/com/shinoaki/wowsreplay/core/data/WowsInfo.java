@@ -68,7 +68,7 @@ public record WowsInfo(
     /**
      * 飞机
      */
-    public record Aircrafts(String key, String type, long id, String name, String bomName) {
+    public record Aircrafts(String key, String type,String nation, long id, String name, String bomName) {
 
     }
 
@@ -133,6 +133,7 @@ public record WowsInfo(
         var out = new HashMap<Long, Aircrafts>();
         for (var e : root.path("aircrafts").properties()) {
             var data = new Aircrafts(e.getKey(), e.getValue().path("type").asString(),
+                    e.getValue().path("nation").asString(),
                     e.getValue().path("id").asLong(),
                     e.getValue().path("name").asString(),
                     e.getValue().path("bombName").asString());
