@@ -12,16 +12,15 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Slf4j
 public class ReplayDumperMeTest {
     private static final String REPLAY_PATH =
-            "temp/wg_15.6/20260730_013138_PASB720-Rhode-Island_56_AngelWings.wowsreplay";
+            "temp/wg_15.7/20260816_105341_PVSA710-Independencia_22_tierra_del_fuego.wowsreplay";
     private static final String WOWS_DATA_BASE = "temp/wows-data";
 
     private static ReplayFile replay;
@@ -44,12 +43,17 @@ public class ReplayDumperMeTest {
         long accountId = 2022515210;
         Map<String, Object> minimap = (Map<String, Object>) dumper.get("minimap");
         List<MinimapOutput.MinimapFrame> tempFrames = (List<MinimapOutput.MinimapFrame>) minimap.get("frames");
-        List<MinimapOutput.MinimapFrame> frames = new ArrayList<>();
+        List<MinimapOutput.PlaneEntry> entries = new ArrayList<>();
         for (var temp : tempFrames) {
-            if (temp.smokeScreens().size() > 2) {
-                frames.add(temp);
-            }
+            entries.addAll(temp.planes());
         }
+        var map = entries.stream().collect(Collectors.groupingBy(m -> m.ownerMetaId()));
+        var info = map.getOrDefault(537315308L, List.of());
+        Set<Long> pl = new HashSet<>();
+        info.forEach(x -> pl.add(x.paramsId()));
+
+        Set<Long> pl2 = new HashSet<>();
+        info.forEach(x -> pl2.add(x.planeId()));
         //过滤数据
         var json = JsonMapper.toPrettyJson(dumper);
         var tree = JsonMapper.readTree(json);

@@ -2,6 +2,7 @@ package com.shinoaki.wowsreplay.dumper.minimap;
 
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.constant.GameConstants;
+import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
 import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.packet.Packet;
@@ -48,15 +49,25 @@ public final class MinimapMerger {
     private final EntitySpecProvider specProvider;
     private final GameConstantsProvider constants;
     private final List<ReplayFile> replays;
+    private final WowsInfo wowsInfo;
 
     /**
      * @param replays 同场次候选回放（第 0 项默认主视角；须含敌对队伍成员才能凑齐双方移动）
      */
     public MinimapMerger(EntitySpecProvider specProvider, GameConstantsProvider constants,
                          List<ReplayFile> replays) {
+        this(specProvider, constants, replays, null);
+    }
+
+    /**
+     * @param wowsInfo 可空；用于把对局飞机 params_id 解析成 type（为 null 时 type 输出 null）。
+     */
+    public MinimapMerger(EntitySpecProvider specProvider, GameConstantsProvider constants,
+                         List<ReplayFile> replays, WowsInfo wowsInfo) {
         this.specProvider = specProvider;
         this.constants = constants;
         this.replays = replays;
+        this.wowsInfo = wowsInfo;
     }
 
     /** 主/副两份回放的合并 minimap 输出（形状与单 replay 一致）。 */
@@ -102,11 +113,14 @@ public final class MinimapMerger {
             .toList();
         frames = MinimapExtractor.enrichBuffZones(frames, dropEvents);
 
+        var planeTypes = MinimapOutput.resolvePlaneTypes(
+            MinimapExtractor.collectPlaneParamsIds(primary.world()), wowsInfo);
+
         return new MinimapOutput(
             parseArenaId(primary.world()), frames, firing, damage, shotHits, deadShips,
             battleStageName(primary.world().battleStageId(), primary.replay().version()),
             primary.world().winningTeam(), finishType(primary.world()),
-            scoringRules(primary.world()), capturedBuffs, dropEvents);
+            scoringRules(primary.world()), capturedBuffs, dropEvents, planeTypes);
     }
 
     // ── 主/副选择 + battle_result 检测 ───────────────────────────────────

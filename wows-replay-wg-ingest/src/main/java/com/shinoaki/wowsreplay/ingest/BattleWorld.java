@@ -236,6 +236,9 @@ public class BattleWorld {
             case DecodedPayload.PlaneAddedPayload pap -> handlePlaneAdded(pap, elapsed);
             case DecodedPayload.PlaneRemovedPayload prp -> handlePlaneRemoved(prp, elapsed);
             case DecodedPayload.PlanePositionPayload ppp -> handlePlanePosition(ppp, elapsed);
+            case DecodedPayload.SquadronAddedPayload sap -> handleSquadronAdded(sap);
+            case DecodedPayload.SquadronHealthPayload shp -> handleSquadronHealth(shp);
+            case DecodedPayload.SquadronPlanesHealthPayload sph -> handleSquadronPlanesHealth(sph);
             case DecodedPayload.WardAddedPayload wap -> handleWardAdded(wap, elapsed);
             case DecodedPayload.WardRemovedPayload wrp -> handleWardRemoved(wrp);
 
@@ -457,8 +460,10 @@ public class BattleWorld {
     }
 
     private void handlePlaneAdded(DecodedPayload.PlaneAddedPayload pap, float elapsed) {
-        var ps = new PlaneState(pap.planeId(), pap.entityId().value(), pap.teamId(),
-                pap.paramsId(), pap.x(), pap.z(), elapsed, elapsed);
+        // 拥有者实体 id 编码在 planeId（u64）低 32 位：planeId = (中队序号 << 32) | ownerEntityId。
+        int ownerEntityId = (int) (pap.planeId() & 0xFFFFFFFFL);
+        var ps = new PlaneState(pap.planeId(), ownerEntityId, pap.teamId(),
+                pap.paramsId(), pap.x(), pap.z(), elapsed, elapsed, null);
         activePlanes.put(pap.planeId(), ps);
         planeEvents.add(new PlaneRecord(elapsed, "added", pap.planeId(), ps));
     }
@@ -472,6 +477,28 @@ public class BattleWorld {
         var ps = activePlanes.get(ppp.planeId());
         if (ps != null) {
             activePlanes.put(ppp.planeId(), ps.withPosition(ppp.x(), ppp.z(), elapsed));
+        }
+    }
+
+    /** 完整中队血量/状态：按 squadronState.planeID 关联到已存在的 minimap 中队。 */
+    private void handleSquadronAdded(DecodedPayload.SquadronAddedPayload sap) {
+        var ps = activePlanes.get(sap.state().planeId());
+        if (ps != null) {
+            activePlanes.put(ps.planeId(), ps.withSquadronState(sap.state()));
+        }
+    }
+
+    private void handleSquadronHealth(DecodedPayload.SquadronHealthPayload shp) {
+        var ps = activePlanes.get(shp.planeId());
+        if (ps != null) {
+            activePlanes.put(ps.planeId(), ps.withHealthPart(shp.healthPart()));
+        }
+    }
+
+    private void handleSquadronPlanesHealth(DecodedPayload.SquadronPlanesHealthPayload sph) {
+        var ps = activePlanes.get(sph.planeId());
+        if (ps != null) {
+            activePlanes.put(ps.planeId(), ps.withPlaneHealth(sph.planeHealth()));
         }
     }
 

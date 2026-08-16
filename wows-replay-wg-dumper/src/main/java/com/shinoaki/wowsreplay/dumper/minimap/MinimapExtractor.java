@@ -293,8 +293,19 @@ public final class MinimapExtractor {
     public static MinimapOutput.MinimapFrame frame(BattleWorld world, float clock,
                                                    List<MinimapOutput.MinimapEntity> entities) {
         var planes = world.activePlanes().values().stream()
-            .map(p -> new MinimapOutput.PlaneEntry(p.planeId(), ReplayMapper.metaIdOf(world, p.ownerEntityId()),
-                p.teamId(), p.paramsId().value(), p.x(), p.z(), p.lastUpdateAt()))
+            .map(p -> {
+                var s = p.squadronState();
+                return new MinimapOutput.PlaneEntry(p.planeId(), ReplayMapper.metaIdOf(world, p.ownerEntityId()),
+                    p.teamId(), p.paramsId().value(), p.x(), p.z(), p.lastUpdateAt(),
+                    s != null ? s.maxHealth() : null,
+                    s != null ? s.healthPart() : null,
+                    s != null ? s.planeHealth() : null,
+                    s != null ? s.numPlanes() : null,
+                    s != null ? s.totalNumPlanes() : null,
+                    s != null ? s.isActive() : null,
+                    s != null ? s.currentStateId() : null,
+                    s != null ? s.parentId() : null);
+            })
             .toList();
 
         var torpedoes = world.activeTorpedoes().values().stream()
@@ -387,5 +398,15 @@ public final class MinimapExtractor {
                 f.teamScores(), f.capturePoints(), f.timeLeft()));
         }
         return out;
+    }
+
+    /** 收集对局出现过的所有飞机 params_id（去重，含已离场的）。 */
+    public static Set<Long> collectPlaneParamsIds(BattleWorld world) {
+        var ids = new HashSet<Long>();
+        if (world == null) return ids;
+        for (var e : world.planeEvents()) {
+            if (e.state() != null) ids.add(e.state().paramsId().value());
+        }
+        return ids;
     }
 }

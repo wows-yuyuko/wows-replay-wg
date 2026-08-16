@@ -130,9 +130,12 @@ public final class ReplayDumper {
         if (options.minimap()) {
             var core = collector.end(world);
             var frames = MinimapExtractor.enrichBuffZones(mmFrames, core.dropEvents());
+            var planeTypes = MinimapOutput.resolvePlaneTypes(
+                MinimapExtractor.collectPlaneParamsIds(world), cache.wowsInfo(primary));
             mm = new MinimapOutput(core.arenaId(), frames, core.firingEvents(), core.damageEvents(),
                 core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
-                core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents());
+                core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents(),
+                planeTypes);
         }
         return assemble(primary, world, report, mm);
     }
@@ -157,7 +160,7 @@ public final class ReplayDumper {
 
         JsonNode battleResults = report.battleResults();
         MinimapOutput mm = options.minimap()
-                ? new MinimapMerger(specProvider, constants, replays).merge()
+                ? new MinimapMerger(specProvider, constants, replays, cache.wowsInfo(primary)).merge()
                 : null;
         return assembleFinal(primary, report, merged.replay(), mm, battleResults);
     }
@@ -366,6 +369,7 @@ public final class ReplayDumper {
             out.put("battle_stage", mm.battleStage());
             out.put("scoring_rules", mm.scoringRules());
             out.put("drop_events", mm.dropEvents());
+            out.put("plane_types", mm.planeTypes());
         }
 
         return out;

@@ -168,6 +168,37 @@ public sealed interface DecodedPayload {
 
     record PlanePositionPayload(EntityId entityId, long planeId, float x, float z) implements DecodedPayload {}
 
+    /** receive_addSquadron 的完整中队状态（血量/状态）。 */
+    record SquadronState(
+        long planeId,
+        int totalNumPlanes,
+        int numPlanes,
+        boolean isActive,
+        int currentStateId,
+        long parentId,
+        int maxHealth,
+        float healthPart,
+        long planeHealth
+    ) {
+        public SquadronState withHealthPart(float part) {
+            return new SquadronState(planeId, totalNumPlanes, numPlanes, isActive, currentStateId,
+                parentId, maxHealth, part, planeHealth);
+        }
+
+        public SquadronState withPlaneHealth(long ph) {
+            return new SquadronState(planeId, totalNumPlanes, numPlanes, isActive, currentStateId,
+                parentId, maxHealth, healthPart, ph);
+        }
+    }
+
+    record SquadronAddedPayload(SquadronState state) implements DecodedPayload {}
+
+    /** receive_squadronHealth：健康度（0..1）实时更新。 */
+    record SquadronHealthPayload(long planeId, float healthPart) implements DecodedPayload {}
+
+    /** receive_squadronPlanesHealth：每机血量（u64）实时更新。 */
+    record SquadronPlanesHealthPayload(long planeId, long planeHealth) implements DecodedPayload {}
+
     // ── Property update (pass-through) ─────────────────────────────────────
 
     record PropertyUpdatePayload(PropertyUpdatePacket packet) implements DecodedPayload {}

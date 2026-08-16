@@ -113,6 +113,9 @@ public class PacketDecoder {
                  "receive_removeMinimapSquadron" -> decodePlaneRemoved(em.entityId(), args);
             case "onPlanePosition",
                  "receive_updateMinimapSquadron" -> decodePlanePosition(em.entityId(), args);
+            case "receive_addSquadron" -> decodeSquadronAdded(args);
+            case "receive_squadronHealth" -> decodeSquadronHealth(args);
+            case "receive_squadronPlanesHealth" -> decodeSquadronPlanesHealth(args);
             case "onGunSync", "syncGun" -> decodeGunSync(em.entityId(), args);
             case "onSetAmmoForWeapon",
                  "setAmmoForWeapon" -> decodeSetAmmo(em.entityId(), args);
@@ -666,6 +669,37 @@ public class PacketDecoder {
     private DecodedPayload decodePlanePosition(EntityId eid, NamedArgs args) {
         Vec3 pos = args.size() >= 2 ? extractVec3(args.get(1)) : new Vec3(0, 0, 0);
         return new DecodedPayload.PlanePositionPayload(eid, longFromArg(args.get(0)), pos.x(), pos.z());
+    }
+
+    /** receive_addSquadron：完整中队血量/状态（squadronState 是 SQUADRON_STATE 字典）。 */
+    private DecodedPayload decodeSquadronAdded(NamedArgs args) {
+        int totalNumPlanes = intFromArg(args.get("totalNumPlanes"));
+        long parentId = longFromArg(args.get("parentID"));
+        int maxHealth = intFromArg(args.get("maxHealth"));
+        float healthPart = floatFromArg(args.get("squadronHealthPart"));
+        long planeHealth = longFromArg(args.get("planeHealth"));
+
+        long planeId = 0;
+        boolean isActive = false;
+        int numPlanes = 0;
+        int currentStateId = 0;
+        if (args.get("squadronState") instanceof ArgValue.DictVal(Map<String, ArgValue> d)) {
+            planeId = longFromArg(d.get("planeID"));
+            isActive = intFromArg(d.get("isActive")) != 0;
+            numPlanes = intFromArg(d.get("numPlanes"));
+            currentStateId = intFromArg(d.get("currentStateId"));
+        }
+        return new DecodedPayload.SquadronAddedPayload(new DecodedPayload.SquadronState(
+            planeId, totalNumPlanes, numPlanes, isActive, currentStateId, parentId,
+            maxHealth, healthPart, planeHealth));
+    }
+
+    private DecodedPayload decodeSquadronHealth(NamedArgs args) {
+        return new DecodedPayload.SquadronHealthPayload(longFromArg(args.get(0)), floatFromArg(args.get(1)));
+    }
+
+    private DecodedPayload decodeSquadronPlanesHealth(NamedArgs args) {
+        return new DecodedPayload.SquadronPlanesHealthPayload(longFromArg(args.get(0)), longFromArg(args.get(1)));
     }
 
     // ── Gun sync / Ammo ────────────────────────────────────────────────

@@ -4,7 +4,9 @@ import com.shinoaki.wowsreplay.core.JsonMapper;
 import tools.jackson.databind.JsonNode;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * wowsinfo.json 解析结果：GameParams 原始 id → 名称映射，供 dumper vehicle 节点数组富化。
@@ -16,14 +18,19 @@ public record WowsInfo(
         Map<Long, ShipConfig> shipType,
         Map<Long, Modernizations> modernizations,
         Map<Long, Abilities> consumables,
-        /** 外观：id → {icon, type}（type 如 "MSkin" 等）。 */
+        /* 外观：id → {icon, type}（type 如 "MSkin" 等）。 */
         Map<Long, ExteriorInfo> exteriors,
-        /** skillType id → 技能（icon=内部名，name/description 为 IDS 键，需 lang 翻译）。 */
-        Map<Long, Skills> skills
+        /* skillType id → 技能（icon=内部名，name/description 为 IDS 键，需 lang 翻译）。 */
+        Map<Long, Skills> skills,
+        /*
+         * 飞机
+         */
+        Map<Long, Aircrafts> aircrafts,
+        Map<String, JsonNode> projectiles
 ) {
 
     public static final WowsInfo EMPTY =
-            new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            new WowsInfo(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
     /** 解析 wowsinfo.json 文本。缺失/解析异常由调用方兜底。 */
     public static WowsInfo fromJson(String json) {
@@ -34,7 +41,9 @@ public record WowsInfo(
                 modernizationsMap(root),
                 abilitiesMap(root),
                 exteriorMap(root),
-                skillTypeMap(root));
+                skillTypeMap(root),
+                aircraftsMap(root),
+                projectilesMap(root));
     }
 
     /** 外观条目：icon + type + name（wowsinfo exteriors 段）。 */
@@ -54,6 +63,13 @@ public record WowsInfo(
     }
 
     public record Abilities(String nation, String name, long id, String icon, String filter, String type) {
+    }
+
+    /**
+     * 飞机
+     */
+    public record Aircrafts(String key, String type, long id, String name, String bomName) {
+
     }
 
     public Modernizations modernization(long id) {
@@ -89,6 +105,14 @@ public record WowsInfo(
         return skills.get((long) skillType);
     }
 
+    private static Map<String, JsonNode> projectilesMap(JsonNode root) {
+        var out = new HashMap<String, JsonNode>();
+        for (var e : root.path("projectiles").properties()) {
+            out.put(e.getKey(), e.getValue());
+        }
+        return out;
+    }
+
     private static Map<Long, Abilities> abilitiesMap(JsonNode root) {
         var out = new HashMap<Long, Abilities>();
         for (var e : root.path("abilities").properties()) {
@@ -101,6 +125,18 @@ public record WowsInfo(
                     e.getValue().path("filter").asString(),
                     e.getValue().path("type").asString()
             ));
+        }
+        return out;
+    }
+
+    private static Map<Long, Aircrafts> aircraftsMap(JsonNode root) {
+        var out = new HashMap<Long, Aircrafts>();
+        for (var e : root.path("aircrafts").properties()) {
+            var data = new Aircrafts(e.getKey(), e.getValue().path("type").asString(),
+                    e.getValue().path("id").asLong(),
+                    e.getValue().path("name").asString(),
+                    e.getValue().path("bombName").asString());
+            if (data.id() != 0) out.put(data.id(), data);
         }
         return out;
     }
