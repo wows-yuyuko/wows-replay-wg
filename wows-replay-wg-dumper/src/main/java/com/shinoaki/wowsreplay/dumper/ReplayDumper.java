@@ -600,18 +600,7 @@ public final class ReplayDumper {
                 allByFilter.putIfAbsent(filterKey(ab.filter()), ab);
             }
         }
-        Map<Long, Map<String, WowsInfo.Abilities>> playerByFilter = new HashMap<>();
-        for (var r : report.players()) {
-            if (r.vehicleEntity() == null || r.vehicleEntity().shipConfig() == null) continue;
-            var map = new HashMap<String, WowsInfo.Abilities>();
-            for (var consumableId : r.vehicleEntity().shipConfig().consumables()) {
-                var ab = wowsInfo.consumable(consumableId);
-                if (ab != null && ab.filter() != null) {
-                    map.putIfAbsent(filterKey(ab.filter()), ab);
-                }
-            }
-            playerByFilter.put(r.metaId(), map);
-        }
+        Map<Long, Map<String, WowsInfo.Abilities>> playerByFilter = createPlayerByFilter(report, wowsInfo);
         for (var e : replay.consumableLog()) {
             var data = new LinkedHashMap<String, Object>();
             data.put("meta_id", e.metaId());
@@ -692,6 +681,22 @@ public final class ReplayDumper {
 
         events.sort(Comparator.comparingDouble(e -> ((Number) e.get("clock")).doubleValue()));
         return events;
+    }
+
+    private static Map<Long, Map<String, WowsInfo.Abilities>> createPlayerByFilter(BattleReport report, WowsInfo wowsInfo) {
+        Map<Long, Map<String, WowsInfo.Abilities>> playerByFilter = new HashMap<>();
+        for (var r : report.players()) {
+            if (r.vehicleEntity() == null || r.vehicleEntity().shipConfig() == null) continue;
+            var map = new HashMap<String, WowsInfo.Abilities>();
+            for (var consumableId : r.vehicleEntity().shipConfig().consumables()) {
+                var ab = wowsInfo.consumable(consumableId);
+                if (ab != null && ab.filter() != null) {
+                    map.putIfAbsent(filterKey(ab.filter()), ab);
+                }
+            }
+            playerByFilter.put(r.metaId(), map);
+        }
+        return playerByFilter;
     }
 
     /** consumable filter 归一化键（等价于 equalsIgnoreCase 的忽略大小写比较）。 */

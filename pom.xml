@@ -169,7 +169,7 @@
                         <source>${maven.compiler.source}</source>
                         <target>${maven.compiler.target}</target>
                         <compilerArgs>
-                            <arg>--enable-preview</arg>
+<!--                            <arg>&#45;&#45;enable-preview</arg>-->
                         </compilerArgs>
                         <annotationProcessorPaths>
                             <path>
@@ -185,7 +185,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
                     <configuration>
-                        <argLine>--enable-preview</argLine>
+<!--                        <argLine>&#45;&#45;enable-preview</argLine>-->
                     </configuration>
                 </plugin>
             </plugins>
