@@ -24,7 +24,8 @@ import java.util.Map;
 public final class GameDataCache {
 
     private final int maxSize;
-    private final Map<VersionKey, Object> store;
+    /** 版本化数据缓存：key = 版本+子类型，value = {@link Cached}（明确缓存了什么数据）。 */
+    private final Map<VersionKey, Cached> store;
     /** 全局语言表（取 base 下最新版本，版本更新时自动替换）。 */
     private static volatile LangCache langCache;
 
@@ -32,7 +33,7 @@ public final class GameDataCache {
         this.maxSize = maxSize;
         this.store = new LinkedHashMap<>(maxSize, 0.75f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<VersionKey, Object> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<VersionKey, Cached> eldest) {
                 return size() > maxSize;
             }
         };
@@ -51,7 +52,7 @@ public final class GameDataCache {
             return emptyConstants();
         }
         var key = gd.version.subKey("constants");
-        return (JsonConstantsProvider) store.computeIfAbsent(key, _ -> loadConstants(gd.dir));
+        return ((ConstantsEntry) store.computeIfAbsent(key, _ -> new ConstantsEntry(loadConstants(gd.dir)))).value();
     }
 
     /** 获取（或加载并缓存）replay 对应版本的实体规范提供者。 */
@@ -85,13 +86,13 @@ public final class GameDataCache {
         }
         lang(replay);
         var key = gd.version.subKey("wowsInfo");
-        return (WowsInfo) store.computeIfAbsent(key, _ -> loadWowsInfo(gd.dir));
+        return ((WowsInfoEntry) store.computeIfAbsent(key, _ -> new WowsInfoEntry(loadWowsInfo(gd.dir)))).value();
     }
 
     /** 获取（或加载并缓存）指定版本的 constants.json。 */
     public JsonConstantsProvider constants(VersionKey version, Path gameDataDir) {
         var key = version.subKey("constants");
-        return (JsonConstantsProvider) store.computeIfAbsent(key, _ -> loadConstants(gameDataDir));
+        return ((ConstantsEntry) store.computeIfAbsent(key, _ -> new ConstantsEntry(loadConstants(gameDataDir)))).value();
     }
 
     /** 获取（或加载并缓存）指定版本的实体规范提供者。 */
@@ -252,9 +253,8 @@ public final class GameDataCache {
     }
 
     /** 按 key 获取（或解析并缓存）实体规范列表。 */
-    @SuppressWarnings("unchecked")
     private List<EntitySpec> specs(VersionKey key, Path gameDataDir) {
-        return (List<EntitySpec>) store.computeIfAbsent(key, _ -> loadEntitySpecs(gameDataDir));
+        return ((EntitySpecsEntry) store.computeIfAbsent(key, _ -> new EntitySpecsEntry(loadEntitySpecs(gameDataDir)))).value();
     }
 
     private List<EntitySpec> loadEntitySpecs(Path gameDataDir) {
@@ -306,6 +306,25 @@ public final class GameDataCache {
     }
 
     private record LangCache(Path dir, Version version, LangProvider provider) {
+    }
+
+    /**
+     * 版本化缓存条目：permits 枚举了 {@link #store} 中允许缓存的全部数据类型，
+     * 编译器保证不会出现这三种之外的条目。
+     */
+    private sealed interface Cached permits ConstantsEntry, EntitySpecsEntry, WowsInfoEntry {
+    }
+
+    /** constants.json 解析结果。 */
+    private record ConstantsEntry(JsonConstantsProvider value) implements Cached {
+    }
+
+    /** 实体规范解析结果（同一 major.minor.patch 的所有 build 共享）。 */
+    private record EntitySpecsEntry(List<EntitySpec> value) implements Cached {
+    }
+
+    /** wowsinfo.json 解析结果。 */
+    private record WowsInfoEntry(WowsInfo value) implements Cached {
     }
 
     /** 版本标识，按 major.minor.patch 分组，忽略 build 号。 */
