@@ -116,6 +116,12 @@
             <version>${brotli.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>native-linux-x86_64</artifactId>
+            <version>${brotli.version}</version>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- SLF4J API -->
         <dependency>
@@ -129,11 +135,13 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
