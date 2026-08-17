@@ -29,7 +29,7 @@
         <jackson.version>3.2.1</jackson.version>
         <jackson-annotations.version>2.22</jackson-annotations.version>
         <!-- BouncyCastle -->
-        <bcprov.version>1.84</bcprov.version>
+        <bcprov.version>1.85.2</bcprov.version>
         <!-- jlibdeflate -->
         <jlibdeflate.version>0.1.0</jlibdeflate.version>
         <brotli.version>1.23.0</brotli.version>
