@@ -592,15 +592,25 @@ public final class ReplayDumper {
             }
         }
         // 飞机的消耗品事件在 minimap 里；先在本体消耗品里按 filter 匹配（优先用玩家自己的），
-        // 匹配不到再退回全局 consumableFindFilter。空槽(id=0)/无 vehicle 的玩家跳过。
-        Map<Long, List<WowsInfo.Abilities>> metaMap = new HashMap<>();
+        // 匹配不到再退回全局。空槽(id=0)/无 vehicle 的玩家跳过。
+        // filter → 能力 预索引（忽略大小写）：全局兜底 + 每玩家偏好，事件匹配降为 O(1)。
+        var allByFilter = new HashMap<String, WowsInfo.Abilities>();
+        for (var ab : wowsInfo.consumables().values()) {
+            if (ab != null && ab.filter() != null) {
+                allByFilter.putIfAbsent(filterKey(ab.filter()), ab);
+            }
+        }
+        Map<Long, Map<String, WowsInfo.Abilities>> playerByFilter = new HashMap<>();
         for (var r : report.players()) {
             if (r.vehicleEntity() == null || r.vehicleEntity().shipConfig() == null) continue;
-            List<WowsInfo.Abilities> list = new ArrayList<>();
+            var map = new HashMap<String, WowsInfo.Abilities>();
             for (var consumableId : r.vehicleEntity().shipConfig().consumables()) {
-                list.add(wowsInfo.consumable(consumableId));
+                var ab = wowsInfo.consumable(consumableId);
+                if (ab != null && ab.filter() != null) {
+                    map.putIfAbsent(filterKey(ab.filter()), ab);
+                }
             }
-            metaMap.put(r.metaId(), list);
+            playerByFilter.put(r.metaId(), map);
         }
         for (var e : replay.consumableLog()) {
             var data = new LinkedHashMap<String, Object>();
@@ -610,12 +620,13 @@ public final class ReplayDumper {
             data.put("type", e.type());
             data.put("consumable", e.consumableId());
             var ctName = constants.consumableName((int) e.consumableId()).orElse(null);
-            var abilities = metaMap.getOrDefault(e.metaId(), java.util.List.of());
-            WowsInfo.Abilities optional = abilities.stream()
-                    .filter(Objects::nonNull) // 空槽(id=0)映射为 null，跳过
-                    .filter(f -> ctName != null && f.filter() != null && ctName.equalsIgnoreCase(f.filter()))
-                    .findFirst()
-                    .orElseGet(() -> wowsInfo.consumableFindFilter(ctName));
+            WowsInfo.Abilities optional = null;
+            if (ctName != null) {
+                var key = filterKey(ctName);
+                var playerMap = playerByFilter.get(e.metaId());
+                optional = playerMap != null ? playerMap.get(key) : null;
+                if (optional == null) optional = allByFilter.get(key);
+            }
             if (optional != null) {
                 data.put("consumable_icon", optional.icon());
                 data.put("consumable_name", this.cache.getLangProvider(this.options.lang(), optional.name()));
@@ -681,6 +692,11 @@ public final class ReplayDumper {
 
         events.sort(Comparator.comparingDouble(e -> ((Number) e.get("clock")).doubleValue()));
         return events;
+    }
+
+    /** consumable filter 归一化键（等价于 equalsIgnoreCase 的忽略大小写比较）。 */
+    private static String filterKey(String filter) {
+        return filter.toLowerCase(Locale.ROOT);
     }
 
     private static LinkedHashMap<String, Object> getData(NormalizedKill k, GameConstantsProvider constants) {
