@@ -42,8 +42,9 @@ class ReplayMergerIT {
         replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
         assertNotNull(GameDataCache.resolveGameDataDir(replay), "游戏数据未找到: " + base);
         var cache = GameDataCache.withMaxSize(4);
-        EntitySpecProvider specProvider = cache.entitySpecs(replay);
-        var constants = cache.constants(replay);
+        var gd = cache.gameData(replay);
+        EntitySpecProvider specProvider = gd.entitySpecs();
+        var constants = gd.constants();
         merger = new ReplayMerger(specProvider, constants);
     }
 

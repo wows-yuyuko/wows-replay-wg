@@ -46,7 +46,7 @@ class BattleWorldIT {
         version = replay.version();
 
         assertNotNull(GameDataCache.resolveGameDataDir(replay), "游戏数据未找到: " + base);
-        specProvider = GameDataCache.withMaxSize(4).entitySpecs(replay);
+        specProvider = GameDataCache.withMaxSize(4).gameData(replay).entitySpecs();
 
         // 完整管线：Parser → PacketDecoder → BattleWorld
         var parser = new Parser(specProvider, version);

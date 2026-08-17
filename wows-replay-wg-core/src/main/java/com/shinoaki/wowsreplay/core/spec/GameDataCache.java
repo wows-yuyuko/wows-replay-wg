@@ -5,7 +5,6 @@ import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.data.LangProvider;
 import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.model.Version;
-import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 全局 LRU 缓存，按版本缓存已加载的游戏数据文件。
+ * 全局 LRU 缓存，按版本缓存已加载的游戏数据。
  *
  * <p>支持多版本并存，超过最大容量时淘汰最久未使用的条目。</p>
  */
@@ -24,8 +23,8 @@ import java.util.Map;
 public final class GameDataCache {
 
     private final int maxSize;
-    /** 版本化数据缓存：key = 版本+子类型，value = {@link Cached}（明确缓存了什么数据）。 */
-    private final Map<VersionKey, Cached> store;
+    /** 版本化数据缓存：一个版本一份 {@link GameDataEntry}（constants / 实体规范 / wowsinfo 整体加载）。 */
+    private final Map<VersionKey, GameDataEntry> store;
     /** 全局语言表（取 base 下最新版本，版本更新时自动替换）。 */
     private static volatile LangCache langCache;
 
@@ -33,7 +32,7 @@ public final class GameDataCache {
         this.maxSize = maxSize;
         this.store = new LinkedHashMap<>(maxSize, 0.75f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<VersionKey, Cached> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<VersionKey, GameDataEntry> eldest) {
                 return size() > maxSize;
             }
         };
@@ -44,60 +43,25 @@ public final class GameDataCache {
         return new GameDataCache(maxSize);
     }
 
-    /** 获取（或加载并缓存）replay 对应版本的 constants.json。 */
-    public JsonConstantsProvider constants(ReplayFile replay) {
+    /**
+     * 获取（或加载并缓存）replay 对应版本的整份游戏数据。
+     *
+     * <p>唯一缓存入口：一次调用同时加载 constants.json、实体规范、wowsinfo.json，
+     * 同一 major.minor.patch 的所有 build 共享同一份；未匹配到数据目录返回 {@link GameDataEntry#EMPTY}。</p>
+     */
+    public GameDataEntry gameData(ReplayFile replay) {
         var gd = resolve(replay);
         if (gd == null) {
-            log.warn("未找到匹配版本的游戏数据（base={}），返回空常量实现", replay.gameDataBase());
-            return emptyConstants();
+            log.warn("未找到匹配版本的游戏数据（base={}），返回空条目", replay.gameDataBase());
+            return GameDataEntry.EMPTY;
         }
-        var key = gd.version.subKey("constants");
-        return ((ConstantsEntry) store.computeIfAbsent(key, _ -> new ConstantsEntry(loadConstants(gd.dir)))).value();
+        lang(replay);
+        return store.computeIfAbsent(gd.version, _ -> load(gd.dir));
     }
-
-    /** 获取（或加载并缓存）replay 对应版本的实体规范提供者。 */
-    public EntitySpecProvider entitySpecs(ReplayFile replay) {
-        var gd = resolve(replay);
-        if (gd == null) {
-            log.warn("未找到匹配版本的游戏数据（base={}），返回空 spec", replay.gameDataBase());
-            return EntitySpecProvider.empty();
-        }
-        // 缓存的是解析结果 List<EntitySpec>：同一数据目录（同一 major.minor.patch）
-        // 的所有 build 共享同一份列表，故返回的 provider 忽略版本参数。
-        return _ -> specs(gd.version.subKey("entitySpecs"), gd.dir);
-    }
-
 
     /** 指定语言查 key，未命中返回 key 本身。 */
     public String getLangProvider(LangProvider.Lang lang, String key) {
         return langCache == null ? key : langCache.provider().get(lang, key);
-    }
-
-    /**
-     * 获取（或加载并缓存）replay 对应版本的 wowsinfo.json（{@code <live>/app/data/wowsinfo.json}），
-     * 提供 vehicle 节点数组（ship/modernizations/consumables/exteriors/commander_skills）的 id → 名称映射。
-     * 文件缺失或解析失败返回 {@link WowsInfo#EMPTY}。
-     */
-    public WowsInfo wowsInfo(ReplayFile replay) {
-        var gd = resolve(replay);
-        if (gd == null) {
-            log.warn("未找到匹配版本的游戏数据（base={}），返回空 wowsinfo", replay.gameDataBase());
-            return WowsInfo.EMPTY;
-        }
-        lang(replay);
-        var key = gd.version.subKey("wowsInfo");
-        return ((WowsInfoEntry) store.computeIfAbsent(key, _ -> new WowsInfoEntry(loadWowsInfo(gd.dir)))).value();
-    }
-
-    /** 获取（或加载并缓存）指定版本的 constants.json。 */
-    public JsonConstantsProvider constants(VersionKey version, Path gameDataDir) {
-        var key = version.subKey("constants");
-        return ((ConstantsEntry) store.computeIfAbsent(key, _ -> new ConstantsEntry(loadConstants(gameDataDir)))).value();
-    }
-
-    /** 获取（或加载并缓存）指定版本的实体规范提供者。 */
-    public EntitySpecProvider entitySpecs(VersionKey version, Path gameDataDir) {
-        return _ -> specs(version.subKey("entitySpecs"), gameDataDir);
     }
 
     /**
@@ -239,22 +203,19 @@ public final class GameDataCache {
         return best;
     }
 
-    private JsonConstantsProvider emptyConstants() {
-        return new JsonConstantsProvider("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    /** 整版本加载：constants / 实体规范 / wowsinfo 一次性解析（缓存键已按版本去重，只执行一次）。 */
+    private GameDataEntry load(Path gameDataDir) {
+        var specs = loadEntitySpecs(gameDataDir);
+        return new GameDataEntry(loadConstants(gameDataDir), _ -> specs, loadWowsInfo(gameDataDir));
     }
 
     private JsonConstantsProvider loadConstants(Path gameDataDir) {
         var path = gameDataDir.resolve("constants.json");
         if (!Files.exists(path)) {
             log.warn("{} 缺少 constants.json，返回空常量实现", gameDataDir);
-            return emptyConstants();
+            return GameDataEntry.EMPTY.constants();
         }
         return JsonConstantsProvider.fromFile(path);
-    }
-
-    /** 按 key 获取（或解析并缓存）实体规范列表。 */
-    private List<EntitySpec> specs(VersionKey key, Path gameDataDir) {
-        return ((EntitySpecsEntry) store.computeIfAbsent(key, _ -> new EntitySpecsEntry(loadEntitySpecs(gameDataDir)))).value();
     }
 
     private List<EntitySpec> loadEntitySpecs(Path gameDataDir) {
@@ -288,7 +249,7 @@ public final class GameDataCache {
     }
 
     /** 解析 replay → (版本键, live 目录)；未匹配或 IO 异常返回 null。 */
-    private static GameData resolve(ReplayFile replay) {
+    private static ResolvedDir resolve(ReplayFile replay) {
         Path dir;
         try {
             dir = resolveGameDataDir(replay);
@@ -299,36 +260,17 @@ public final class GameDataCache {
         if (dir == null) return null;
         // 版本键取自 data-* 目录名（live 的父目录），非 live 本身。
         var vk = VersionKey.from(dir.getParent());
-        return new GameData(vk, dir);
+        return new ResolvedDir(vk, dir);
     }
 
-    private record GameData(VersionKey version, Path dir) {
+    private record ResolvedDir(VersionKey version, Path dir) {
     }
 
     private record LangCache(Path dir, Version version, LangProvider provider) {
     }
 
-    /**
-     * 版本化缓存条目：permits 枚举了 {@link #store} 中允许缓存的全部数据类型，
-     * 编译器保证不会出现这三种之外的条目。
-     */
-    private sealed interface Cached permits ConstantsEntry, EntitySpecsEntry, WowsInfoEntry {
-    }
-
-    /** constants.json 解析结果。 */
-    private record ConstantsEntry(JsonConstantsProvider value) implements Cached {
-    }
-
-    /** 实体规范解析结果（同一 major.minor.patch 的所有 build 共享）。 */
-    private record EntitySpecsEntry(List<EntitySpec> value) implements Cached {
-    }
-
-    /** wowsinfo.json 解析结果。 */
-    private record WowsInfoEntry(WowsInfo value) implements Cached {
-    }
-
     /** 版本标识，按 major.minor.patch 分组，忽略 build 号。 */
-    public record VersionKey(int major, int minor, int patch, String subKey) {
+    public record VersionKey(int major, int minor, int patch) {
 
         /** 从目录名（如 "data-15.6.0.0.12830008"）提取。 */
         public static VersionKey from(Path gameDataDir) {
@@ -346,12 +288,7 @@ public final class GameDataCache {
                 if (parts.length >= 3) patch = Integer.parseInt(parts[2]);
             } catch (NumberFormatException ignored) {
             }
-            return new VersionKey(major, minor, patch, "");
-        }
-
-        /** 同版本号下不同子类型。 */
-        public VersionKey subKey(String subKey) {
-            return new VersionKey(major, minor, patch, subKey);
+            return new VersionKey(major, minor, patch);
         }
     }
 }

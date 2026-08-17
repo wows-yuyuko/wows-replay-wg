@@ -56,7 +56,7 @@ class NestedPropertyUpdateDiagIT {
         replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
         version = replay.version();
         assertNotNull(GameDataCache.resolveGameDataDir(replay), "游戏数据未找到: " + base);
-        specProvider = GameDataCache.withMaxSize(4).entitySpecs(replay);
+        specProvider = GameDataCache.withMaxSize(4).gameData(replay).entitySpecs();
     }
 
     private static Path resolve(String path) {

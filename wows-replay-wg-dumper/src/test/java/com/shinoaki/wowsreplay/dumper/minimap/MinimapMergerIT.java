@@ -37,8 +37,9 @@ class MinimapMergerIT {
         var first = ReplayFile.fromFile(files.get(0), resolve(WOWS_DATA_PATH));
         assertNotNull(GameDataCache.resolveGameDataDir(first), "游戏数据未找到");
         var cache = GameDataCache.withMaxSize(4);
-        specProvider = cache.entitySpecs(first);
-        constants = cache.constants(first);
+        var gd = cache.gameData(first);
+        specProvider = gd.entitySpecs();
+        constants = gd.constants();
     }
 
     private static Path resolve(String path) {

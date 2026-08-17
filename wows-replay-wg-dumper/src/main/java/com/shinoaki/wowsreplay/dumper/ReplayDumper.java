@@ -13,6 +13,7 @@ import com.shinoaki.wowsreplay.core.model.VoiceLine;
 import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
+import com.shinoaki.wowsreplay.core.spec.GameDataEntry;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapExtractor;
@@ -70,6 +71,7 @@ public final class ReplayDumper {
     /** 主视角（= replays 第 0 项）：spec/constants 解析、dumpJson 与合并广播状态的权威。 */
     private final ReplayFile primary;
     private final Options options;
+    private final GameDataEntry gameData;
     private final EntitySpecProvider specProvider;
     private final GameConstantsProvider constants;
     private final GameDataCache cache;
@@ -103,10 +105,10 @@ public final class ReplayDumper {
         this.primary = this.replays.getFirst();
         this.options = options;
         this.cache = cache;
-        this.specProvider = cache.entitySpecs(primary);
-        this.constants = cache.constants(primary);
-        // 预热语言表（getLangProvider 依赖 lang 已加载），并缓存 wowsinfo。
-        cache.wowsInfo(primary);
+        // 唯一缓存入口：一次取整份游戏数据（同时预热语言表，getLangProvider 依赖 lang 已加载）。
+        this.gameData = cache.gameData(primary);
+        this.specProvider = gameData.entitySpecs();
+        this.constants = gameData.constants();
         this.gameDataDir = resolveGameDataDir(primary);
     }
 
@@ -131,7 +133,7 @@ public final class ReplayDumper {
             var core = collector.end(world);
             var frames = MinimapExtractor.enrichBuffZones(mmFrames, core.dropEvents());
             var planeTypes = MinimapOutput.resolvePlaneTypes(
-                MinimapExtractor.collectPlaneParamsIds(world), cache.wowsInfo(primary));
+                MinimapExtractor.collectPlaneParamsIds(world), gameData.wowsInfo());
             mm = new MinimapOutput(core.arenaId(), frames, core.firingEvents(), core.damageEvents(),
                 core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
                 core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents(),
@@ -160,7 +162,7 @@ public final class ReplayDumper {
 
         JsonNode battleResults = report.battleResults();
         MinimapOutput mm = options.minimap()
-                ? new MinimapMerger(specProvider, constants, replays, cache.wowsInfo(primary)).merge()
+                ? new MinimapMerger(specProvider, constants, replays, gameData.wowsInfo()).merge()
                 : null;
         return assembleFinal(primary, report, merged.replay(), mm, battleResults);
     }
@@ -339,7 +341,7 @@ public final class ReplayDumper {
         out.put("match_result", report.matchResult());
         out.put("finish_type", report.finishType());
         // 映射层：实体 id → 全局一致 metaId，事件流输出只带 metaId
-        WowsInfo wowsInfo = cache.wowsInfo(primary);
+        WowsInfo wowsInfo = gameData.wowsInfo();
         List<Map<String, Object>> players = buildPlayers(report, wowsInfo);
         out.put("players", JsonMapper.toTree(players));
         out.put("game_events", buildGameEvents(report, normalized, wowsInfo, constants));
