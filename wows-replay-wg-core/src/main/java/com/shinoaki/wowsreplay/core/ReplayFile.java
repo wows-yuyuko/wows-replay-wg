@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.Security;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -120,7 +121,7 @@ public final class ReplayFile {
     public Stream<RawPacket> packets() {
         var iter = packetIterator();
         return Stream.generate(() -> iter.hasNext() ? iter.next() : null)
-                .takeWhile(pkt -> pkt != null);
+                .takeWhile(Objects::nonNull);
     }
 
     /**
