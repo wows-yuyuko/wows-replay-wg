@@ -6,15 +6,15 @@ import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Default {@link EntitySpecProvider} that loads entity specs from game
  * .def files using an XML parser.
  *
- * <p>Specs are cached by version for repeated use.  Requires a
- * {@link DefFileLoader} to access game data files.</p>
+ * <p>纯解析器，自身<b>不缓存</b>：解析结果的缓存统一由 {@link GameDataCache} 负责
+ * （按 major.minor.patch 键缓存 {@code List<EntitySpec>}，并复用本实例）。
+ * {@code version} 参数不影响结果——{@link DefFileLoader} 已绑定单一游戏数据目录，
+ * {@link SpecLoader} 解析时忽略版本。</p>
  *
  * <h3>Usage</h3>
  * <pre>{@code
@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class EntityRegistry implements EntitySpecProvider {
 
     private final SpecLoader parser;
-    private final Map<Version, List<EntitySpec>> cache = new ConcurrentHashMap<>();
 
     public EntityRegistry(DefFileLoader loader) {
         this.parser = new SpecLoader(loader);
@@ -34,12 +33,10 @@ public final class EntityRegistry implements EntitySpecProvider {
 
     @Override
     public List<EntitySpec> loadSpecs(Version version) {
-        return cache.computeIfAbsent(version, v -> {
-            try {
-                return parser.parseAll(v);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to load entity specs for " + v, e);
-            }
-        });
+        try {
+            return parser.parseAll(version);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load entity specs for " + version, e);
+        }
     }
 }

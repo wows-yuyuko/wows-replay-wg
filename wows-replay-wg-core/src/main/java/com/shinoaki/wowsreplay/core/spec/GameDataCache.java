@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,8 +61,9 @@ public final class GameDataCache {
             log.warn("未找到匹配版本的游戏数据（base={}），返回空 spec", replay.gameDataBase());
             return EntitySpecProvider.empty();
         }
-        var key = gd.version.subKey("entitySpecs");
-        return (EntitySpecProvider) store.computeIfAbsent(key, _ -> loadEntitySpecs(gd.dir));
+        // 缓存的是解析结果 List<EntitySpec>：同一数据目录（同一 major.minor.patch）
+        // 的所有 build 共享同一份列表，故返回的 provider 忽略版本参数。
+        return _ -> specs(gd.version.subKey("entitySpecs"), gd.dir);
     }
 
 
@@ -94,8 +96,7 @@ public final class GameDataCache {
 
     /** 获取（或加载并缓存）指定版本的实体规范提供者。 */
     public EntitySpecProvider entitySpecs(VersionKey version, Path gameDataDir) {
-        var key = version.subKey("entitySpecs");
-        return (EntitySpecProvider) store.computeIfAbsent(key, _ -> loadEntitySpecs(gameDataDir));
+        return _ -> specs(version.subKey("entitySpecs"), gameDataDir);
     }
 
     /**
@@ -250,19 +251,26 @@ public final class GameDataCache {
         return JsonConstantsProvider.fromFile(path);
     }
 
-    private EntitySpecProvider loadEntitySpecs(Path gameDataDir) {
+    /** 按 key 获取（或解析并缓存）实体规范列表。 */
+    @SuppressWarnings("unchecked")
+    private List<EntitySpec> specs(VersionKey key, Path gameDataDir) {
+        return (List<EntitySpec>) store.computeIfAbsent(key, _ -> loadEntitySpecs(gameDataDir));
+    }
+
+    private List<EntitySpec> loadEntitySpecs(Path gameDataDir) {
         // 验证 .def 文件存在性
         var entitiesXml = gameDataDir.resolve("scripts/entities.xml");
         var aliasXml = gameDataDir.resolve("scripts/entity_defs/alias.xml");
         if (!Files.exists(entitiesXml) || !Files.exists(aliasXml)) {
             log.warn("{} 中缺少 scripts/entities.xml 或 scripts/entity_defs/alias.xml", gameDataDir);
-            return EntitySpecProvider.empty();
+            return List.of();
         }
+        // version 参数对解析无影响（loader 已绑定该目录），传占位版本。
         return new EntityRegistry(path -> {
             var file = gameDataDir.resolve(path);
             if (!Files.exists(file)) throw new IOException("def file not found: " + path);
             return Files.readAllBytes(file);
-        });
+        }).loadSpecs(new Version(0, 0, 0, 0));
     }
 
     private WowsInfo loadWowsInfo(Path liveDir) {
