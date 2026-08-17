@@ -59,14 +59,6 @@
                                         <exclude>META-INF/NOTICE.md</exclude>
                                     </excludes>
                                 </filter>
-                                <filter>
-                                    <!-- 明确指定 BC 的 groupId 和 artifactId -->
-                                    <artifact>org.bouncycastle:bcprov-jdk18on</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/LICENSE.md</exclude>
-                                        <exclude>META-INF/NOTICE.md</exclude>
-                                    </excludes>
-                                </filter>
                             </filters>
                         </configuration>
                     </execution>
