@@ -181,7 +181,7 @@ public final class MinimapMerger {
      */
     private List<MinimapOutput.MinimapFrame> mergeFrames(ParsedReplay primary, ParsedReplay secondary,
                                                          Map<Long, Integer> sideById, int primaryTeam) {
-        var frames = new ArrayList<MinimapOutput.MinimapFrame>();
+        var frames = new ArrayList<MinimapOutput.MinimapFrame>(MinimapExtractor.FRAME_SIZE);
         var worldP = new BattleWorld(primary.replay().meta(), primary.replay().version(), constants);
         var parserP = new Parser(specProvider, primary.replay().version());
         var decoderP = new PacketDecoder(primary.replay().version());

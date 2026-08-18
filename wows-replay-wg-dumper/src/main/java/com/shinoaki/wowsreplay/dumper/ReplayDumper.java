@@ -121,7 +121,7 @@ public final class ReplayDumper {
         verifyVersion(primary);
         MinimapOutput mm = null;
         MinimapExtractor.Collector collector = null;
-        List<MinimapOutput.MinimapFrame> mmFrames = new ArrayList<>();;
+        List<MinimapOutput.MinimapFrame> mmFrames = new ArrayList<>(MinimapExtractor.FRAME_SIZE);
         if (options.minimap()) {
             var extractor = new MinimapExtractor(specProvider, constants, primary);
             collector = extractor.newCollector((world, clock) -> mmFrames.add(MinimapExtractor.snapshot(world, clock)));
@@ -133,11 +133,11 @@ public final class ReplayDumper {
             var core = collector.end(world);
             var frames = MinimapExtractor.enrichBuffZones(mmFrames, core.dropEvents());
             var planeTypes = MinimapOutput.resolvePlaneTypes(
-                MinimapExtractor.collectPlaneParamsIds(world), gameData.wowsInfo());
+                    MinimapExtractor.collectPlaneParamsIds(world), gameData.wowsInfo());
             mm = new MinimapOutput(core.arenaId(), frames, core.firingEvents(), core.damageEvents(),
-                core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
-                core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents(),
-                planeTypes);
+                    core.shotHits(), core.deadShips(), core.battleStage(), core.winningTeam(),
+                    core.finishType(), core.scoringRules(), core.capturedBuffs(), core.dropEvents(),
+                    planeTypes);
         }
         return assemble(primary, world, report, mm);
     }

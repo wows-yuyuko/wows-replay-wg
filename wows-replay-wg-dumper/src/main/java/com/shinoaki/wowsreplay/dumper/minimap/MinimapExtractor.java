@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * docs §3），位置直接读 {@link EntityState} 的 minimap 状态。</p>
  */
 public final class MinimapExtractor {
-
+    public static final int FRAME_SIZE = 20000;
     private final EntitySpecProvider specProvider;
     private final GameConstantsProvider constants;
     private final GameConstants gameConstants;
@@ -65,7 +65,7 @@ public final class MinimapExtractor {
      */
     public MinimapOutput.Compressed extractCompressed() {
         // 帧数无法提前得知（每时钟边界一帧，量级数千到数万），按常见值预分配减少扩容。
-        var frames = new ArrayList<MinimapOutput.MinimapFrame>(8192);
+        var frames = new ArrayList<MinimapOutput.MinimapFrame>(FRAME_SIZE);
         var lastState = new HashMap<Long, MinimapOutput.MinimapEntity>();
         var collector = new Collector(gameConstants, replay.version(), (world, clock) -> frames.add(snapshotDelta(world, clock, lastState)));
         var core = runCore(collector);
