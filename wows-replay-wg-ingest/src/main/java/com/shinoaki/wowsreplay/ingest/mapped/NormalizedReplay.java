@@ -8,6 +8,7 @@ import com.shinoaki.wowsreplay.ingest.*;
 import com.shinoaki.wowsreplay.ingest.report.BattleType;
 import com.shinoaki.wowsreplay.ingest.report.FinishType;
 import com.shinoaki.wowsreplay.ingest.report.MatchResult;
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 
@@ -38,7 +39,7 @@ public record NormalizedReplay(
     @JsonProperty("battle_start_clock") float battleStartClock,
     @JsonProperty("battle_result_clock") float battleResultClock,
     @JsonProperty("battle_end_clock") float battleEndClock,
-    @JsonProperty("battle_results") String battleResultsJson,
+    @JsonProperty("battle_results") JsonNode battleResultsJson,
 
     // ── 玩家（metaId + accountId，accountId 保留在用户信息）──
     @JsonProperty("players") List<NormalizedPlayer> players,

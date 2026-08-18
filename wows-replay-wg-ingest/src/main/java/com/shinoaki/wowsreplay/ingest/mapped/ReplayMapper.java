@@ -48,8 +48,7 @@ public final class ReplayMapper {
             report.battleStartClock(),
             world.battleResultClock(),
             world.battleEndClock(),
-            report.battleResults() != null ? JsonMapper.toJson(report.battleResults()) : null,
-
+            report.battleResults(),
             mapPlayers(world, report),
             mapKills(world),
             mapDamage(world),
