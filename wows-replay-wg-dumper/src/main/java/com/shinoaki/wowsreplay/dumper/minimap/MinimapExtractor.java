@@ -144,6 +144,10 @@ public final class MinimapExtractor {
         private final Set<Long> seenSalvos = new HashSet<>();
         private int lastDamageCount = 0;
         private int lastHitCount = 0;
+        /** 已处理过的 salvo 数量（增量游标，避免每边界全量重扫 firedSalvos）。 */
+        private int lastSalvoCount = 0;
+        /** 跨帧复用的 shot→开火时钟 表：只增量追加，避免每边界从零重建。 */
+        private final Map<Long, Float> firedAtByShot = new HashMap<>();
         private float lastClock = Float.NaN;
 
         public Collector(GameConstants gameConstants, Version version, BiConsumer<BattleWorld, Float> boundary) {
@@ -164,18 +168,17 @@ public final class MinimapExtractor {
             }
             lastDamageCount = dmg.size();
 
-            for (var s : world.firedSalvos()) {
+            // 增量处理新增 salvo：seenSalvos 去重 + firedAtByShot 追加合并为同一趟（O(新增) 而非 O(全量)）。
+            for (int i = lastSalvoCount; i < world.firedSalvos().size(); i++) {
+                var s = world.firedSalvos().get(i);
                 long key = ((long) s.avatarId() << 32) | (s.salvo().salvoId() & 0xFFFFFFFFL);
                 if (seenSalvos.add(key)) firingEvents.add(toShotEntry(s, world));
-            }
-
-            var firedAtByShot = new HashMap<Long, Float>();
-            for (var s : world.firedSalvos()) {
                 int owner = s.salvo().ownerId().value();
                 for (var sh : s.salvo().shots()) {
                     firedAtByShot.put(((long) owner << 32) | (sh.shotId() & 0xFFFFFFFFL), s.clock());
                 }
             }
+            lastSalvoCount = world.firedSalvos().size();
 
             var hits = world.shotHits();
             for (int i = lastHitCount; i < hits.size(); i++) {
