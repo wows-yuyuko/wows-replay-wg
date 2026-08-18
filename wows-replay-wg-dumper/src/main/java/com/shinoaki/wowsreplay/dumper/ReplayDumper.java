@@ -381,7 +381,7 @@ public final class ReplayDumper {
      * minimap 字段压缩（对标 Rust {@code compress_minimap_field}）：JSON → Brotli → Base64 字符串。
      */
     static String compressMinimapField(Object value, int quality) {
-        byte[] json = JsonMapper.toJson(value).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] json = JsonMapper.getMapper().writeValueAsBytes(value);
         var params = new com.aayushatharva.brotli4j.encoder.Encoder.Parameters().setQuality(quality);
         byte[] compressed;
         try {
