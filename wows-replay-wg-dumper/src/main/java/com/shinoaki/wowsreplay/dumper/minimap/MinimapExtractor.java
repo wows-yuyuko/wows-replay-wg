@@ -104,7 +104,8 @@ public final class MinimapExtractor {
             if (Float.isNaN(es.minimapX) || Float.isNaN(es.minimapZ)) continue;
             float heading = Float.isNaN(es.minimapHeading) ? 0f : es.minimapHeading;
             int side = es.relation >= 0 ? es.relation : 2;
-            long metaId = ReplayMapper.metaIdOf(world, es.id.value());
+            // 直接读 es.metaId（metaIdOf 首帧解析后回填，后续帧零查询）
+            long metaId = es.metaId != null && es.metaId != 0L ? es.metaId : ReplayMapper.metaIdOf(world, es.id.value());
             var e = new MinimapOutput.MinimapEntity(metaId, es.minimapX, es.minimapZ,
                     heading, es.visible, es.visibilityFlags, es.isInvisible,
                     es.teamId, es.health, es.maxHealth, es.isAlive, side);
@@ -166,9 +167,11 @@ public final class MinimapExtractor {
             lastDamageCount = dmg.size();
 
             // 增量处理新增 salvo：seenSalvos 去重 + firedAtByShot 追加合并为同一趟（O(新增) 而非 O(全量)）。
+            // 去重键用射击者 ownerId（而非接收方 avatarId）：receiveArtilleryShots 是广播给录制玩家
+            // 的，avatarId 恒为录制者；salvoId 是每射击者计数器，跨玩家同号齐射会被误判重复丢掉。
             for (int i = lastSalvoCount; i < world.firedSalvos().size(); i++) {
                 var s = world.firedSalvos().get(i);
-                long key = ((long) s.avatarId() << 32) | (s.salvo().salvoId() & 0xFFFFFFFFL);
+                long key = ((long) s.salvo().ownerId().value() << 32) | (s.salvo().salvoId() & 0xFFFFFFFFL);
                 if (seenSalvos.add(key)) firingEvents.add(toShotEntry(s, world));
                 int owner = s.salvo().ownerId().value();
                 for (var sh : s.salvo().shots()) {
@@ -245,9 +248,10 @@ public final class MinimapExtractor {
                 .map(sh -> new MinimapOutput.ShotDetail(sh.shotId(), sh.origin(), sh.pitch(), sh.speed(), sh.target(),
                         sh.gunBarrelId(), sh.serverTimeLeft(), sh.shooterHeight(), sh.hitDistance()))
                 .collect(sizedList(salvo.shots().size()));
+        // avatar_meta_id / owner_meta_id 均为射击者（receiveArtilleryShots 的 avatarId 是接收方=录制者，不能用）
+        var metaIdOf = ReplayMapper.metaIdOf(world, salvo.ownerId().value());
         return new MinimapOutput.ShotEntry(s.clock(),
-                ReplayMapper.metaIdOf(world, s.avatarId()),
-                ReplayMapper.metaIdOf(world, salvo.ownerId().value()),
+                metaIdOf, metaIdOf,
                 salvo.paramsId().value(), salvo.salvoId(), s.clock(), shots);
     }
 
@@ -278,7 +282,9 @@ public final class MinimapExtractor {
             if (Float.isNaN(es.minimapX) || Float.isNaN(es.minimapZ)) continue;
             float heading = Float.isNaN(es.minimapHeading) ? 0f : es.minimapHeading;
             int side = es.relation >= 0 ? es.relation : 2;
-            entities.add(new MinimapOutput.MinimapEntity(ReplayMapper.metaIdOf(world, es.id.value()),
+            // 直接读 es.metaId（metaIdOf 首帧解析后回填，后续帧零查询）
+            long metaId = es.metaId != null && es.metaId != 0L ? es.metaId : ReplayMapper.metaIdOf(world, es.id.value());
+            entities.add(new MinimapOutput.MinimapEntity(metaId,
                     es.minimapX, es.minimapZ, heading, es.visible, es.visibilityFlags, es.isInvisible,
                     es.teamId, es.health, es.maxHealth, es.isAlive, side));
         }

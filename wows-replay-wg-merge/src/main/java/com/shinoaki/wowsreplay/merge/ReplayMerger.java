@@ -197,12 +197,14 @@ public final class ReplayMerger {
         }
         dedup.put("ribbons", total(views, v -> v.ribbonLog().size()) - ribbonLog.size());
 
-        // 齐射/鱼雷/命中：身份用全局唯一 salvoId/shotId（不依赖视角相关实体 id）
+        // 齐射去重键 (ownerId, salvoId)：salvoId 是每射击者计数器，并非全局唯一，跨玩家同号会误并。
+        // 注：跨视角时 ownerId 可能有 ±1 漂移，理想键为 (ownerMetaId, salvoId)（需 salvo 归一化，见 docs）。
         var salvos = new ArrayList<ArtillerySalvo>();
-        var salvoSeen = new HashSet<Integer>();
+        var salvoSeen = new HashSet<Long>();
         for (var v : views) {
             for (var s : v.firedSalvos()) {
-                if (salvoSeen.add(s.salvo().salvoId())) salvos.add(s);
+                long key = ((long) s.salvo().ownerId().value() << 32) | (s.salvo().salvoId() & 0xFFFFFFFFL);
+                if (salvoSeen.add(key)) salvos.add(s);
             }
         }
         dedup.put("salvos", total(views, v -> v.firedSalvos().size()) - salvos.size());

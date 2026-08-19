@@ -143,12 +143,21 @@ public final class ReplayMapper {
     // ── 解析辅助 ─────────────────────────────────────────────────────────
 
     /**
-     * entity → metaId：Avatar/玩家实体直查 {@code entityToPlayer}；未命中走
-     * {@code vehicleToOwner}（Vehicle 船 → Avatar）再查。未知返回 0。
+     * entity → metaId：优先读 {@link EntityState#metaId}（整场稳定，命中零查询）；
+     * 未命中走 {@code entityToPlayer} 直查 / {@code vehicleToOwner} 反查，并回填非 0 结果。
+     * 未知返回 0。
      *
-     * <p>供 dumper（minimap 输出）等消费方复用同一解析链。</p>
+     * <p>回填只写非 0：避免"映射尚未就绪时缓存了 0"导致的陈旧值，迟到玩家可自愈。</p>
      */
     public static long metaIdOf(BattleWorld world, int eid) {
+        var es = world.entities().get(eid);
+        if (es != null && es.metaId != null && es.metaId != 0L) return es.metaId;
+        long m = resolveMetaId(world, eid);
+        if (es != null && m != 0) es.metaId = m;
+        return m;
+    }
+
+    private static long resolveMetaId(BattleWorld world, int eid) {
         var link = world.entityToPlayer().get(eid);
         if (link != null) return link.metaId();
         Integer owner = world.vehicleToOwner().get(eid);
