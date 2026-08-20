@@ -58,12 +58,16 @@ public final class BattleResultsResolver {
             out.set("playersPublicInfo", resolved);
         }
 
-        // playersPrivateInfo / privateDataList：每玩家数组 → 对象（PLAYER_PRIVATE_RESULTS_INDICES）
+        // playersPrivateInfo / privateDataList：位置数组 → 具名对象（PLAYER_PRIVATE_RESULTS_INDICES）
+        // 兼容两种形态：
+        //   对象形态 {db_id: [array], ...}（旧版 playersPrivateInfo）→ 逐玩家转具名对象；
+        //   扁平数组形态 [v0, v1, ...]（新版 privateDataList，录制玩家自己的数据，无 db_id 键）→ 整个数组转一个具名对象。
         JsonNode privateIndices = constants.get("PLAYER_PRIVATE_RESULTS_INDICES");
         if (privateIndices != null && privateIndices.isObject()) {
             for (String key : new String[]{"playersPrivateInfo", "privateDataList"}) {
                 JsonNode players = out.get(key);
-                if (players != null && players.isObject()) {
+                if (players == null) continue;
+                if (players.isObject()) {
                     ObjectNode resolved = (ObjectNode) players.deepCopy();
                     for (var prop : resolved.properties()) {
                         JsonNode playerVal = prop.getValue();
@@ -72,6 +76,9 @@ public final class BattleResultsResolver {
                         }
                     }
                     out.set(key, resolved);
+                } else if (players.isArray()) {
+                    // 扁平数组：无 db_id 键，按索引映射整体转一个具名对象
+                    out.set(key, indexToObject(privateIndices, (tools.jackson.databind.node.ArrayNode) players));
                 }
             }
         }
