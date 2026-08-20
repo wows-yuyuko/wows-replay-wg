@@ -2,6 +2,7 @@ package com.shinoaki.wowsreplay.core.decode;
 
 import com.shinoaki.wowsreplay.core.constant.GameConstants;
 import com.shinoaki.wowsreplay.core.model.*;
+import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.core.packet.*;
 import com.shinoaki.wowsreplay.core.pickle.PickleReader;
 import com.shinoaki.wowsreplay.core.types.ArgValue;
@@ -27,10 +28,17 @@ public class PacketDecoder {
     private final Version version;
     /** 统一常量布局管理器（VoiceLine id→名称等），见 {@link GameConstants}。 */
     private final GameConstants gameConstants;
+    /** 游戏常量查询（arena 名册成员字段索引等；null → 空实现，成员字段无法解析）。 */
+    private final GameConstantsProvider constants;
 
     public PacketDecoder(Version version) {
+        this(version, GameConstantsProvider.empty());
+    }
+
+    public PacketDecoder(Version version, GameConstantsProvider constants) {
         this.version = version;
-        this.gameConstants = GameConstants.empty();
+        this.constants = constants != null ? constants : GameConstantsProvider.empty();
+        this.gameConstants = new GameConstants(this.constants);
     }
 
     /**
@@ -225,11 +233,16 @@ public class PacketDecoder {
         List<PlayerStateData> result = new ArrayList<>();
         for (var item : list) {
             if (item instanceof List<?> tuples) {
-                var psd = PlayerStateData.fromTuples(tuples, version, isBot);
+                var psd = PlayerStateData.fromTuples(tuples, version, isBot, memberIndices(isBot));
                 if (psd.entityId() > 0 || psd.dbId() > 0) result.add(psd);
             }
         }
         return result;
+    }
+
+    /** 名册成员字段索引（玩家/机器人；来自 constants.json NUM_MEMBER_MAP，无 constants 时为空表）。 */
+    private Map<String, Integer> memberIndices(boolean isBot) {
+        return isBot ? constants.botMemberIndices() : constants.playerMemberIndices();
     }
 
     private Map<Long, List<Map<String, String>>> parsePreBattlesInfo(NamedArgs args, int argIndex) {
@@ -333,7 +346,7 @@ public class PacketDecoder {
             List<PlayerStateData> result = new ArrayList<>();
             for (var player : players) {
                 if (player instanceof List<?> tuples) {
-                    var psd = PlayerStateData.fromTuples(tuples, version, isBot);
+                    var psd = PlayerStateData.fromTuples(tuples, version, isBot, memberIndices(isBot));
                     if (psd.entityId() > 0 || psd.dbId() > 0) result.add(psd);
                 }
             }

@@ -21,6 +21,12 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     private final Map<Integer, String> finishTypes;
     private final Map<Integer, String> damageStatCategories;
     private final Map<Integer, String> consumableStates;
+    /** 勋带 id→枚举名（RIBBONS 是 id→name 正向表；id 有空洞时对应位为 null）。 */
+    private final List<String> ribbonNames;
+    /** Arena 名册成员字段索引（field→index，NUM_MEMBER_MAP 是 index→field 正向表，反转为 field→index）。 */
+    private final Map<String, Integer> playerMemberIndices;
+    private final Map<String, Integer> botMemberIndices;
+    private final Map<String, Integer> observerMemberIndices;
 
     /** 从字节数组加载。 */
     public JsonConstantsProvider(byte[] jsonBytes) {
@@ -34,6 +40,12 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
         // FINISH_TYPE / DAMAGE_STATS：name→id，反向查找成 id→name（供 GameConstants 对未知 id 兜底）。
         this.finishTypes = buildReverseLookup("FINISH_TYPE");
         this.damageStatCategories = buildReverseLookup("DAMAGE_STATS");
+        // RIBBONS：{id: "RIBBON_X"} → 按 id 索引的列表
+        this.ribbonNames = buildRibbonNames();
+        // NUM_MEMBER_MAP：{index: field} → 反转为 field→index（玩家/机器人/观察者名册布局）
+        this.playerMemberIndices = buildNameToIndex("PLAYER_NUM_MEMBER_MAP");
+        this.botMemberIndices = buildNameToIndex("BOT_NUM_MEMBER_MAP");
+        this.observerMemberIndices = buildNameToIndex("OBSERVER_NUM_MEMBER_MAP");
     }
 
     /** 从文件路径加载。 */
@@ -52,6 +64,10 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
     @Override public Map<Integer, String> battleStages(Version version) { return Collections.unmodifiableMap(battleStages); }
     @Override public Map<Integer, String> finishTypeNames(Version version) { return Collections.unmodifiableMap(finishTypes); }
     @Override public Map<Integer, String> damageStatCategories(Version version) { return Collections.unmodifiableMap(damageStatCategories); }
+    @Override public List<String> ribbonNames() { return ribbonNames; }
+    @Override public Map<String, Integer> playerMemberIndices() { return playerMemberIndices; }
+    @Override public Map<String, Integer> botMemberIndices() { return botMemberIndices; }
+    @Override public Map<String, Integer> observerMemberIndices() { return observerMemberIndices; }
 
     /** 获取顶级节点，返回 null 表示该版本无此字段。 */
     public JsonNode section(String name) { return root.get(name); }
@@ -91,6 +107,44 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
             }
         }
         return result;
+    }
+
+    /** NUM_MEMBER_MAP 等 {index: field} 正向表 → 反转为 {field: index}（field 重复时后者覆盖）。 */
+    private Map<String, Integer> buildNameToIndex(String sectionName) {
+        var node = root.get(sectionName);
+        if (node == null || !node.isObject()) return Map.of();
+        var result = new LinkedHashMap<String, Integer>();
+        for (var p : node.properties()) {
+            try {
+                int idx = Integer.parseInt(p.getKey());
+                if (p.getValue().isTextual()) result.put(p.getValue().asString(), idx);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
+    /** RIBBONS：{ "id": "RIBBON_X", ... } → 按 id 索引的列表（id 空洞处为 null）。 */
+    private List<String> buildRibbonNames() {
+        var node = root.get("RIBBONS");
+        if (node == null || !node.isObject()) return List.of();
+        int max = -1;
+        for (var p : node.properties()) {
+            try {
+                max = Math.max(max, Integer.parseInt(p.getKey()));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        if (max < 0) return List.of();
+        var list = new ArrayList<String>(Collections.nCopies(max + 1, null));
+        for (var p : node.properties()) {
+            try {
+                int id = Integer.parseInt(p.getKey());
+                if (p.getValue().isTextual()) list.set(id, p.getValue().asString());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return Collections.unmodifiableList(list);
     }
 
     /** 15.x DEATH_REASONS：对象 { "0": {icon,id,name,sound}, ... } 或数组 → id→name。 */

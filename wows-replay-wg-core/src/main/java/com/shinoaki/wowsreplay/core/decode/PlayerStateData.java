@@ -13,18 +13,12 @@ import java.util.Map;
 /**
  * Player state decoded from {@code onArenaStateReceived} pickle blobs.
  *
- * <p>Mirrors Rust {@code PlayerStateData} with version-aware key maps.
- * The client serializes player data as a FixedDict where keys are integer
- * indices ordered alphabetically by field name. The indices change across
- * versions as WG adds/removes fields.</p>
- *
- * <p>Supported version layouts:</p>
- * <ul>
- *   <li>0.11.11+ — 38 fields (added keyTargetMarkers)</li>
- *   <li>0.10.9–0.11.10 — 37 fields (added antiAbuseEnabled, shipComponents)</li>
- *   <li>0.10.7–0.10.8 — 35 fields (added isClientLoaded)</li>
- *   <li>pre-0.10.7 — 34 fields</li>
- * </ul>
+ * <p>Mirrors Rust {@code PlayerStateData}. The client serializes player data
+ * as a FixedDict where keys are integer indices ordered alphabetically by
+ * field name. The indices change across versions as WG adds/removes fields,
+ * so the field→index layout comes from {@code constants.json} 的
+ * {@code PLAYER_NUM_MEMBER_MAP} / {@code BOT_NUM_MEMBER_MAP}（由调用方传入，
+ * 见 {@code GameConstantsProvider#playerMemberIndices()}），不再硬编码版本表。</p>
  */
 public final class PlayerStateData {
 
@@ -95,6 +89,8 @@ public final class PlayerStateData {
     /** All raw key→value entries (for diagnostics). */
     private final Map<Long, Object> raw = new LinkedHashMap<>();
     private Version version;
+    /** 字段名→索引布局（来自 constants.json NUM_MEMBER_MAP，解析时传入并保存供 rawWithNames 反查）。 */
+    private Map<String, Integer> keyMap = Map.of();
 
     // ── Constructors ───────────────────────────────────────────────────
 
@@ -106,10 +102,11 @@ public final class PlayerStateData {
      * comes from {@link PickleReader}.
      *
      * @param tuples  list of (key, value) pairs from pickle
-     * @param version game version for key layout selection
+     * @param version game version（记录用途）
      * @param isBot   true if this is a bot player (different key layout)
+     * @param keyMap  field→index 布局（来自 constants.json NUM_MEMBER_MAP）
      */
-    public static PlayerStateData fromTuples(List<?> tuples, Version version, boolean isBot) {
+    public static PlayerStateData fromTuples(List<?> tuples, Version version, boolean isBot, Map<String, Integer> keyMap) {
         var rawValues = new LinkedHashMap<Long, Object>();
         for (var tupleObj : tuples) {
             if (!(tupleObj instanceof List<?> kv) || kv.size() < 2) continue;
@@ -117,13 +114,13 @@ public final class PlayerStateData {
             if (!(keyObj instanceof Long key)) continue;
             rawValues.put(key, kv.get(1));
         }
-        return fromRawValues(rawValues, version, isBot);
+        return fromRawValues(rawValues, version, isBot, keyMap);
     }
 
-    static PlayerStateData fromRawValues(Map<Long, Object> rawValues, Version version, boolean isBot) {
+    static PlayerStateData fromRawValues(Map<Long, Object> rawValues, Version version, boolean isBot, Map<String, Integer> keyMap) {
         var psd = new PlayerStateData();
         psd.version = version;
-        var keyMap = isBot ? botKeyMap(version) : playerKeyMap(version);
+        psd.keyMap = keyMap != null ? keyMap : Map.of();
 
         // Copy raw values
         psd.raw.putAll(rawValues);
@@ -180,229 +177,6 @@ public final class PlayerStateData {
         }
 
         return psd;
-    }
-
-    // ── Key maps ───────────────────────────────────────────────────────
-
-    /**
-     * Player key map for versions ≥ 0.11.11 (38 fields).
-     * Indices are derived from alphabetical sort of FixedDict field names.
-     */
-    private static Map<String, Integer> keyMap38() {
-        var m = new LinkedHashMap<String, Integer>();
-        m.put(KEY_ACCOUNT_DBID, 0);
-        m.put(KEY_ANTI_ABUSE_ENABLED, 1);
-        m.put(KEY_AVATAR_ID, 2);
-        m.put(KEY_CAMOUFLAGE_INFO, 3);
-        m.put(KEY_CLAN_COLOR, 4);
-        m.put(KEY_CLAN_ID, 5);
-        m.put(KEY_CLAN_TAG, 6);
-        m.put(KEY_CREW_PARAMS, 7);
-        m.put(KEY_DOG_TAG, 8);
-        m.put(KEY_FRAGS_COUNT, 9);
-        m.put(KEY_FRIENDLY_FIRE_ENABLED, 10);
-        m.put(KEY_ID, 11);
-        m.put(KEY_INVITATIONS_ENABLED, 12);
-        m.put(KEY_IS_ABUSER, 13);
-        m.put(KEY_IS_ALIVE, 14);
-        m.put(KEY_IS_BOT, 15);
-        m.put(KEY_IS_CLIENT_LOADED, 16);
-        m.put(KEY_IS_CONNECTED, 17);
-        m.put(KEY_IS_HIDDEN, 18);
-        m.put(KEY_IS_LEAVER, 19);
-        m.put(KEY_IS_PRE_BATTLE_OWNER, 20);
-        m.put(KEY_IS_T_SHOOTER, 21);
-        m.put(KEY_KEY_TARGET_MARKERS, 22);
-        m.put(KEY_KILLED_BUILDINGS_COUNT, 23);
-        m.put(KEY_MAX_HEALTH, 24);
-        m.put(KEY_NAME, 25);
-        m.put(KEY_PLAYER_MODE, 26);
-        m.put(KEY_PRE_BATTLE_ID_ON_START, 27);
-        m.put(KEY_PRE_BATTLE_SIGN, 28);
-        m.put(KEY_PREBATTLE_ID, 29);
-        m.put(KEY_REALM, 30);
-        m.put(KEY_SHIP_COMPONENTS, 31);
-        m.put(KEY_SHIP_CONFIG_DUMP, 32);
-        m.put(KEY_SHIP_ID, 33);
-        m.put(KEY_SHIP_PARAMS_ID, 34);
-        m.put(KEY_SKIN_ID, 35);
-        m.put(KEY_TEAM_ID, 36);
-        m.put(KEY_TTK_STATUS, 37);
-        return m;
-    }
-
-    /** 0.10.9–0.11.10: 37 fields (added antiAbuseEnabled, shipComponents; no keyTargetMarkers) */
-    private static Map<String, Integer> keyMap37() {
-        var m = new LinkedHashMap<String, Integer>();
-        m.put(KEY_ACCOUNT_DBID, 0);
-        m.put(KEY_ANTI_ABUSE_ENABLED, 1);
-        m.put(KEY_AVATAR_ID, 2);
-        m.put(KEY_CAMOUFLAGE_INFO, 3);
-        m.put(KEY_CLAN_COLOR, 4);
-        m.put(KEY_CLAN_ID, 5);
-        m.put(KEY_CLAN_TAG, 6);
-        m.put(KEY_CREW_PARAMS, 7);
-        m.put(KEY_DOG_TAG, 8);
-        m.put(KEY_FRAGS_COUNT, 9);
-        m.put(KEY_FRIENDLY_FIRE_ENABLED, 10);
-        m.put(KEY_ID, 11);
-        m.put(KEY_INVITATIONS_ENABLED, 12);
-        m.put(KEY_IS_ABUSER, 13);
-        m.put(KEY_IS_ALIVE, 14);
-        m.put(KEY_IS_BOT, 15);
-        m.put(KEY_IS_CLIENT_LOADED, 16);
-        m.put(KEY_IS_CONNECTED, 17);
-        m.put(KEY_IS_HIDDEN, 18);
-        m.put(KEY_IS_LEAVER, 19);
-        m.put(KEY_IS_PRE_BATTLE_OWNER, 20);
-        m.put(KEY_IS_T_SHOOTER, 21);
-        m.put(KEY_KILLED_BUILDINGS_COUNT, 22);
-        m.put(KEY_MAX_HEALTH, 23);
-        m.put(KEY_NAME, 24);
-        m.put(KEY_PLAYER_MODE, 25);
-        m.put(KEY_PRE_BATTLE_ID_ON_START, 26);
-        m.put(KEY_PRE_BATTLE_SIGN, 27);
-        m.put(KEY_PREBATTLE_ID, 28);
-        m.put(KEY_REALM, 29);
-        m.put(KEY_SHIP_COMPONENTS, 30);
-        m.put(KEY_SHIP_CONFIG_DUMP, 31);
-        m.put(KEY_SHIP_ID, 32);
-        m.put(KEY_SHIP_PARAMS_ID, 33);
-        m.put(KEY_SKIN_ID, 34);
-        m.put(KEY_TEAM_ID, 35);
-        m.put(KEY_TTK_STATUS, 36);
-        return m;
-    }
-
-    /** 0.10.7–0.10.8: 35 fields (added isClientLoaded; no antiAbuseEnabled/shipComponents) */
-    private static Map<String, Integer> keyMap35() {
-        var m = new LinkedHashMap<String, Integer>();
-        m.put(KEY_ACCOUNT_DBID, 0);
-        m.put(KEY_AVATAR_ID, 1);
-        m.put(KEY_CAMOUFLAGE_INFO, 2);
-        m.put(KEY_CLAN_COLOR, 3);
-        m.put(KEY_CLAN_ID, 4);
-        m.put(KEY_CLAN_TAG, 5);
-        m.put(KEY_CREW_PARAMS, 6);
-        m.put(KEY_DOG_TAG, 7);
-        m.put(KEY_FRAGS_COUNT, 8);
-        m.put(KEY_FRIENDLY_FIRE_ENABLED, 9);
-        m.put(KEY_ID, 10);
-        m.put(KEY_INVITATIONS_ENABLED, 11);
-        m.put(KEY_IS_ABUSER, 12);
-        m.put(KEY_IS_ALIVE, 13);
-        m.put(KEY_IS_BOT, 14);
-        m.put(KEY_IS_CLIENT_LOADED, 15);
-        m.put(KEY_IS_CONNECTED, 16);
-        m.put(KEY_IS_HIDDEN, 17);
-        m.put(KEY_IS_LEAVER, 18);
-        m.put(KEY_IS_PRE_BATTLE_OWNER, 19);
-        m.put(KEY_IS_T_SHOOTER, 20);
-        m.put(KEY_KILLED_BUILDINGS_COUNT, 21);
-        m.put(KEY_MAX_HEALTH, 22);
-        m.put(KEY_NAME, 23);
-        m.put(KEY_PLAYER_MODE, 24);
-        m.put(KEY_PRE_BATTLE_ID_ON_START, 25);
-        m.put(KEY_PRE_BATTLE_SIGN, 26);
-        m.put(KEY_PREBATTLE_ID, 27);
-        m.put(KEY_REALM, 28);
-        m.put(KEY_SHIP_CONFIG_DUMP, 29);
-        m.put(KEY_SHIP_ID, 30);
-        m.put(KEY_SHIP_PARAMS_ID, 31);
-        m.put(KEY_SKIN_ID, 32);
-        m.put(KEY_TEAM_ID, 33);
-        m.put(KEY_TTK_STATUS, 34);
-        return m;
-    }
-
-    /** pre-0.10.7: 34 fields */
-    private static Map<String, Integer> keyMap34() {
-        var m = new LinkedHashMap<String, Integer>();
-        m.put(KEY_ACCOUNT_DBID, 0);
-        m.put(KEY_AVATAR_ID, 1);
-        m.put(KEY_CAMOUFLAGE_INFO, 2);
-        m.put(KEY_CLAN_COLOR, 3);
-        m.put(KEY_CLAN_ID, 4);
-        m.put(KEY_CLAN_TAG, 5);
-        m.put(KEY_CREW_PARAMS, 6);
-        m.put(KEY_DOG_TAG, 7);
-        m.put(KEY_FRAGS_COUNT, 8);
-        m.put(KEY_FRIENDLY_FIRE_ENABLED, 9);
-        m.put(KEY_ID, 10);
-        m.put(KEY_INVITATIONS_ENABLED, 11);
-        m.put(KEY_IS_ABUSER, 12);
-        m.put(KEY_IS_ALIVE, 13);
-        m.put(KEY_IS_BOT, 14);
-        m.put(KEY_IS_CONNECTED, 15);
-        m.put(KEY_IS_HIDDEN, 16);
-        m.put(KEY_IS_LEAVER, 17);
-        m.put(KEY_IS_PRE_BATTLE_OWNER, 18);
-        m.put(KEY_IS_T_SHOOTER, 19);
-        m.put(KEY_KILLED_BUILDINGS_COUNT, 20);
-        m.put(KEY_MAX_HEALTH, 21);
-        m.put(KEY_NAME, 22);
-        m.put(KEY_PLAYER_MODE, 23);
-        m.put(KEY_PRE_BATTLE_ID_ON_START, 24);
-        m.put(KEY_PRE_BATTLE_SIGN, 25);
-        m.put(KEY_PREBATTLE_ID, 26);
-        m.put(KEY_REALM, 27);
-        m.put(KEY_SHIP_CONFIG_DUMP, 28);
-        m.put(KEY_SHIP_ID, 29);
-        m.put(KEY_SHIP_PARAMS_ID, 30);
-        m.put(KEY_SKIN_ID, 31);
-        m.put(KEY_TEAM_ID, 32);
-        m.put(KEY_TTK_STATUS, 33);
-        return m;
-    }
-
-    /** Bot key map for 0.12.8+ (28 fields, different layout from players) */
-    private static Map<String, Integer> botKeyMap28() {
-        var m = new LinkedHashMap<String, Integer>();
-        m.put(KEY_ACCOUNT_DBID, 0);
-        m.put(KEY_ANTI_ABUSE_ENABLED, 1);
-        m.put(KEY_CAMOUFLAGE_INFO, 2);
-        m.put(KEY_CLAN_COLOR, 3);
-        m.put(KEY_CLAN_ID, 4);
-        m.put(KEY_CLAN_TAG, 5);
-        m.put(KEY_CREW_PARAMS, 6);
-        m.put(KEY_DOG_TAG, 7);
-        m.put(KEY_FRAGS_COUNT, 8);
-        m.put(KEY_FRIENDLY_FIRE_ENABLED, 9);
-        m.put(KEY_ID, 10);
-        m.put(KEY_IS_ABUSER, 11);
-        m.put(KEY_IS_ALIVE, 12);
-        m.put(KEY_IS_BOT, 13);
-        m.put(KEY_IS_HIDDEN, 14);
-        m.put(KEY_IS_T_SHOOTER, 15);
-        m.put(KEY_KEY_TARGET_MARKERS, 16);
-        m.put(KEY_KILLED_BUILDINGS_COUNT, 17);
-        m.put(KEY_MAX_HEALTH, 18);
-        m.put(KEY_NAME, 19);
-        m.put(KEY_REALM, 20);
-        m.put(KEY_SHIP_COMPONENTS, 21);
-        m.put(KEY_SHIP_CONFIG_DUMP, 22);
-        m.put(KEY_SHIP_ID, 23);
-        m.put(KEY_SHIP_PARAMS_ID, 24);
-        m.put(KEY_SKIN_ID, 25);
-        m.put(KEY_TEAM_ID, 26);
-        m.put(KEY_TTK_STATUS, 27);
-        return m;
-    }
-
-    static Map<String, Integer> playerKeyMap(Version version) {
-        if (version == null) return keyMap38(); // default to latest
-        if (version.isAtLeast(new Version(0, 11, 11, 0))) return keyMap38();
-        if (version.isAtLeast(new Version(0, 10, 9, 0)))  return keyMap37();
-        if (version.isAtLeast(new Version(0, 10, 7, 0)))  return keyMap35();
-        return keyMap34();
-    }
-
-    static Map<String, Integer> botKeyMap(Version version) {
-        if (version != null && version.isAtLeast(new Version(0, 12, 8, 0))) {
-            return botKeyMap28();
-        }
-        // Older versions: bots use same layout as players
-        return playerKeyMap(version);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────
@@ -481,7 +255,6 @@ public final class PlayerStateData {
 
     /** 原始 pickle 字段名→值映射（dumper 输出 initial_state.raw_with_names 用）。 */
     public Map<String, Object> rawWithNames() {
-        var keyMap = isBot() ? botKeyMap(version) : playerKeyMap(version);
         var nameByIndex = new LinkedHashMap<Integer, String>();
         for (var e : keyMap.entrySet()) nameByIndex.put(e.getValue(), e.getKey());
         var out = new LinkedHashMap<String, Object>();

@@ -49,6 +49,15 @@ public interface GameConstantsProvider {
     /** All known battle stage ID → name mappings. */
     default Map<Integer, String> battleStages(Version version) { return Collections.emptyMap(); }
 
+    /** Arena 名册玩家成员字段索引（field→index，PLAYER_NUM_MEMBER_MAP）。 */
+    default Map<String, Integer> playerMemberIndices() { return Collections.emptyMap(); }
+
+    /** Arena 名册机器人成员字段索引（field→index，BOT_NUM_MEMBER_MAP）。 */
+    default Map<String, Integer> botMemberIndices() { return Collections.emptyMap(); }
+
+    /** Arena 名册观察者成员字段索引（field→index，OBSERVER_NUM_MEMBER_MAP）。 */
+    default Map<String, Integer> observerMemberIndices() { return Collections.emptyMap(); }
+
     /** List of known ribbon names (indexed by ribbon type ID). */
     default List<String> ribbonNames() { return Collections.emptyList(); }
 

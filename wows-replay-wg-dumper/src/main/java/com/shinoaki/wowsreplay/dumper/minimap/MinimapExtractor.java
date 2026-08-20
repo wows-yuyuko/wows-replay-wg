@@ -225,7 +225,7 @@ public final class MinimapExtractor {
     private Core runCore(Collector collector) {
         var world = new BattleWorld(replay.meta(), replay.version(), constants);
         var parser = new Parser(specProvider, replay.version());
-        var decoder = new PacketDecoder(replay.version());
+        var decoder = new PacketDecoder(replay.version(), constants);
 
         var iter = replay.packetIterator();
         while (iter.hasNext()) {

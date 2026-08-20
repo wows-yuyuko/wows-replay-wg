@@ -297,7 +297,7 @@ public final class ReplayDumper {
     private BattleWorld parseWorld(ReplayFile replay, MinimapExtractor.Collector collector) {
         var parser = new Parser(specProvider, replay.version());
         var world = new BattleWorld(replay.meta(), replay.version(), constants);
-        var decoder = new PacketDecoder(replay.version());
+        var decoder = new PacketDecoder(replay.version(), constants);
 
         var iter = replay.packetIterator();
         while (iter.hasNext()) {

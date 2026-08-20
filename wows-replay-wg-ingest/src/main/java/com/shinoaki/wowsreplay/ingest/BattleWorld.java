@@ -538,7 +538,14 @@ public class BattleWorld {
     }
 
     private void handleRibbon(DecodedPayload.RibbonPayload rp, float elapsed) {
-        ribbonLog.add(new RibbonEvent(elapsed, rp.ribbonId()));
+        ribbonLog.add(new RibbonEvent(elapsed, rp.ribbonId(), ribbonName(rp.ribbonId())));
+    }
+
+    /** 勋带 id → 枚举名（constants.json RIBBONS 表；未知 id 回退 "ribbon_" + id）。 */
+    private String ribbonName(int id) {
+        var names = constants.ribbonNames();
+        if (id >= 0 && id < names.size() && names.get(id) != null) return names.get(id);
+        return "ribbon_" + id;
     }
 
     private void handleVoiceLine(DecodedPayload.VoiceLinePayload vl, float elapsed) {

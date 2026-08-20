@@ -184,7 +184,7 @@ public final class MinimapMerger {
         var frames = new ArrayList<MinimapOutput.MinimapFrame>(MinimapExtractor.FRAME_SIZE);
         var worldP = new BattleWorld(primary.replay().meta(), primary.replay().version(), constants);
         var parserP = new Parser(specProvider, primary.replay().version());
-        var decoderP = new PacketDecoder(primary.replay().version());
+        var decoderP = new PacketDecoder(primary.replay().version(), constants);
         var iterP = primary.replay().packetIterator();
         RawPacket nextP = iterP.hasNext() ? iterP.next() : null;
 
@@ -196,7 +196,7 @@ public final class MinimapMerger {
         if (secondary != null) {
             worldS = new BattleWorld(secondary.replay().meta(), secondary.replay().version(), constants);
             parserS = new Parser(specProvider, secondary.replay().version());
-            decoderS = new PacketDecoder(secondary.replay().version());
+            decoderS = new PacketDecoder(secondary.replay().version(), constants);
             iterS = secondary.replay().packetIterator();
             nextS = iterS.hasNext() ? iterS.next() : null;
         }

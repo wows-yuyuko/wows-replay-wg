@@ -64,7 +64,7 @@ public final class ReplayMerger {
         }
         var version = replay.version();
         var parser = new Parser(specProvider, version);
-        var decoder = new PacketDecoder(version);
+        var decoder = new PacketDecoder(version, constants);
         var world = new BattleWorld(replay.meta(), version, constants);
         var iter = replay.packetIterator();
         while (iter.hasNext()) {
