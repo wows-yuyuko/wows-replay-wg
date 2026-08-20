@@ -322,10 +322,13 @@ public final class ReplayDumper {
         out.put("date_time", replay.meta().dateTime());
         out.put("version", report.version() != null ? report.version().toString() : null);
         out.put("map_id", replay.meta().mapId());
-        out.put("map_name", this.cache.getLangProvider(this.options.lang(), "IDS_" + report.mapName().toUpperCase(Locale.ROOT)));
+        out.put("map_name", report.mapName());
+        out.put("map_view_name", this.cache.getLangProvider(this.options.lang(), "IDS_" + report.mapName().toUpperCase(Locale.ROOT)));
         out.put("space_size", parseSpaceSize(gameDataDir, replay.meta().mapName()));
         out.put("game_mode", report.gameMode());
         out.put("game_type", replay.meta().gameType());
+        out.put("game_mode_view", report.gameMode());
+        out.put("game_type_view", replay.meta().gameType());
         out.put("match_group", report.matchGroup());
         out.put("match_result", report.matchResult());
         out.put("finish_type", report.finishType());
