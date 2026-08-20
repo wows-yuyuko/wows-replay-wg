@@ -10,7 +10,6 @@ import com.shinoaki.wowsreplay.core.packet.Packet;
 import com.shinoaki.wowsreplay.core.packet.Parser;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
-import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
 import com.shinoaki.wowsreplay.ingest.report.BattleReportBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,7 +17,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -127,19 +125,12 @@ class BattleWorldIT {
     }
 
     @Test
-    @DisplayName("BattleWorld 常量兜底: null → 空实现，gameModeName 进入 report 兜底链（§12.4.3）")
+    @DisplayName("BattleWorld 常量兜底: null → 空实现；game_mode 直接取 meta.scenario（对标 Rust report_game_mode）")
     void constantsFallback() {
         var worldNull = new BattleWorld(replay.meta(), version, null);
         assertNotNull(worldNull.constants(), "无 GameConstants 时应用默认空实现");
-        assertEquals(Optional.empty(), worldNull.constants().gameModeName(1));
 
-        var fake = new GameConstantsProvider() {
-            @Override public Optional<String> gameModeName(int id) { return Optional.of("自定义模式"); }
-        };
-        var report = new BattleReportBuilder(new BattleWorld(replay.meta(), version, fake), replay.meta()).build();
-        assertEquals("自定义模式", report.gameMode(), "本地化缺失时用 constants.gameModeName");
-
-        var fallback = new BattleReportBuilder(new BattleWorld(replay.meta(), version), replay.meta()).build();
-        assertEquals(replay.meta().scenario(), fallback.gameMode(), "常量缺失时回退到原始 scenario");
+        var report = new BattleReportBuilder(new BattleWorld(replay.meta(), version), replay.meta()).build();
+        assertEquals(replay.meta().scenario(), report.gameMode(), "game_mode 直接取 meta.scenario");
     }
 }

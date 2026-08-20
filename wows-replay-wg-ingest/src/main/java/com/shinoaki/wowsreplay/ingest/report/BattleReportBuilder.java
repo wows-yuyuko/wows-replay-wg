@@ -116,8 +116,9 @@ public final class BattleReportBuilder {
         // 8. 元数据（§5.7）
         Version version = Version.fromClientExe(meta.clientVersionFromExe());
         String mapName = meta.mapName();
-        // 无本地化资源时回退到常量里的模式名（§12.4.3），再无则原始 scenario。
-        String gameMode = world.constants().gameModeName(meta.gameMode()).orElse(meta.scenario());
+        // game_mode 对标 Rust report_game_mode：直接取 meta.scenario
+        // （Rust 用 IDS_SCENARIO_* 查 gettext 本地化，Java 无 global.mo 时原样输出；GAME_MODES 表与战报语义无关）。
+        String gameMode = meta.scenario();
         Recognized<BattleType> gameType = BattleType.fromValue(meta.gameType(), version);
         String matchGroup = meta.matchGroup() != null ? meta.matchGroup() : "";
         long maxDuration = world.maxDuration() != 0f

@@ -21,9 +21,6 @@ public interface GameConstantsProvider {
     /** Human-readable name for a death reason ID, or empty if unknown. */
     default Optional<String> deathReasonName(int id) { return Optional.empty(); }
 
-    /** Human-readable name for a game mode ID, or empty if unknown. */
-    default Optional<String> gameModeName(int id) { return Optional.empty(); }
-
     /** Human-readable name for a camera mode ID, or empty if unknown. */
     default Optional<String> cameraModeName(int id) { return Optional.empty(); }
 
