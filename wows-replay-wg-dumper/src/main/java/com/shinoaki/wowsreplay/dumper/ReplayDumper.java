@@ -258,37 +258,26 @@ public final class ReplayDumper {
     }
 
     /**
-     * 版本门禁：回放 client build 必须与加载的 game-data build 一致，否则拒绝解析
+     * 版本门禁：回放的大版本（major.minor.patch）必须与加载的 game-data 一致，否则拒绝解析
      * （防止用错版本的游戏数据解码，对标 ReplayVersionMismatchException）。
-     * 任一 build 未知时跳过。
+     * 末尾 build 号**忽略**——分服（如国服）clientVersionFromExe 的 build 与其他服不一致，
+     * 只按大版本匹配；目录名无法解析版本时跳过门禁。
      */
     private void verifyVersion(ReplayFile replay) throws ReplayVersionMismatchException {
         if (gameDataDir == null) return;
         Path dataDir = gameDataDir.getParent();
         if (dataDir == null) return;
-        String dataName = dataDir.getFileName().toString();
-        long dataBuild = parseBuildNumber(dataName);
-        if (dataBuild <= 0) return;
+        GameDataCache.VersionKey dataVersion = GameDataCache.VersionKey.from(dataDir);
+        if (dataVersion.major() == 0 && dataVersion.minor() == 0 && dataVersion.patch() == 0) return;
 
-        String clientVersion = replay.meta().clientVersionFromExe();
-        String[] parts = clientVersion != null ? clientVersion.split(",") : new String[0];
-        long replayBuild = parts.length >= 4 ? parseBuildNumber(parts[3]) : 0;
-        if (replayBuild > 0 && dataBuild != replayBuild) {
+        Version replayVersion = replay.version();
+        if (dataVersion.major() != replayVersion.major()
+            || dataVersion.minor() != replayVersion.minor()
+            || dataVersion.patch() != replayVersion.patch()) {
             throw new ReplayVersionMismatchException(
-                    "回放 build 与游戏数据不匹配：回放 " + replay.version() + "，数据目录 " + dataName
-                    + "（拒绝解析，防止 schema 错配）");
-        }
-    }
-
-    /** 从 "data-M.m.p.b" 目录名或纯数字串解析 build 号，无法解析返回 0。 */
-    private static long parseBuildNumber(String s) {
-        if (s == null) return 0;
-        int idx = s.lastIndexOf('.');
-        String build = idx >= 0 ? s.substring(idx + 1) : s;
-        try {
-            return Long.parseLong(build);
-        } catch (NumberFormatException e) {
-            return 0;
+                    "回放版本与游戏数据不匹配：回放 " + replayVersion + "，数据目录 "
+                    + dataDir.getFileName()
+                    + "（拒绝解析，防止 schema 错配；仅 build 号差异不判定为不匹配）");
         }
     }
 

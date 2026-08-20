@@ -73,8 +73,10 @@ public final class GameDataCache {
     private void lang(ReplayFile replay) {
         if (replay == null) return;
         var cached = langCache;
-        // 快速判断：缓存版本 >= replay 版本，直接复用（避免扫描 base 目录）
-        if (cached != null && cached.version().compareTo(replay.version()) >= 0) {
+        // 快速判断：缓存数据目录的大版本（M.m.p）不低于回放版本即复用（忽略末尾 build，
+        // 分服如国服的 build 与其他服不一致，compareTo 含 build 会导致国服每次重载 lang）；
+        // 避免扫描 base 目录。
+        if (cached != null && cached.version().isAtLeast(replay.version())) {
             return;
         }
         Path base = replay.gameDataBase();
