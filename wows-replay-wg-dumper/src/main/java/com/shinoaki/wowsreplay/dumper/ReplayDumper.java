@@ -34,6 +34,8 @@ import tools.jackson.databind.JsonNode;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -65,6 +67,7 @@ public final class ReplayDumper {
 
         public static final Options DEFAULT = new Options(LangProvider.DEFAULT_LANG, false, false, 0);
     }
+
 
     /** 全部视角回放（第 0 项为主视角）。 */
     private final List<ReplayFile> replays;
@@ -424,12 +427,32 @@ public final class ReplayDumper {
                         v.put("commander_skills", mapShipTypeSkills(sc, wowsInfo));
                     }
                     if (sc.commanderSkillsId() != null) v.put("commander_skills_id", sc.commanderSkillsId());
+                    //计算雷达 水听 反潜雷达 的距离
+                    var shipInfo = wowsInfo.shipType().getOrDefault(sc.shipParamsId(), null);
+                    if (shipInfo != null) {
+                        v.put("PCY020_RLSSearchPremium", consumableByLogicAndDistShip(shipInfo, "PCY020_RLSSearchPremium", wowsInfo));
+                        v.put("PCY016_SonarSearchPremium", consumableByLogicAndDistShip(shipInfo, "PCY016_SonarSearchPremium", wowsInfo));
+                        v.put("PCY048_SubmarineLocator", consumableByLogicAndDistShip(shipInfo, "PCY048_SubmarineLocator", wowsInfo));
+                    }
                 }
                 if (!v.isEmpty()) pm.put("vehicle", v);
             }
             players.add(pm);
         }
         return players;
+    }
+
+    public int consumableByLogicAndDistShip(WowsInfo.ShipConfig shipConfig, String icon, WowsInfo wowsInfo) {
+        var radarType = Optional.ofNullable(shipConfig.consumables().getOrDefault(icon, null)).orElse("");
+        if (radarType.isEmpty()) {
+            return 0;
+        }
+        var cs = wowsInfo.consumable(icon);
+        if (cs.isPresent()) {
+            WowsInfo.Abilities.AbilitiesInfo info = cs.get().abilities().getOrDefault(radarType, null);
+            return BigDecimal.valueOf(info.logic().path("distShip").asDouble() / 30).setScale(2, RoundingMode.HALF_UP).intValue();
+        }
+        return 0;
     }
 
     private List<Map<String, String>> mapModernizations(List<Long> ids, WowsInfo wowsInfo) {

@@ -6,6 +6,7 @@ import tools.jackson.databind.JsonNode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -59,16 +60,20 @@ public record WowsInfo(
     }
 
     /** 战舰类型条目：type（"AirCarrier"/"Battleship"/…）。 */
-    public record ShipConfig(String type) {
+    public record ShipConfig(String type, Map<String, String> consumables) {
     }
 
-    public record Abilities(String nation, String name, long id, String icon, String filter, String type) {
+    public record Abilities(String nation, String name, long id, String icon, String filter, String type, Map<String, AbilitiesInfo> abilities) {
+
+        public record AbilitiesInfo(JsonNode logic) {
+
+        }
     }
 
     /**
      * 飞机
      */
-    public record Aircrafts(String key, String type,String nation, long id, String name, String bomName) {
+    public record Aircrafts(String key, String type, String nation, long id, String name, String bomName) {
 
     }
 
@@ -78,6 +83,11 @@ public record WowsInfo(
 
     public Abilities consumable(long id) {
         return consumables.get(id);
+    }
+
+
+    public Optional<Abilities> consumable(String icon) {
+        return consumables.values().stream().filter(f -> f.icon().equalsIgnoreCase(icon)).findFirst();
     }
 
     /** 按 consumableType 名字（constants.json CONSUMABLE_IDS 翻译后的 filter）查第一个匹配能力；无匹配返回 null。 */
@@ -117,13 +127,18 @@ public record WowsInfo(
         var out = new HashMap<Long, Abilities>();
         for (var e : root.path("abilities").properties()) {
             long id = e.getValue().path("id").asLong(0L);
+            Map<String, Abilities.AbilitiesInfo> map = new HashMap<>();
+            for (var entry : e.getValue().path("abilities").properties()) {
+                map.put(entry.getKey(), new Abilities.AbilitiesInfo(entry.getValue().path("logic")));
+            }
             out.put(id, new Abilities(
                     e.getValue().path("nation").asString(),
                     e.getValue().path("name").asString(),
                     id,
                     e.getValue().path("icon").asString(),
                     e.getValue().path("filter").asString(),
-                    e.getValue().path("type").asString()
+                    e.getValue().path("type").asString(),
+                    map
             ));
         }
         return out;
@@ -182,7 +197,13 @@ public record WowsInfo(
         for (var e : root.path("ships").properties()) {
             long shipId = Long.parseLong(e.getKey());
             var type = e.getValue().path("type").asString();
-            out.putIfAbsent(shipId, new ShipConfig(type));
+            Map<String, String> consumables = new HashMap<>();
+            for (var entry : e.getValue().path("consumables")) {
+                for (var temp : entry) {
+                    consumables.put(temp.path("name").asString(""), temp.path("type").asString(""));
+                }
+            }
+            out.putIfAbsent(shipId, new ShipConfig(type, consumables));
         }
         return out;
     }
