@@ -442,7 +442,7 @@ public final class ReplayDumper {
         return players;
     }
 
-    public int consumableByLogicAndDistShip(WowsInfo.ShipConfig shipConfig, String icon, WowsInfo wowsInfo) {
+    public double consumableByLogicAndDistShip(WowsInfo.ShipConfig shipConfig, String icon, WowsInfo wowsInfo) {
         var radarType = Optional.ofNullable(shipConfig.consumables().getOrDefault(icon, null)).orElse("");
         if (radarType.isEmpty()) {
             return 0;
@@ -450,7 +450,8 @@ public final class ReplayDumper {
         var cs = wowsInfo.consumable(icon);
         if (cs.isPresent()) {
             WowsInfo.Abilities.AbilitiesInfo info = cs.get().abilities().getOrDefault(radarType, null);
-            return BigDecimal.valueOf(info.logic().path("distShip").asDouble() / 30).setScale(2, RoundingMode.HALF_UP).intValue();
+//            return BigDecimal.valueOf(info.logic().path("distShip").asDouble() / 30).setScale(2, RoundingMode.HALF_UP).intValue();
+            return info.logic().path("distShip").asDouble();
         }
         return 0;
     }
