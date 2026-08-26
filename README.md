@@ -87,3 +87,11 @@ The following are abstract interfaces, no game install required:
 
 - [landaire/wows-toolkit](https://github.com/landaire/wows-toolkit) — Rust crate for reading/parsing World of Warships replay files (unpacking, decryption, packet decoding)
 - [Monstrofil/replays_unpack](https://github.com/Monstrofil/replays_unpack) — Python library for unpacking World of Warships replays (widely used in the WoWS tooling ecosystem)
+
+## Data source
+
+- [wowsinfo/data](https://github.com/wowsinfo/data) — WoWS game data (ship stats, consumables, localisation) used for entity specs and constants
+
+## Acknowledgements
+
+Special thanks to [HenryQuan](https://github.com/HenryQuan) for development assistance.
