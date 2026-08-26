@@ -561,3 +561,4 @@ FodyWeavers.xsd
 /temp/compare/*
 # JFR 性能分析产物（每次基准生成的录制文件，数十 MB，不入库）
 /temp/*.jfr
+docs/
