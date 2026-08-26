@@ -83,20 +83,7 @@ The following are abstract interfaces, no game install required:
 - `GameConstantsProvider` — game constant queries (consumable/battle stage/death cause names)
 - `DefFileLoader` — abstract filesystem access for .def files
 
-Default implementations are no-ops with graceful degradation.
+## Reference implementations
 
-## Replay file format
-
-```
-[magic: u32 0x12345678]
-[block_count: u32]
-[meta_len: u32] [meta_json: UTF-8]
-[extra_blocks...]
-[decompressed_size: u32]
-[compressed_size: u32]
-[encrypted_packets: Blowfish-CBC + zlib]
-
-Each packet: [size: u32][type: u32][clock: f32][payload: bytes]
-```
-
-Decryption key: `29 B7 C9 09 38 3F 84 88 FA 98 EC 4E 13 19 79 FB` (Blowfish-CBC, all-zero IV)
+- [landaire/wows-toolkit](https://github.com/landaire/wows-toolkit) — Rust crate for reading/parsing World of Warships replay files (unpacking, decryption, packet decoding)
+- [Monstrofil/replays_unpack](https://github.com/Monstrofil/replays_unpack) — Python library for unpacking World of Warships replays (widely used in the WoWS tooling ecosystem)

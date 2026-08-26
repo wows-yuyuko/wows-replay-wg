@@ -25,6 +25,14 @@
         </dependency>
     </dependencies>
 
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub OWNER JustOneSummer Maven Packages</name>
+            <url>https://github.com/wows-yuyuko/wows-replay-wg</url>
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -54,9 +62,11 @@
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                         <exclude>module-info.class</exclude>
-                                        <!-- 新增：排除 BC 未签名的文件 -->
-                                        <exclude>META-INF/LICENSE.md</exclude>
-                                        <exclude>META-INF/NOTICE.md</exclude>
+                                        <!-- 新增 ↓ -->
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>   <!-- 消除 module-info 重叠 -->
+                                        <exclude>META-INF/MANIFEST.MF</exclude>                    <!-- 消除 manifest 重叠 -->
+                                        <exclude>META-INF/LICENSE*</exclude>                       <!-- 消除 jackson 许可文件重叠 -->
+                                        <exclude>META-INF/NOTICE*</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
