@@ -3,7 +3,6 @@ package com.shinoaki.wowsreplay.dumper;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.ReplayVersionMismatchException;
-import com.shinoaki.wowsreplay.core.data.LangProvider;
 import com.shinoaki.wowsreplay.core.data.ShipConfig;
 import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.decode.PacketDecoder;
@@ -34,8 +33,6 @@ import tools.jackson.databind.JsonNode;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -55,17 +52,12 @@ public final class ReplayDumper {
 
     /** 管线选项（对标 Rust {@code ParseOptions} 的 Single 子集）。 */
     public record Options(
-            LangProvider.Lang lang,
             boolean minimap,
             boolean selfDamageStats,
             /* minimap 字段 brotli 压缩等级 0-11，0 表示不压缩。 */
             int compressLevel
     ) {
-        public Options {
-            if (lang == null) lang = LangProvider.DEFAULT_LANG;
-        }
-
-        public static final Options DEFAULT = new Options(LangProvider.DEFAULT_LANG, false, false, 0);
+        public static final Options DEFAULT = new Options(false, false, 0);
     }
 
 
@@ -108,7 +100,7 @@ public final class ReplayDumper {
         this.primary = this.replays.getFirst();
         this.options = options;
         this.cache = cache;
-        // 唯一缓存入口：一次取整份游戏数据（同时预热语言表，getLangProvider 依赖 lang 已加载）。
+        // 唯一缓存入口：一次取整份游戏数据（constants / 实体规范 / wowsinfo 整体加载）。
         this.gameData = cache.gameData(primary);
         this.specProvider = gameData.entitySpecs();
         this.constants = gameData.constants();
@@ -326,7 +318,6 @@ public final class ReplayDumper {
         out.put("version", report.version() != null ? report.version().toString() : null);
         out.put("map_id", replay.meta().mapId());
         out.put("map_name", report.mapName());
-        out.put("map_view_name", this.cache.getLangProvider(this.options.lang(), "IDS_" + report.mapName().toUpperCase(Locale.ROOT)));
         out.put("space_size", parseSpaceSize(gameDataDir, replay.meta().mapName()));
         out.put("game_mode", report.gameMode());
         out.put("game_type", replay.meta().gameType());
@@ -464,7 +455,7 @@ public final class ReplayDumper {
             var info = wowsInfo.modernization(id);
             if (info != null) {
                 m.put("icon", info.icon());
-                m.put("name", this.cache.getLangProvider(this.options.lang(), info.name()));
+                m.put("name", info.name());
             } else {
                 m.put("icon", null);
                 m.put("name", null);
@@ -482,8 +473,8 @@ public final class ReplayDumper {
             var info = wowsInfo.consumable(id);
             if (info != null) {
                 m.put("type", info.type());
-                m.put("icon", info.icon());
-                m.put("name", this.cache.getLangProvider(this.options.lang(), info.name()));
+                m.put("icon", info.icon());  
+                m.put("name", info.name());
             } else {
                 m.put("type", null);
                 m.put("icon", null);
@@ -504,7 +495,7 @@ public final class ReplayDumper {
             if (info != null) {
                 m.put("type", info.type());
                 m.put("icon", info.icon());
-                m.put("name", this.cache.getLangProvider(this.options.lang(), info.name()));
+                m.put("name", info.name());
             } else {
                 m.put("type", null);
                 m.put("icon", null);
@@ -545,7 +536,7 @@ public final class ReplayDumper {
             m.put("skillType", id.toString());
             if (info != null) {
                 m.put("icon", info.icon());
-                m.put("name", this.cache.getLangProvider(this.options.lang(), info.name()));
+                m.put("name", info.name());
             } else {
                 m.put("icon", null);
                 m.put("name", null);
@@ -634,7 +625,7 @@ public final class ReplayDumper {
             }
             if (optional != null) {
                 data.put("consumable_icon", optional.icon());
-                data.put("consumable_name", this.cache.getLangProvider(this.options.lang(), optional.name()));
+                data.put("consumable_name", optional.name());
             } else {
                 data.put("consumable_icon", null);
                 data.put("consumable_name", null);

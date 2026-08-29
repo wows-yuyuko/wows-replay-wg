@@ -2,7 +2,6 @@ package com.shinoaki.wowsreplay.dumper;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
-import com.shinoaki.wowsreplay.core.data.LangProvider;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,7 @@ public class ReplayDumperMeTest {
     @Test
     @DisplayName("ReplayDumper: 自定义测试")
     void dumpSingle() throws Exception {
-        var options = new ReplayDumper.Options(LangProvider.DEFAULT_LANG, true, false, 0);
+        var options = new ReplayDumper.Options(true, false, 0);
         var replayDumper = new ReplayDumper(replay, options);
         var dumper = replayDumper.dump();
         long accountId = 2022515210;

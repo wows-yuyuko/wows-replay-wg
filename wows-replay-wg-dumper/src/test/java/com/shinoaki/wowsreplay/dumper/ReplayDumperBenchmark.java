@@ -3,7 +3,6 @@ package com.shinoaki.wowsreplay.dumper;
 import ch.qos.logback.classic.Logger;
 import com.shinoaki.wowsreplay.core.ReplayException;
 import com.shinoaki.wowsreplay.core.ReplayFile;
-import com.shinoaki.wowsreplay.core.data.LangProvider;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -46,7 +45,7 @@ public class ReplayDumperBenchmark {
         log.info("加载了 {} 个 replay 文件用于测试", fileList.size());
         if (!fileList.isEmpty()) {
             try {
-                var options = new ReplayDumper.Options(LangProvider.Lang.ZH_SG, true, false, 6);
+                var options = new ReplayDumper.Options(true, false, 6);
                 var replayDumper = new ReplayDumper(
                         List.of(ReplayFile.fromFile(fileList.getFirst().toPath(), base)),
                         options,
@@ -66,7 +65,7 @@ public class ReplayDumperBenchmark {
         // 为了更接近真实场景，你可以循环解析多个文件
         try {
             for (var filePath : fileList) {
-                var options = new ReplayDumper.Options(LangProvider.Lang.ZH_SG, true, false, 6);
+                var options = new ReplayDumper.Options(true, false, 6);
                 var replayDumper = new ReplayDumper(List.of(ReplayFile.fromFile(filePath.toPath(), base)), options, gameDataCache);
                 replayDumper.dump();
             }

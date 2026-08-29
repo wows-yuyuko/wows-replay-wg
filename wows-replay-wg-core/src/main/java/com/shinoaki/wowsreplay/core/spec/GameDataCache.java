@@ -2,7 +2,6 @@ package com.shinoaki.wowsreplay.core.spec;
 
 import com.shinoaki.wowsreplay.core.JsonConstantsProvider;
 import com.shinoaki.wowsreplay.core.ReplayFile;
-import com.shinoaki.wowsreplay.core.data.LangProvider;
 import com.shinoaki.wowsreplay.core.data.WowsInfo;
 import com.shinoaki.wowsreplay.core.model.Version;
 import lombok.extern.slf4j.Slf4j;
@@ -25,8 +24,6 @@ public final class GameDataCache {
     private final int maxSize;
     /** 版本化数据缓存：一个版本一份 {@link GameDataEntry}（constants / 实体规范 / wowsinfo 整体加载）。 */
     private final Map<VersionKey, GameDataEntry> store;
-    /** 全局语言表（取 base 下最新版本，版本更新时自动替换）。 */
-    private static volatile LangCache langCache;
 
     private GameDataCache(int maxSize) {
         this.maxSize = maxSize;
@@ -55,120 +52,7 @@ public final class GameDataCache {
             log.warn("未找到匹配版本的游戏数据（base={}），返回空条目", replay.gameDataBase());
             return GameDataEntry.EMPTY;
         }
-        lang(replay);
         return store.computeIfAbsent(gd.version, _ -> load(gd.dir));
-    }
-
-    /** 指定语言查 key，未命中返回 key 本身。 */
-    public String getLangProvider(LangProvider.Lang lang, String key) {
-        return langCache == null ? key : langCache.provider().get(lang, key);
-    }
-
-    /**
-     * 获取多语言字符串表（{@code app/lang/lang.json} 的 en/ja/zh_sg）。
-     *
-     * <p>全局统一：始终加载 {@code replay.gameDataBase()} 下<b>最新版本</b> data 目录的 lang.json
-     * （不按 replay 版本匹配），并缓存；当 base 下出现更新的 data 目录时自动替换。</p>
-     */
-    private void lang(ReplayFile replay) {
-        if (replay == null) return;
-        var cached = langCache;
-        // 快速判断：缓存数据目录的大版本（M.m.p）不低于回放版本即复用（忽略末尾 build，
-        // 分服如国服的 build 与其他服不一致，compareTo 含 build 会导致国服每次重载 lang）；
-        // 避免扫描 base 目录。
-        if (cached != null && cached.version().isAtLeast(replay.version())) {
-            return;
-        }
-        Path base = replay.gameDataBase();
-        if (base == null) return;
-        Path latest;
-        try {
-            latest = latestGameDataDir(base);
-        } catch (IOException e) {
-            log.warn("定位最新游戏数据目录失败（base={}）: {}", base, e.toString());
-            return;
-        }
-        if (latest == null) {
-            log.warn("{} 下未找到任何 data-*/live 目录，跳过 lang.json 加载", base);
-            return;
-        }
-        if (cached != null && cached.dir().equals(latest)) {
-            return;
-        }
-        var provider = loadLang(latest);
-        langCache = new LangCache(latest, versionOfDir(latest), provider);
-    }
-
-    private LangProvider loadLang(Path liveDir) {
-        var path = liveDir.resolve("app/lang/lang.json");
-        if (!Files.exists(path)) {
-            log.warn("{} 缺少 lang.json，返回空语言表", path);
-            return LangProvider.EMPTY;
-        }
-        try {
-            return LangProvider.fromJson(Files.readString(path));
-        } catch (Exception e) {
-            log.warn("解析 lang.json 失败 {}: {}", path, e.toString());
-            return LangProvider.EMPTY;
-        }
-    }
-
-    /** 解析 "data-M.m.p[.b…]" 目录名 → 各段数字；无法解析返回 null。 */
-    private static long[] parseVersionParts(String dirName) {
-        String body = dirName.startsWith("data-") ? dirName.substring("data-".length()) : dirName;
-        String[] parts = body.split("\\.");
-        long[] v = new long[parts.length];
-        for (int i = 0; i < parts.length; i++) {
-            try {
-                v[i] = Long.parseLong(parts[i]);
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-        return v;
-    }
-
-    /** live 目录 → 版本号（取 major.minor.patch 与末段 build，忽略中间额外段）。 */
-    private static Version versionOfDir(Path liveDir) {
-        long[] parts = parseVersionParts(liveDir.getParent().getFileName().toString());
-        if (parts == null || parts.length < 3) return new Version(0, 0, 0, 0);
-        return new Version((int) parts[0], (int) parts[1], (int) parts[2], (int) parts[parts.length - 1]);
-    }
-
-    /** 逐段比较版本号。 */
-    private static int compareVersion(long[] a, long[] b) {
-        int n = Math.min(a.length, b.length);
-        for (int i = 0; i < n; i++) {
-            int c = Long.compare(a[i], b[i]);
-            if (c != 0) return c;
-        }
-        return Integer.compare(a.length, b.length);
-    }
-
-    /**
-     * 在 base 下定位<b>最新版本</b>（major.minor.patch.build 最高）的 {@code data-M.m.p.b/live} 目录。
-     * 与 {@link #resolveGameDataDir}（按 replay 版本匹配）不同，这里取全局最新。
-     *
-     * @return live 目录；base 为 null 或未找到返回 null
-     */
-    public static Path latestGameDataDir(Path base) throws IOException {
-        if (base == null) return null;
-        Path best = null;
-        long[] bestVer = null;
-        try (var entries = Files.list(base)) {
-            for (var dir : entries.toList()) {
-                if (!Files.isDirectory(dir)) continue;
-                long[] ver = parseVersionParts(dir.getFileName().toString());
-                if (ver == null) continue;
-                var live = dir.resolve("live");
-                if (!Files.isDirectory(live)) continue;
-                if (bestVer == null || compareVersion(ver, bestVer) > 0) {
-                    bestVer = ver;
-                    best = live;
-                }
-            }
-        }
-        return best;
     }
 
     /**
@@ -268,8 +152,7 @@ public final class GameDataCache {
     private record ResolvedDir(VersionKey version, Path dir) {
     }
 
-    private record LangCache(Path dir, Version version, LangProvider provider) {
-    }
+
 
     /** 版本标识，按 major.minor.patch 分组，忽略 build 号。 */
     public record VersionKey(int major, int minor, int patch) {
