@@ -117,7 +117,7 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
         for (var p : node.properties()) {
             try {
                 int idx = Integer.parseInt(p.getKey());
-                if (p.getValue().isTextual()) result.put(p.getValue().asString(), idx);
+                if (p.getValue().isString()) result.put(p.getValue().asString(), idx);
             } catch (NumberFormatException ignored) {
             }
         }
@@ -140,7 +140,7 @@ public final class JsonConstantsProvider implements GameConstantsProvider {
         for (var p : node.properties()) {
             try {
                 int id = Integer.parseInt(p.getKey());
-                if (p.getValue().isTextual()) list.set(id, p.getValue().asString());
+                if (p.getValue().isString()) list.set(id, p.getValue().asString());
             } catch (NumberFormatException ignored) {
             }
         }

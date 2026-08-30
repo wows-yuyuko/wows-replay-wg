@@ -17,10 +17,6 @@
     <dependencies>
         <dependency>
             <groupId>com.shinoaki.wowsreplay</groupId>
-            <artifactId>wows-replay-wg-ingest</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.shinoaki.wowsreplay</groupId>
             <artifactId>wows-replay-wg-merge</artifactId>
         </dependency>
     </dependencies>
@@ -33,5 +29,45 @@
         </repository>
     </distributionManagement>
 
+    <build>
+        <plugins>
+            <!-- 或者使用 shade 插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <!--                            <shadedArtifactAttached>true</shadedArtifactAttached>-->
+                            <!--                            <shadedClassifierName>all</shadedClassifierName>-->
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
 
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>module-info.class</exclude>
+                                        <!-- 新增 ↓ -->
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>   <!-- 消除 module-info 重叠 -->
+                                        <exclude>META-INF/MANIFEST.MF</exclude>                    <!-- 消除 manifest 重叠 -->
+                                        <exclude>META-INF/LICENSE*</exclude>                       <!-- 消除 jackson 许可文件重叠 -->
+                                        <exclude>META-INF/NOTICE*</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

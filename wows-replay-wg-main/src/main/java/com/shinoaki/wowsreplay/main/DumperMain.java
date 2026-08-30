@@ -1,4 +1,4 @@
-package com.shinoaki.wowsreplay;
+package com.shinoaki.wowsreplay.main;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;

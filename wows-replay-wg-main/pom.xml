@@ -22,6 +22,40 @@
             <groupId>com.shinoaki.wowsreplay</groupId>
             <artifactId>wows-replay-wg-dumper</artifactId>
         </dependency>
+        <!-- Jackson3 -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.module</groupId>
+            <artifactId>jackson-module-blackbird</artifactId>
+            <version>${jackson.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson-annotations.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- SLF4J API -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
@@ -47,13 +81,22 @@
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.shinoaki.wowsreplay.DumperMain</mainClass>
+                                    <mainClass>com.shinoaki.wowsreplay.main.DumperMain</mainClass>
                                 </transformer>
                             </transformers>
+                            <artifactSet>
+                                <excludes>
+                                    <!-- 排除 dumper 已包含的模块，避免重复 -->
+                                    <exclude>com.shinoaki.wowsreplay:wows-replay-wg-core</exclude>
+                                    <exclude>com.shinoaki.wowsreplay:wows-replay-wg-ingest</exclude>
+                                    <exclude>com.shinoaki.wowsreplay:wows-replay-wg-merge</exclude>
+                                </excludes>
+                            </artifactSet>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>

@@ -17,10 +17,6 @@
     <dependencies>
         <dependency>
             <groupId>com.shinoaki.wowsreplay</groupId>
-            <artifactId>wows-replay-wg-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.shinoaki.wowsreplay</groupId>
             <artifactId>wows-replay-wg-ingest</artifactId>
         </dependency>
     </dependencies>
