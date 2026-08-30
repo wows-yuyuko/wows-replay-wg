@@ -1,6 +1,5 @@
 package com.shinoaki.wowsreplay.dumper;
 
-import ch.qos.logback.classic.Logger;
 import com.shinoaki.wowsreplay.core.ReplayException;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
@@ -38,7 +37,6 @@ public class ReplayDumperBenchmark {
     @Setup(Level.Trial)                 // 所有测试开始前执行一次
     public void setup() {
         // 初始化 ReplayDumper（可以注入真实依赖）
-        setLogLevel();
         fileList = new ArrayList<>();
         String f = "D:\\Games\\World_of_Warships\\replays";
         fileList.addAll(Arrays.asList(Objects.requireNonNull(new File(f).listFiles())));
@@ -76,21 +74,6 @@ public class ReplayDumperBenchmark {
         }
     }
 
-    /**
-     * 设置 Logback 日志级别
-     *
-     */
-    private void setLogLevel() {
-        var level = ch.qos.logback.classic.Level.INFO;
-//        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-//        rootLogger.setLevel(level);
-
-        // 也可以针对特定包设置级别
-        Logger packageLogger = (Logger) LoggerFactory.getLogger("com.shinoaki.wowsreplay");
-        packageLogger.setLevel(level);
-
-        log.info("日志级别已设置为: {}", level);
-    }
 
     public static void main(String[] args) throws Exception {
         Options options = new OptionsBuilder()

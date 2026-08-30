@@ -1,13 +1,11 @@
 package com.shinoaki.wowsreplay.core;
 
+import com.shinoaki.wowsreplay.core.crypto.BlowfishCbcDecryptors;
 import com.shinoaki.wowsreplay.core.model.GameClock;
 import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.packet.RawPacket;
 import com.shinoaki.wowsreplay.core.packet.RawPacketIterator;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -15,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -42,18 +39,8 @@ import java.util.zip.Inflater;
  */
 public final class ReplayFile {
 
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
     /** File magic number (always 0x12345678). Not checked strictly. */
     private static final int MAGIC = 0x12345678;
-
-    /** Blowfish key (16 bytes), identical across all WG game versions. */
-    private static final byte[] BLOWFISH_KEY = {
-            0x29, (byte) 0xB7, (byte) 0xC9, 0x09, 0x38, 0x3F, (byte) 0x84, (byte) 0x88,
-            (byte) 0xFA, (byte) 0x98, (byte) 0xEC, 0x4E, 0x13, 0x19, 0x79, (byte) 0xFB
-    };
 
     private final ReplayMeta meta;
     private final String rawMeta;
@@ -305,35 +292,9 @@ public final class ReplayFile {
     /**
      * Blowfish-CBC decrypt using the hardcoded WG key and all-zero IV.
      *
-     * <p>Implements CBC manually: each plaintext block (8 bytes) is XORed with
-     * the previous ciphertext block. The IV is all zeros.</p>
      */
     static byte[] decryptBlowfishCbc(byte[] encrypted) throws GeneralSecurityException {
-        // Pad to 8-byte boundary for Blowfish (64-bit block cipher)
-        int paddedLen = ((encrypted.length + 7) / 8) * 8;
-        byte[] padded = Arrays.copyOf(encrypted, paddedLen);
-
-        // Java's standard Blowfish uses "Blowfish/ECB/NoPadding" (BouncyCastle provides it)
-        // But the standard approach: use BouncyCastle's provider or JCA with BouncyCastle installed
-        Cipher cipher = Cipher.getInstance("Blowfish/ECB/NoPadding", "BC");
-        var keySpec = new SecretKeySpec(BLOWFISH_KEY, "Blowfish");
-        cipher.init(Cipher.DECRYPT_MODE, keySpec);
-
-        // CBC with zero IV done manually
-        byte[] decrypted = new byte[paddedLen];
-        byte[] previous = new byte[8]; // all-zero IV
-
-        for (int offset = 0; offset < paddedLen; offset += 8) {
-            byte[] block = new byte[8];
-            System.arraycopy(padded, offset, block, 0, 8);
-            byte[] decryptedBlock = cipher.doFinal(block);
-            for (int j = 0; j < 8; j++) {
-                decrypted[offset + j] = (byte) (decryptedBlock[j] ^ previous[j]);
-            }
-            System.arraycopy(decrypted, offset, previous, 0, 8);
-        }
-
-        return decrypted;
+        return BlowfishCbcDecryptors.decrypt(encrypted);
     }
 
     /**

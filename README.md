@@ -71,8 +71,8 @@ mvn package            # package
 
 - **JDK 25** — Records, Pattern Matching, Sealed Types, Switch Expressions
 - **Jackson 3** — JSON serialization
-- **BouncyCastle** — Blowfish-CBC decryption
-- **jlibdeflate** — zlib decompression
+- **JDK SunJCE** — Blowfish-CBC decryption (pluggable; falls back to BouncyCastle via `-Dwows.replay.cipher=bc`)
+- **java.util.zip** — zlib decompression (JDK built-in)
 - **Maven** — build management
 
 ## SPI interfaces

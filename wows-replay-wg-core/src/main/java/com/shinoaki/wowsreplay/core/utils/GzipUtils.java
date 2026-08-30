@@ -5,9 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * @author Xun
@@ -23,11 +22,20 @@ public class GzipUtils {
         return compress(data.getBytes(StandardCharsets.UTF_8), 5);
     }
 
+    /**
+     * 真 gzip 压缩（gzip 头 1f 8b + raw deflate + CRC32 尾），与 {@link #uncompress}（GZIPInputStream）双向兼容。
+     *
+     * <p>GZIPOutputStream 无 Deflater 构造器（JDK 26），用匿名子类设置压缩级别；
+     * level 超界（>9）自动收敛到 9（Deflater 合法范围 0-9）。</p>
+     */
     public static byte[] compress(byte[] data, int level) {
-        // 创建 Deflater 并设置压缩等级
-        Deflater deflater = new Deflater(level, true);
+        int lvl = Math.clamp(level, 0, 9);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (DeflaterOutputStream gzip = new DeflaterOutputStream(out, deflater)) {
+        try (GZIPOutputStream gzip = new GZIPOutputStream(out) {
+            {
+                def.setLevel(lvl);
+            }
+        }) {
             gzip.write(data);
             gzip.finish();
         } catch (Exception e) {

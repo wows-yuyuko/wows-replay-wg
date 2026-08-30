@@ -55,7 +55,7 @@ public final class ReplayDumper {
     public record Options(
             boolean minimap,
             boolean selfDamageStats,
-            /* minimap 字段 brotli 压缩等级 0-11，0 表示不压缩。 */
+            /* minimap 字段压缩等级 0-11（GzipUtils），0 表示不压缩。 */
             int compressLevel
     ) {
         public static final Options DEFAULT = new Options(false, false, 0);
