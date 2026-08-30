@@ -1,6 +1,5 @@
 package com.shinoaki.wowsreplay.core;
 
-import com.fulcrumgenomics.jlibdeflate.LibdeflateDecompressor;
 import com.shinoaki.wowsreplay.core.model.GameClock;
 import com.shinoaki.wowsreplay.core.model.Version;
 import com.shinoaki.wowsreplay.core.packet.RawPacket;
@@ -20,6 +19,8 @@ import java.security.Security;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 
 /**
  * 已解析的 WoWs 回放文件。
@@ -336,22 +337,32 @@ public final class ReplayFile {
     }
 
     /**
-     * zlib decompress using jlibdeflate.
+     * zlib decompress using the JDK built-in {@link Inflater}.
      *
-     * <p>Uses the extended decompression API so the exact uncompressed size
-     * isn't required — {@code expectedSize} is used only to size the output
-     * buffer.  The decompressor is closed via try-with-resources.</p>
+     * <p>{@code expectedSize} is used only to size the initial output buffer;
+     * the buffer grows automatically when the decompressed data is larger.
+     * 与 jlibdeflate 实测逐字节一致（同一 zlib 流，含头 + Adler-32，见
+     * docs/graalvm-shared-library-so.md §3.1.1）。</p>
      */
-    static byte[] inflateZlib(byte[] compressed, int expectedSize) {
-        try (var decompressor = new LibdeflateDecompressor()) {
+    static byte[] inflateZlib(byte[] compressed, int expectedSize) throws DataFormatException {
+        // zlib 流（含头 + Adler-32）
+        try (Inflater inflater = new Inflater(false)) {
             byte[] output = new byte[Math.max(expectedSize, compressed.length * 4)];
-            var result = decompressor.zlibDecompressEx(compressed, 0, compressed.length,
-                output, 0, output.length);
-            int written = result.outputBytesProduced();
-            if (written < output.length) {
-                return Arrays.copyOf(output, written);
+            int written = 0;
+            inflater.setInput(compressed);
+            while (!inflater.finished()) {
+                if (written == output.length) {
+                    output = Arrays.copyOf(output, output.length * 2);
+                }
+                int n = inflater.inflate(output, written, output.length - written);
+                if (n == 0 && !inflater.finished()) {
+                    if (inflater.needsInput()) throw new DataFormatException("zlib 数据不完整");
+                    if (inflater.needsDictionary()) throw new DataFormatException("zlib 需要字典");
+                    // 输出缓冲满：扩容后继续
+                }
+                written += n;
             }
-            return output;
+            return Arrays.copyOf(output, written);
         }
     }
 }

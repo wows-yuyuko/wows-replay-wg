@@ -30,8 +30,6 @@
         <jackson-annotations.version>2.22</jackson-annotations.version>
         <!-- BouncyCastle -->
         <bcprov.version>1.85.2</bcprov.version>
-        <!-- jlibdeflate -->
-        <jlibdeflate.version>0.1.0</jlibdeflate.version>
         <slf4j.version>2.0.18</slf4j.version>
         <logback.version>1.5.38</logback.version>
         <lombok.version>1.18.46</lombok.version>
@@ -99,13 +97,6 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
             <version>${bcprov.version}</version>
-        </dependency>
-
-        <!-- jlibdeflate -->
-        <dependency>
-            <groupId>com.fulcrumgenomics</groupId>
-            <artifactId>jlibdeflate</artifactId>
-            <version>${jlibdeflate.version}</version>
         </dependency>
 
         <!-- SLF4J API -->
