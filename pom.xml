@@ -35,7 +35,7 @@
         <lombok.version>1.18.46</lombok.version>
         <!-- Test -->
         <junit.version>5.12.2</junit.version>
-
+        <jmh.version>1.37</jmh.version>
         <!-- Plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
@@ -93,11 +93,11 @@
 
 
         <!-- BouncyCastle -->
-<!--        <dependency>-->
-<!--            <groupId>org.bouncycastle</groupId>-->
-<!--            <artifactId>bcprov-jdk18on</artifactId>-->
-<!--            <version>${bcprov.version}</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.bouncycastle</groupId>-->
+        <!--            <artifactId>bcprov-jdk18on</artifactId>-->
+        <!--            <version>${bcprov.version}</version>-->
+        <!--        </dependency>-->
 
         <!-- SLF4J API -->
         <dependency>
@@ -129,13 +129,13 @@
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-core</artifactId>
-            <version>1.37</version>
+            <version>${jmh.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-generator-annprocess</artifactId>
-            <version>1.37</version>
+            <version>${jmh.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -162,17 +162,9 @@
                             <path>
                                 <groupId>org.openjdk.jmh</groupId>
                                 <artifactId>jmh-generator-annprocess</artifactId>
-                                <version>1.37</version>
+                                <version>${jmh.version}</version>
                             </path>
                         </annotationProcessorPaths>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin.version}</version>
-                    <configuration>
-                        <!--                        <argLine>&#45;&#45;enable-preview</argLine>-->
                     </configuration>
                 </plugin>
             </plugins>
