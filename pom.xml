@@ -18,6 +18,7 @@
         <module>wows-replay-wg-dumper</module>
         <module>wows-replay-wg-merge</module>
         <module>wows-replay-wg-ship</module>
+        <module>wows-replay-wg-main</module>
     </modules>
 
     <properties>
@@ -106,12 +107,7 @@
             <version>${slf4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>compile</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

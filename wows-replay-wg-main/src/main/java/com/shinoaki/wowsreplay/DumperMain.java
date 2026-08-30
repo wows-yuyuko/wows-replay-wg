@@ -1,13 +1,13 @@
-package com.shinoaki.wowsreplay.dumper;
+package com.shinoaki.wowsreplay;
 
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayFile;
 import com.shinoaki.wowsreplay.core.spec.GameDataCache;
+import com.shinoaki.wowsreplay.dumper.ReplayDumper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 /**
  * replay-dumper CLI 入口（对标 Rust {@code replay-dumper::main} 的 Single 模式子集）。
