@@ -15,6 +15,7 @@ import com.shinoaki.wowsreplay.core.spec.GameDataCache;
 import com.shinoaki.wowsreplay.core.spec.GameDataEntry;
 import com.shinoaki.wowsreplay.core.spi.EntitySpecProvider;
 import com.shinoaki.wowsreplay.core.spi.GameConstantsProvider;
+import com.shinoaki.wowsreplay.core.utils.GzipUtils;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapExtractor;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapMerger;
 import com.shinoaki.wowsreplay.dumper.minimap.MinimapOutput;
@@ -359,28 +360,18 @@ public final class ReplayDumper {
             out.put("drop_events", mm.dropEvents());
             out.put("plane_types", mm.planeTypes());
         }
-
+        out.put("data_compress", "gzip");
         return out;
     }
 
     /**
-     * minimap 字段压缩（对标 Rust {@code compress_minimap_field}）：JSON → Brotli → Base64 字符串。
+     * minimap 字段压缩（对标 Rust {@code compress_minimap_field}）：JSON → Gzip → Base64 字符串。
      */
     static String compressMinimapField(Object value, int quality) {
         byte[] json = JsonMapper.getMapper().writeValueAsBytes(value);
-        var params = new com.aayushatharva.brotli4j.encoder.Encoder.Parameters().setQuality(quality);
-        byte[] compressed;
-        try {
-            compressed = com.aayushatharva.brotli4j.encoder.Encoder.compress(json, params);
-        } catch (java.io.IOException e) {
-            throw new IllegalStateException("brotli 压缩失败", e);
-        }
-        return java.util.Base64.getEncoder().encodeToString(compressed);
+        return Base64.getEncoder().encodeToString(GzipUtils.compress(json, quality));
     }
 
-    static {
-        com.aayushatharva.brotli4j.Brotli4jLoader.ensureAvailability();
-    }
 
     /**
      * players 装配（对标 Rust pipeline.rs player_json）：玩家字段（metaId + accountId，去掉
@@ -473,7 +464,7 @@ public final class ReplayDumper {
             var info = wowsInfo.consumable(id);
             if (info != null) {
                 m.put("type", info.type());
-                m.put("icon", info.icon());  
+                m.put("icon", info.icon());
                 m.put("name", info.name());
             } else {
                 m.put("type", null);
