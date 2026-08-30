@@ -6,7 +6,7 @@ import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * 战报位置数组 → 具名对象解析（对标 Rust {@code wowsunpack::battle_results::resolve_battle_results}）。
+ * 战报位置数组 → 具名对象解析（wowsunpack::battle_results::resolve_battle_results）。
  *
  * <p>服务端下发战报为紧凑位置数组；{@code constants.json} 提供字段名→索引映射：
  * {@code COMMON_RESULTS}（commonList 字段名序）、{@code CLIENT_PUBLIC_RESULTS_INDICES}

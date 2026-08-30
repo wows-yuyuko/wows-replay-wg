@@ -123,7 +123,7 @@ public final class ReplayMapper {
         return out;
     }
 
-    /** 消耗品使用者类型名（对标 DecodedPayload.ConsumableKind）。 */
+    /** 消耗品使用者类型名（对应 DecodedPayload.ConsumableKind）。 */
     private static String typeName(DecodedPayload.ConsumableKind kind) {
         return switch (kind) {
             case SHIP -> "ship";

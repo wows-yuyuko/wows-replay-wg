@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Minimap 数据提取输出（对标 Rust {@code replay-dumper::position::MinimapOutput}，
+ * Minimap 数据提取输出（replay-dumper::position::MinimapOutput，
  * docs/replay-dumper-minimap.md §6）。
  *
  * <p>仅覆盖 Single 路径（单回放 ECS）：逐时钟边界事件流 + 逐时钟边界全量帧 + 终局状态。
@@ -30,7 +30,7 @@ public record MinimapOutput(
         @JsonProperty("shot_hits") List<ShotHitEntry> shotHits,
         /** 沉船（位置+时间）。 */
         @JsonProperty("dead_ships") List<DeadShip> deadShips,
-        /** 最终战斗阶段名（Waiting/Battle/Results/Finishing/Ended，对齐 Rust Option&lt;String&gt;）。 */
+        /** 最终战斗阶段名（Waiting/Battle/Results/Finishing/Ended，Option&lt;String&gt;）。 */
         @JsonProperty("battle_stage") String battleStage,
         /** 获胜队伍 0/1，-1 平局。 */
         @JsonProperty("winning_team") Integer winningTeam,

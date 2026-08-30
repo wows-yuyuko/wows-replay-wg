@@ -4,7 +4,7 @@ import com.shinoaki.wowsreplay.core.model.GameClock;
 import com.shinoaki.wowsreplay.ingest.BattleWorld;
 
 /**
- * 多视角合并会话（预留接口，对标 Rust {@code MergedReplays}，merged.rs §10）。
+ * 多视角合并会话（预留接口，MergedReplays，）。
  *
  * <p>当前合并模块为<b>结果级</b>实现（{@link ReplayMerger}：各自解析后合并去重）。
  * 本接口为后续<b>流式</b>合并预留契约——把主视角 + 任意数量同场次 alt 视角的包流按

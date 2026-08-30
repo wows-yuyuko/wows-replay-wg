@@ -26,12 +26,12 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * NestedPropertyUpdate 值解码验证（capture-point-audit.md §3）。
  *
- * <p>镜像本地 Rust 参考（C:/Users/uuz/Documents/GitHub/wows-toolkit/crates/wows-replays/
- * src/nested_property_path.rs）的位流路径走查 + 字节对齐叶子值解码，
+ * <p>（C:/Users/uuz/Documents/GitHub/wows-toolkit/crates/wows-replays/
+ * src/）的位流路径走查 + 字节对齐叶子值解码，
  * 跑真实回放全部 NestedPropertyUpdate，验证「载荷不是 {levels,action} pickle，而是
  * 路径位 + 类型化叶子值」的诊断（capture-point-audit.md §3.3）。</p>
  *
- * <p>已确认语义（对照 Rust）：</p>
+ * <p>已确认语义：</p>
  * <ul>
  *   <li>顶层：cont(1) + propIdx(ceil(log2(numClientProps)))；</li>
  *   <li>FixedDict 索引 = ceil(log2(属性数)) bit；</li>
@@ -63,7 +63,7 @@ class NestedPropertyUpdateDiagIT {
         return Path.of(System.getProperty("user.dir")).getParent().resolve(path);
     }
 
-    // ── 镜像 Rust nested_property_path.rs ───────────────────────────────────
+    // ──  ───────────────────────────────────
 
     static final class BitReader {
         final byte[] data;
@@ -99,13 +99,13 @@ class NestedPropertyUpdateDiagIT {
         }
     }
 
-    /** next_power_of_two().trailing_zeros() == ceil(log2(n))（对标 Rust）。 */
+    /** next_power_of_two.trailing_zeros == ceil(log2(n))。 */
     static int bitWidthFor(int n) {
         if (n <= 1) return 0;
         return Integer.SIZE - Integer.numberOfLeadingZeros(n - 1);
     }
 
-    /** 去掉 Named/UserType 透明包装（对标 Rust t.peeled()）。 */
+    /** 去掉 Named/UserType 透明包装（t.peeled）。 */
     static ArgType peel(ArgType t) {
         while (true) {
             if (t instanceof ArgType.NamedType nt) t = nt.inner();
@@ -146,7 +146,7 @@ class NestedPropertyUpdateDiagIT {
 
     record Walk(List<String> levels, Action action) {}
 
-    /** 终端命令（对标 Rust nested_update_command，cont==0 到达更新层）。 */
+    /** 终端命令（nested_update_command，cont==0 到达更新层）。 */
     static Walk terminalCommand(boolean isSlice, ArgType t, ArgValue value, BitReader r) {
         var p = peel(t);
         if (p instanceof ArgType.FixedDict fixed) {
@@ -177,7 +177,7 @@ class NestedPropertyUpdateDiagIT {
         throw new IllegalStateException("terminal command on unsupported type: " + t.typeName());
     }
 
-    /** 递归走查（对标 Rust get_nested_prop_path_helper，含 scalar 叶子分支）。 */
+    /** 递归走查（get_nested_prop_path_helper，含 scalar 叶子分支）。 */
     static Walk walk(boolean isSlice, ArgType t, ArgValue value, BitReader r) {
         var p = peel(t);
         int cont = (int) r.read(1);
@@ -188,7 +188,7 @@ class NestedPropertyUpdateDiagIT {
             int idx = (int) r.read(bitWidthFor(fixed.properties().size()));
             var prop = fixed.properties().get(idx);
             if (isPrimitive(peel(prop.propType()))) {
-                // scalar 叶子：无 cont 位，字节对齐后读值（对标新版 read_aligned_scalar）
+                // scalar 叶子：无 cont 位，字节对齐后读值（对应 新版 read_aligned_scalar）
                 ArgValue v = parseWire(prop.propType(), r.rest());
                 return new Walk(List.of(), new Action.SetKey(prop.name(), v));
             }
@@ -211,7 +211,7 @@ class NestedPropertyUpdateDiagIT {
         throw new IllegalStateException("walk into unsupported type: " + t.typeName());
     }
 
-    // ── 线值解码（BigWorld RPC，little-endian，对标 Parser.parseValue）──────
+    // ── 线值解码（BigWorld RPC，little-endian，对应 Parser.parseValue）──────
 
     record Parsed(ArgValue value, int consumed) {}
 

@@ -39,8 +39,8 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * replay-dumper 管线（对标 Rust {@code replay-dumper} crate 的 Single 模式，
- * 忽略多 rep 合并），产出**单一 JSON**（Rust {@code pipeline::build_json_output}）。
+ * replay-dumper 管线（replay-dumper crate 的 Single 模式，
+ * 忽略多 rep 合并），产出**单一 JSON**（pipeline::build_json_output）。
  *
  * <p>装配：meta + {@link BattleReport}（含 players/capture_points/team_scores/…）+
  * {@code game_events} 时间线（consumable/kill/chat 按 clock 排序）+ 可选 minimap
@@ -51,7 +51,7 @@ import java.util.*;
 @Slf4j
 public final class ReplayDumper {
 
-    /** 管线选项（对标 Rust {@code ParseOptions} 的 Single 子集）。 */
+    /** 管线选项（ParseOptions 的 Single 子集）。 */
     public record Options(
             boolean minimap,
             boolean selfDamageStats,
@@ -108,7 +108,7 @@ public final class ReplayDumper {
         this.gameDataDir = resolveGameDataDir(primary);
     }
 
-    /** 解析主视角 → 单一 JSON（对标 Rust {@code parse_replay_with_options}）。 */
+    /** 解析主视角 → 单一 JSON（parse_replay_with_options）。 */
     public String dumpJson() throws ReplayVersionMismatchException {
         return JsonMapper.toJson(dump());
     }
@@ -188,7 +188,7 @@ public final class ReplayDumper {
      * 装配所有玩家 shipConfig blob dump。每艘车一条：entity_id/owner_entity_id/meta_id/username/
      * account_id + {@link ShipConfig#hexDump} 完整字节分解。
      *
-     * <p>玩家→战舰关联对标 {@code BattleReportBuilder#buildVehicleEntity}（players 表 Avatar 实体 id →
+     * <p>玩家→战舰关联对应 {@code BattleReportBuilder#buildVehicleEntity}（players 表 Avatar 实体 id →
      * vehicleToOwner 反查；复用 Avatar id 时即自身）。未关联到玩家（无 roster）的 Vehicle 也照常输出，
      * 身份字段缺省，保证不丢任何 blob。</p>
      */
@@ -204,7 +204,7 @@ public final class ReplayDumper {
         var ships = new ArrayList<Map<String, Object>>();
         Set<Integer> dumped = new HashSet<>();
 
-        // owner 实体 id → 战舰实体 id（对标 resolveVehicleEid 的反向索引）
+        // owner 实体 id → 战舰实体 id（对应 resolveVehicleEid 的反向索引）
         var ownerToVehicle = new HashMap<Integer, Integer>();
         for (var e : world.vehicleToOwner().entrySet()) ownerToVehicle.put(e.getValue(), e.getKey());
 
@@ -255,7 +255,7 @@ public final class ReplayDumper {
 
     /**
      * 版本门禁：回放的大版本（major.minor.patch）必须与加载的 game-data 一致，否则拒绝解析
-     * （防止用错版本的游戏数据解码，对标 ReplayVersionMismatchException）。
+     * （防止用错版本的游戏数据解码，对应 ReplayVersionMismatchException）。
      * 末尾 build 号**忽略**——分服（如国服）clientVersionFromExe 的 build 与其他服不一致，
      * 只按大版本匹配；目录名无法解析版本时跳过门禁。
      */
@@ -297,7 +297,7 @@ public final class ReplayDumper {
         return world;
     }
 
-    // ── 装配（对标 Rust build_json_output）────────────────────────────────
+    // ── 装配（build_json_output）────────────────────────────────
 
     private Map<String, Object> assemble(ReplayFile replay, BattleWorld world, BattleReport report, MinimapOutput mm) {
         // battle_results 已由 BattleReportBuilder 用 constants.json 解析为具名对象，原样输出。
@@ -365,7 +365,7 @@ public final class ReplayDumper {
     }
 
     /**
-     * minimap 字段压缩（对标 Rust {@code compress_minimap_field}）：JSON → Gzip → Base64 字符串。
+     * minimap 字段压缩（compress_minimap_field）：JSON → Gzip → Base64 字符串。
      */
     static String compressMinimapField(Object value, int quality) {
         byte[] json = JsonMapper.getMapper().writeValueAsBytes(value);
@@ -374,7 +374,7 @@ public final class ReplayDumper {
 
 
     /**
-     * players 装配（对标 Rust pipeline.rs player_json）：玩家字段（metaId + accountId，去掉
+     * players 装配（player_json）：玩家字段（metaId + accountId，去掉
      * 视角相关 entity_id）+ vehicle{ship_id + modernizations/consumables/exteriors 名称 +
      * commander_skills 技能名 + commander_skills_id 舰长原始 id}。名称来自 wowsinfo.json
      * 映射（未知 id → null）；无 wowsinfo.json 时名称为 null。
@@ -539,7 +539,7 @@ public final class ReplayDumper {
 
 
     /**
-     * initial_state 装配（对标 Rust pipeline.rs player_json：保留具名字段 + human_properties +
+     * initial_state 装配（player_json：保留具名字段 + human_properties +
      * raw_with_names，去掉原始 raw 索引映射）。null 时只输出原始字段名映射。
      */
     static Map<String, Object> buildInitialState(PlayerStateData psd) {
@@ -569,7 +569,7 @@ public final class ReplayDumper {
         return m;
     }
 
-    /** game_events 时间线（对标 Rust pipeline.rs）：consumable/kill/chat/voiceline 按 clock 排序，玩家身份只用 metaId。
+    /** game_events 时间线：consumable/kill/chat/voiceline 按 clock 排序，玩家身份只用 metaId。
      *  consumable 事件的 consumable 是 consumableType 数值（onConsumableUsed b[1]，非槽位下标），经
      *  constants.json CONSUMABLE_IDS 翻译成名字，再按该玩家 shipConfig.abilities 各槽能力的
      *  params.consumableType（wowsinfo abilities.consumableType）匹配出真实能力 GameParams id
@@ -580,7 +580,7 @@ public final class ReplayDumper {
                                               WowsInfo wowsInfo, GameConstantsProvider constants) {
         var events = new ArrayList<Map<String, Object>>();
         Map<Long, String> metaToUser = new HashMap<>();
-        // 实体 id → metaId 索引（Avatar 实体 id + Vehicle 实体 id，对标 ReplayMapper.metaIdOf）
+        // 实体 id → metaId 索引（Avatar 实体 id + Vehicle 实体 id，对应 ReplayMapper.metaIdOf）
         Map<Long, Long> entityToMeta = new HashMap<>();
         for (var p : report.players()) {
             metaToUser.put(p.metaId(), p.username());
@@ -726,7 +726,7 @@ public final class ReplayDumper {
         return ev;
     }
 
-    // ── space_size（对标 Rust position::parse_space_settings）────────────
+    // ── space_size（position::parse_space_settings）────────────
 
     public static Integer parseSpaceSize(Path gameDataBase, String mapName) {
         if (mapName == null || mapName.isBlank()) return null;

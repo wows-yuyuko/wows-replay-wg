@@ -20,7 +20,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
- * Minimap 数据提取器（对标 Rust {@code replay-dumper::position::extract_minimap_data}，
+ * Minimap 数据提取器（replay-dumper::position::extract_minimap_data，
  * docs/replay-dumper-minimap.md §4）。
  *
  * <p><b>Single 模式</b>：仅主回放驱动一个 {@link BattleWorld}，逐时钟边界冲刷事件流

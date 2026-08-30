@@ -3,7 +3,7 @@ package com.shinoaki.wowsreplay.ingest.report;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 局部天气区域（对标 Rust {@code LocalWeatherZone}，report.rs §3 WeatherZoneOrder）。
+ * 局部天气区域（LocalWeatherZone， WeatherZoneOrder）。
  */
 public record LocalWeatherZone(
     @JsonProperty("name") String name,

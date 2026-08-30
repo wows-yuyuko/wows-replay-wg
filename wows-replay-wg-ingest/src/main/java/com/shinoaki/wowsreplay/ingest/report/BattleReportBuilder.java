@@ -13,7 +13,7 @@ import tools.jackson.databind.JsonNode;
 import java.util.*;
 
 /**
- * 战斗结束报告装配器（对标 Rust {@code BattleWorld::into_report()}，report.rs）。
+ * 战斗结束报告装配器（BattleWorld::into_report，）。
  *
  * <p>一次性、消费式装配：读 {@link BattleWorld} 累积的状态 + {@link ReplayMeta}，
  * 产出独立拥有的 {@link BattleReport} 快照。不解析任何新包。</p>
@@ -57,7 +57,7 @@ public final class BattleReportBuilder {
             try {
                 parsedBattleResults = JsonMapper.readTree(world.battleResultsJson());
                 // 用 constants.json 把 playersPublicInfo/playersPrivateInfo 位置数组解析为具名对象
-                // （对标 pipeline.rs resolve_battle_results），作为 BattleReport.battleResults。
+                // （resolve_battle_results），作为 BattleReport.battleResults。
                 if (world.constants() instanceof JsonConstantsProvider jcp) {
                     resolvedResults = BattleResultsResolver.resolve(parsedBattleResults, jcp.root());
                 }
@@ -71,7 +71,7 @@ public final class BattleReportBuilder {
             long dbId = world.accountIdOf(metaId);
             var info = entry.getValue();
             boolean isSelf = info.relation == 0;
-            var vehicle = buildVehicleEntity(info.entityId, isSelf);
+            var vehicle = buildVehicleEntity(info.entityId, isSelf, metaId);
             var initialState = world.arenaPlayers().get(metaId);
             players.add(new Player(metaId, dbId, info.entityId, info.username, info.teamId, info.relation,
                 isBot(metaId, info.entityId), initialState, vehicle));
@@ -116,8 +116,8 @@ public final class BattleReportBuilder {
         // 8. 元数据（§5.7）
         Version version = Version.fromClientExe(meta.clientVersionFromExe());
         String mapName = meta.mapName();
-        // game_mode 对标 Rust report_game_mode：直接取 meta.scenario
-        // （Rust 用 IDS_SCENARIO_* 查 gettext 本地化，Java 无 global.mo 时原样输出；GAME_MODES 表与战报语义无关）。
+        // game_mode report_game_mode：直接取 meta.scenario
+        // （客户端用 IDS_SCENARIO_* 查 gettext 本地化，Java 无 global.mo 时原样输出；GAME_MODES 表与战报语义无关）。
         String gameMode = meta.scenario();
         Recognized<BattleType> gameType = BattleType.fromValue(meta.gameType(), version);
         String matchGroup = meta.matchGroup() != null ? meta.matchGroup() : "";
@@ -170,7 +170,7 @@ public final class BattleReportBuilder {
 
     // ── VehicleEntity 构建（§5.1 / §5.3）────────────────────────────────────
 
-    private VehicleEntity buildVehicleEntity(int playerEntityId, boolean isSelf) {
+    private VehicleEntity buildVehicleEntity(int playerEntityId, boolean isSelf, long metaId) {
         int vehicleEid = resolveVehicleEid(playerEntityId);
         EntityState es = world.entities().get(vehicleEid);
         if (es == null) {
@@ -187,10 +187,17 @@ public final class BattleReportBuilder {
         GameParamId captain = es.captainParamsId != null && es.captainParamsId != 0
             ? new GameParamId(es.captainParamsId) : null;
 
-        ShipConfig shipConfig = null;
-        if (es.shipConfig != null) {
-            shipConfig = ShipConfig.parse(es.shipConfig,
-                Version.fromClientExe(meta.clientVersionFromExe()));
+        Version version = Version.fromClientExe(meta.clientVersionFromExe());
+        ShipConfig shipConfig = es.shipConfig != null ? ShipConfig.parse(es.shipConfig, version) : null;
+        if (shipConfig == null) {
+            // 回退：玩家船实体未被录制客户端流式化（无 EntityCreate 的 shipConfig props，只有
+            // onArenaStateReceived 名册条目）时，用名册自带的 shipConfigDump 补齐装载。
+            // 舰长信息（commander_skills / commander_skills_id）只存在于实体创建包的
+            // crewModifiersCompactParams，此处保持缺失——这正是「船未流式化」的天然信号。
+            var roster = world.arenaPlayers().get(metaId);
+            if (roster != null && roster.shipConfigDump() != null) {
+                shipConfig = ShipConfig.parse(roster.shipConfigDump(), version);
+            }
         }
         if (shipConfig != null) {
             shipConfig = shipConfig.withCommander(es.captainSkills, es.captainParamsId);

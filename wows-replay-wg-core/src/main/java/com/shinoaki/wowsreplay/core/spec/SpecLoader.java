@@ -18,7 +18,7 @@ import java.util.*;
  *
  * <p>This is a concrete implementation of the def→EntitySpec pipeline,
  * using JDK's built-in XML parser (no external XML library needed).
- * Mirrors Rust {@code wowsunpack::rpc::entitydefs} + {@code typedefs}.</p>
+ * wowsunpack::rpc::entitydefs + typedefs.</p>
  *
  * <h3>Usage</h3>
  * <pre>{@code
@@ -138,7 +138,7 @@ public final class SpecLoader {
         def.cellMethods = parseMethodList(root, "CellMethods", aliases);
         def.clientMethods = parseMethodList(root, "ClientMethods", aliases);
 
-        // Sort client methods by wire size (Rust sorts for dispatch)
+        // Sort client methods by wire size 
         def.clientMethods.sort(Comparator.comparingInt(m -> methodSortSize(m, aliases)));
         return def;
     }
@@ -277,7 +277,7 @@ public final class SpecLoader {
         }
 
         // getTextContent() 会拼接所有后代文本（如 "USER_TYPE\nBLOB\nZippedBlobConverter.converter"、
-        // "UINT8 true"）；类型关键字总是第一个 token，对齐 Rust parse_type 的
+        // "UINT8 true"）；类型关键字总是第一个 token，parse_type 的
         // arg.first_child().text().trim()（否则 USER_TYPE/带 AllowNone 的多行类型全落 default→BLOB）。
         var kw = text.split("\\s+")[0];
 
@@ -485,7 +485,7 @@ public final class SpecLoader {
     }
 
     private int methodSortSize(Method method, Map<String, ArgType> aliases) {
-        // 对标 Rust Method::sort_size：参数尺寸总和 + VariableLengthHeaderSize，
+        // Method::sort_size：参数尺寸总和 + VariableLengthHeaderSize，
         // 达到 0xFFFF（INFINITY）时仍叠加 vlen。
         int size = method.args().stream().mapToInt(a -> a.argType().sortSize()).sum();
         return size >= 0xFFFF

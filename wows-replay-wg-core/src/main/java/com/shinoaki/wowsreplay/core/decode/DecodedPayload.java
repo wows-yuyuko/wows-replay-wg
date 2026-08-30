@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Layer-2 decoded packet payload — semantic interpretation of raw packet data.
  *
- * <p>Mirrors Rust {@code DecodedPacketPayload}. The {@link PacketDecoder} produces
+ * <p>DecodedPacketPayload. The {@link PacketDecoder} produces
  * these from {@link Parser} output, converting EntityMethod calls into
  * typed domain events and parsing pickle blobs into structured data.</p>
  */
@@ -113,13 +113,13 @@ public sealed interface DecodedPayload {
                               float heading, float x, float z) {
         /**
          * 水听式一次性 ping：{@code disappearing=true} 且位置非哨兵。这类更新只表示瞬时探测
-         * 闪光（如潜艇水听），不当作持续探测（对标 Rust {@code MinimapUpdate::is_minimap_ping}）。
+         * 闪光（如潜艇水听），不当作持续探测（MinimapUpdate::is_minimap_ping）。
          */
         public boolean isMinimapPing() {
             return disappearing && !isSentinel;
         }
 
-        /** 小地图可见 = 非哨兵 且 非一次性 ping（对标 Rust positions.rs:82）。 */
+        /** 小地图可见 = 非哨兵 且 非一次性 ping。 */
         public boolean visible() {
             return !isSentinel && !isMinimapPing();
         }

@@ -5,7 +5,7 @@ import com.shinoaki.wowsreplay.core.model.Recognized;
 import com.shinoaki.wowsreplay.core.model.Version;
 
 /**
- * 游戏类型枚举（对标 Rust {@code BattleType}，game_types.rs）。
+ * 游戏类型枚举（BattleType，）。
  * 从 {@link ReplayMeta#gameType()} 字符串解析。
  */
 public enum BattleType {

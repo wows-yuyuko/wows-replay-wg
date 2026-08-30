@@ -5,7 +5,7 @@ import com.shinoaki.wowsreplay.core.types.ArgType;
 import java.util.Set;
 
 /**
- * Entity property definition.  对标 Rust {@code entitydefs::Property}.
+ * Entity property definition.  entitydefs::Property.
  */
 public record Property(
     /** Property name (e.g. "position", "health", "maxHealth"). */

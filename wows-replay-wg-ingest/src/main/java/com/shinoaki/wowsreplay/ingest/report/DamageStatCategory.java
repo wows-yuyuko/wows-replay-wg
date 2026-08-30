@@ -4,7 +4,7 @@ import com.shinoaki.wowsreplay.core.constant.GameConstants;
 import com.shinoaki.wowsreplay.core.model.Version;
 
 /**
- * 伤害统计类别（对标 Rust {@code DamageStatCategory}）。
+ * 伤害统计类别（DamageStatCategory）。
  * 从 {@code receiveDamageStat} pickle 的 categoryId 解析：
  * DAMAGE_STATS_ENEMY=0, DAMAGE_STATS_ALLY=1, DAMAGE_STATS_SPOT=2, DAMAGE_STATS_AGRO=3.
  *
@@ -22,7 +22,7 @@ public enum DamageStatCategory {
      * 从 categoryId 原始值解析。
      *
      * <p>用 {@code gc.damageStatCategoryName(id, version)} 取得规范名再匹配枚举常量；
-     * 未知类别 → Enemy（保守回退，与 Rust 用 u32 原始值时报告的保守行为一致）。</p>
+     * 未知类别 → Enemy（保守回退，）。</p>
      *
      * @param raw     原始 categoryId
      * @param gc      统一常量布局管理器

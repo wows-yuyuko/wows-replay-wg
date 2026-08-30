@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Player state decoded from {@code onArenaStateReceived} pickle blobs.
  *
- * <p>Mirrors Rust {@code PlayerStateData}. The client serializes player data
+ * <p>PlayerStateData. The client serializes player data
  * as a FixedDict where keys are integer indices ordered alphabetically by
  * field name. The indices change across versions as WG adds/removes fields,
  * so the field→index layout comes from {@code constants.json} 的
@@ -160,7 +160,8 @@ public final class PlayerStateData {
             psd.isClientLoaded = getBool(rawValues, keyMap, KEY_IS_CLIENT_LOADED);
         }
 
-        // shipConfigDump: array of u8 encoded as List<Long>
+        // shipConfigDump: array of u8 —— pickle 里可能是 List<Long>（旧格式）、
+        // BINSTRING（按 ISO-8859-1 解成 String 的 Latin-1 字节序）或 byte[]，统一还原为 byte[]。
         if (hasKey(keyMap, KEY_SHIP_CONFIG_DUMP)) {
             var idx = keyMap.get(KEY_SHIP_CONFIG_DUMP);
             if (idx != null && idx < rawValues.size()) {
@@ -172,6 +173,12 @@ public final class PlayerStateData {
                         bytes[i] = (elem instanceof Number n) ? n.byteValue() : 0;
                     }
                     psd.shipConfigDump = bytes;
+                } else if (val instanceof String s) {
+                    byte[] bytes = new byte[s.length()];
+                    for (int i = 0; i < s.length(); i++) bytes[i] = (byte) (s.charAt(i) & 0xFF);
+                    psd.shipConfigDump = bytes;
+                } else if (val instanceof byte[] arr2) {
+                    psd.shipConfigDump = arr2;
                 }
             }
         }

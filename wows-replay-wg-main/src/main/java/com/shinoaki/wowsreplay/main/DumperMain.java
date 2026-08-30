@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * replay-dumper CLI 入口（对标 Rust {@code replay-dumper::main} 的 Single 模式子集）。
+ * replay-dumper CLI 入口（replay-dumper::main 的 Single 模式子集）。
  *
  * <p>用法：</p>
  * <pre>{@code

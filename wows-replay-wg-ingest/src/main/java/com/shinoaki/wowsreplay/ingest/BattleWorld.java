@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * BattleWorld — the central state container for replay analysis.
  *
- * <p>Mirrors Rust {@code BattleWorld} + ingest dispatch. Processes
+ * <p>BattleWorld + ingest dispatch. Processes
  * {@link DecodedPayload} events, maintains entity state and resources,
  * and produces a {@link BattleReport} on finish.</p>
  *
@@ -58,7 +58,7 @@ public class BattleWorld {
     final List<ChatEvent> chatLog = new ArrayList<>();
     final List<ConsumableEvent> consumableLog = new ArrayList<>();
     final List<CapturePointState> capturePoints = new ArrayList<>();
-    /** Active buff zones (despawned on EntityLeave, mirrors Rust). */
+    /** Active buff zones (despawned on EntityLeave, ). */
     final List<BuffZoneState> buffZones = new ArrayList<>();
     /** 战斗机巡逻圈（InteractiveZone type=12，despawned on EntityLeave）。 */
     final List<FighterZoneState> fighterZones = new ArrayList<>();
@@ -75,7 +75,7 @@ public class BattleWorld {
     // ── Extended resources (Phase 4 ingest) ────────────────────────────
     final List<ArtillerySalvo> firedSalvos = new ArrayList<>();
     final List<TorpedoRecord> torpedoes = new ArrayList<>();
-    /** 在飞鱼雷（命中时移除），对标 Rust ActiveTorpedoOrder */
+    /** 在飞鱼雷（命中时移除），ActiveTorpedoOrder */
     final Map<Long, TorpedoRecord> activeTorpedoes = new LinkedHashMap<>();
     final List<ShotHitRecord> shotHits = new ArrayList<>();
     final List<PlaneRecord> planeEvents = new ArrayList<>();
@@ -174,7 +174,7 @@ public class BattleWorld {
      * Process one decoded packet. This is the main entry point called
      * for each packet in the replay stream.
      *
-     * <p>Equivalent to Rust {@code ingest::dispatch}: the switch is the single
+     * <p>Equivalent to ingest::dispatch: the switch is the single
      * router, each handled variant delegates to a dedicated handler (below) so
      * the compiler keeps the exhaustive sealed-switch safety net.</p>
      */
@@ -258,7 +258,7 @@ public class BattleWorld {
         }
     }
 
-    // ── 分发 handlers（对标 Rust ingest::dispatch 各 handler 模块）──────────
+    // ── 分发 handlers（ingest::dispatch 各 handler 模块）──────────
 
     private void handleArenaStateReceived(DecodedPayload.OnArenaStateReceivedPayload as, GameClock clock) {
         // 保留首个 arena id（onWorldStateReceived 等后续包 arenaId=0，不覆盖）
@@ -281,7 +281,7 @@ public class BattleWorld {
         int eid = el.packet().entityId().value();
         var es = entities.get(eid);
         if (es != null) es.isAlive = false;
-        // Despawn smoke screens and buff zones (mirrors Rust despawn policy:
+        // Despawn smoke screens and buff zones (
         // buff zones are removed from the active set on EntityLeave)
         boolean removedBuffZone = buffZones.removeIf(b -> b.entityId() == eid);
         boolean removedFighterZone = fighterZones.removeIf(fz -> fz.entityId() == eid);
@@ -320,7 +320,7 @@ public class BattleWorld {
 
     private void handleDamageReceived(DecodedPayload.DamageReceivedPayload dr, float elapsed) {
         for (var a : dr.aggressors()) {
-            // 直接用原始 aggressor 实体 id（对标 Rust damage_ledger）
+            // 直接用原始 aggressor 实体 id（damage_ledger）
             int agg = a.aggressor().value();
             var ev = new DamageEvent(elapsed, agg, dr.victim().value(), a.damage());
             damageEvents.add(ev);
@@ -329,7 +329,7 @@ public class BattleWorld {
     }
 
     private void handleShipDestroyed(DecodedPayload.ShipDestroyedPayload sd, float elapsed) {
-        // 直接用原始实体 id（对标 Rust KillRecord，不再经 vehicleToOwner 翻译）
+        // 直接用原始实体 id（KillRecord，不再经 vehicleToOwner 翻译）
         int victimEid = sd.victim().value();
         int killerEid = sd.killer().value();
         var kl = entityToPlayer.get(killerEid);
@@ -348,7 +348,7 @@ public class BattleWorld {
         // 发送者是 args[0] 的账号 ID（与 meta/arena 的 id 字段同空间 = 战斗内 meta id），
         // 不能用接收方 entity_id（即 replay 主视角 Avatar）来归属消息。
         long senderMetaId = Integer.toUnsignedLong(chat.senderId().value());
-        // System messages carry sender_id 0 and are dropped (mirrors Rust).
+        // System messages carry sender_id 0 and are dropped .
         if (senderMetaId == 0) return;
         var pl = players.get(senderMetaId);
         chatLog.add(new ChatEvent(elapsed, chat.entityId().value(),
@@ -434,7 +434,7 @@ public class BattleWorld {
                 ? new Vec3(victimEs.x, victimEs.y, victimEs.z) : null;
         for (var hit : skp.hits()) {
             shotHits.add(new ShotHitRecord(elapsed, skp.avatarId(), hit, victimPosition));
-            // 命中即移除对应在飞鱼雷（对标 Rust remove_matching_torpedo）
+            // 命中即移除对应在飞鱼雷（remove_matching_torpedo）
             activeTorpedoes.remove(torpedoKey(hit.ownerId().value(), hit.shotId()));
         }
     }
@@ -513,7 +513,7 @@ public class BattleWorld {
 
     private void handleDamageStat(DecodedPayload.DamageStatPayload dsp) {
         // receiveDamageStat 是服务端权威的自我玩家伤害统计（服务端覆盖 AoI 外持续伤害）。
-        // 累积到 world.selfDamageStats（对标 Rust SelfStats.damage_stats）。
+        // 累积到 world.selfDamageStats（SelfStats.damage_stats）。
         for (var e : dsp.entries()) {
             selfDamageStats.add(new DamageStatEntry(
                     e.weaponId(),
@@ -525,10 +525,10 @@ public class BattleWorld {
     private void handleMinimapUpdate(DecodedPayload.MinimapUpdatePayload mup, float elapsed) {
         for (var entry : mup.updates()) {
             var es = getOrCreateEntity(entry.entityId().value(), null);
-            // 小地图可见 = 非哨兵 && 非一次性 ping（水听）。对标 Rust positions.rs:82。
+            // 小地图可见 = 非哨兵 && 非一次性 ping（水听）。。
             es.visible = entry.visible();
             es.lastUpdated = elapsed;
-            // 不可见 / 哨兵 / 一次性 ping 时保留上次位置与朝向（对标 Rust MinimapPlacement 保留逻辑）
+            // 不可见 / 哨兵 / 一次性 ping 时保留上次位置与朝向（MinimapPlacement 保留逻辑）
             if (entry.visible()) {
                 es.minimapX = entry.x();
                 es.minimapZ = entry.z();
@@ -1063,7 +1063,7 @@ public class BattleWorld {
         }
     }
 
-    /** 烟雾 points 属性更新（对标 Rust apply_smoke_points_update，zones.rs:498）。 */
+    /** 烟雾 points 属性更新（apply_smoke_points_update，）。 */
     private void applySmokePoints(int eid, NestedUpdate u) {
         var es = smokeScreens.get(eid);
         if (es == null) return;
@@ -1183,7 +1183,7 @@ public class BattleWorld {
             }
         }
 
-        // state.drop.data = SetRange[{zoneId, paramsId, ...}]（掉落区将掉落的 Buff paramsId，对标 Rust zones.rs:182）
+        // state.drop.data = SetRange[{zoneId, paramsId, ...}]（掉落区将掉落的 Buff paramsId，）
         if (keys.size() == 2 && keys.get(0).equals("drop") && keys.get(1).equals("data")
             && u instanceof NestedUpdate.SetRange sr) {
             for (ArgValue v : sr.values()) {
@@ -1201,7 +1201,7 @@ public class BattleWorld {
             handled = true;
         }
 
-        // state.drop.picked = SetRange[{paramsId, owners: [...]}]（已捕获 Buff，队伍捕获，对标 Rust zones.rs:209）
+        // state.drop.picked = SetRange[{paramsId, owners: [...]}]（已捕获 Buff，队伍捕获，）
         if (keys.size() == 2 && keys.get(0).equals("drop") && keys.get(1).equals("picked")
             && u instanceof NestedUpdate.SetRange sr) {
             for (ArgValue v : sr.values()) {
@@ -1341,7 +1341,7 @@ public class BattleWorld {
 
     /** Called after all packets have been processed. */
     public void finish() {
-        // Played/extra duration, mirroring Rust report.rs: battle start (BattleStage
+        // Played/extra duration, rs: battle start (BattleStage
         // → Waiting) through match end (battleResult clock, else BattleEnd clock).
         // 0 作为"未设置"哨兵（战斗开始/结束时钟实际都远大于 0）。
         if (battleStartClock != 0f) {
@@ -1384,7 +1384,7 @@ public class BattleWorld {
     // ── Helpers: Entity management ─────────────────────────────────────
 
     /**
-     * 消费当前状态，产出一个可序列化的终局快照（对标 Rust
+     * 消费当前状态，产出一个可序列化的终局快照（
      * {@code BattleWorld::into_report()}）。应在 {@link #finish()} 之后调用。
      */
     public BattleSnapshot intoReport() {
@@ -1471,7 +1471,7 @@ public class BattleWorld {
         return playerEntityId;
     }
 
-    // ── Dumper 公开访问器（对标 Rust BattleWorld read API）─────────────
+    // ── Dumper 公开访问器（BattleWorld read API）─────────────
 
     public GameClock currentClock() {
         return currentClock;
@@ -1732,7 +1732,7 @@ public class BattleWorld {
     }
 
     /**
-     * 存活实体按 kind 统计，镜像 Rust {@code entity_kinds()}：只数携带
+     * 存活实体按 kind 统计，对应 entity_kinds：只数携带
      * Vehicle/Building/SmokeScreen 类型组件且仍存活的实体。玩家船复用 Avatar id，
      * 故以 EntityCreate 时记录的 {@code kind} 为准。
      */

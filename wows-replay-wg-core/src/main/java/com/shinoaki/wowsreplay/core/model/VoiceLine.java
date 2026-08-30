@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * 快捷指令解析结果（{@code receive_CommonCMD}）。
  *
- * <p>对标 WG 客户端 {@code CommonQuickCommands.QuickCommands}（scripts.zip 15.7）：
+ * <p>对应 WG 客户端 {@code CommonQuickCommands.QuickCommands}（scripts.zip 15.7）：
  * 指令 blob 格式为 {@code commandType(H) sendToAll(?) [按命令类的附加参数]}。</p>
  *
  * <ul>

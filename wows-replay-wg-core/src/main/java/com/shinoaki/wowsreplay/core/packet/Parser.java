@@ -232,7 +232,7 @@ public class Parser {
     }
 
     private Packet parseBattleResults(RawPacket raw) {
-        // 载荷 = [json_len: u32][json: UTF-8]，对标 Rust scan_alt_private_info
+        // 载荷 = [json_len: u32][json: UTF-8]，scan_alt_private_info
         byte[] payload = raw.payload();
         String json;
         if (payload.length >= 4) {
@@ -527,7 +527,7 @@ public class Parser {
             }
             var propSpec = spec.clientProperties().get(propIdx);
 
-            // 走位流路径 + 解码类型化叶子值（对照 Rust nested_property_path.rs），
+            // 走位流路径 + 解码类型化叶子值，
             // 并在属性当前值树上应用更新（Array 索引位宽依赖当前长度）。
             var properties = state.properties;
             ArgValue current = properties.getOrDefault(propSpec.name(), new ArgValue.NullVal());
@@ -541,12 +541,12 @@ public class Parser {
         }
     }
 
-    /** ceil(log2(n))，对标 Rust {@code n.next_power_of_two().trailing_zeros()}。 */
+    /** ceil(log2(n))，n.next_power_of_two.trailing_zeros。 */
     private static int bitWidthFor(int n) {
         return n > 1 ? Integer.SIZE - Integer.numberOfLeadingZeros(n - 1) : 0;
     }
 
-    /** 去掉 NamedType/UserType 透明包装（对标 Rust {@code ArgType::peeled}）。 */
+    /** 去掉 NamedType/UserType 透明包装（ArgType::peeled）。 */
     private static ArgType peel(ArgType t) {
         while (true) {
             if (t instanceof ArgType.NamedType nt) t = nt.inner();
@@ -563,7 +563,7 @@ public class Parser {
     private record NestedResult(List<String> levels, NestedUpdate action, ArgValue value) {}
 
     /**
-     * 递归走查嵌套属性路径（对标 Rust {@code get_nested_prop_path_helper}）。
+     * 递归走查嵌套属性路径（get_nested_prop_path_helper）。
      * 顺带把更新应用到 {@code value}；未物化（NullVal）容器会被替换为默认空容器并随返回值持久化。
      */
     private NestedResult walkNested(boolean isSlice, ArgType t, ArgValue value, BitReader r) {
@@ -582,7 +582,7 @@ public class Parser {
             var pair = ensureDict(value, fixed);
             Map<String, ArgValue> dict = pair.dict();
             if (isScalar(peel(prop.propType()))) {
-                // scalar 叶子：无 cont 位，字节对齐后读值（对标新版 Rust read_aligned_scalar）
+                // scalar 叶子：无 cont 位，字节对齐后读值（read_aligned_scalar）
                 ArgValue leaf = parseAlignedScalar(prop.propType(), r);
                 dict.put(prop.name(), leaf);
                 return new NestedResult(List.of(), new NestedUpdate.SetKey(prop.name(), leaf), pair.value());
@@ -614,7 +614,7 @@ public class Parser {
         throw new IllegalStateException("nested property walk into unsupported type: " + t.typeName());
     }
 
-    /** 终端更新命令（对标 Rust {@code nested_update_command}，cont==0 到达更新层）。 */
+    /** 终端更新命令（nested_update_command，cont==0 到达更新层）。 */
     private NestedResult terminalCommand(boolean isSlice, ArgType t, ArgValue value, BitReader r) {
         var p = peel(t);
         if (p instanceof ArgType.FixedDict fixed) {
@@ -675,7 +675,7 @@ public class Parser {
     private record DictPair(Map<String, ArgValue> dict, ArgValue value) {}
     private record ArrayPair(List<ArgValue> elems, ArgValue value) {}
 
-    /** 字节对齐后按 def schema 读单个叶子值（对标 Rust read_aligned_scalar）。 */
+    /** 字节对齐后按 def schema 读单个叶子值（read_aligned_scalar）。 */
     private ArgValue parseAlignedScalar(ArgType t, BitReader r) {
         byte[] rest = r.rest();
         return parseValue(ByteBuffer.wrap(rest).order(ByteOrder.LITTLE_ENDIAN), t);
@@ -726,7 +726,7 @@ public class Parser {
         };
     }
 
-    /** Python 切片语义（对标 Rust slice_insert）：删 target[start..stop]，再在 start 插入 source。 */
+    /** Python 切片语义（slice_insert）：删 target[start..stop]，再在 start 插入 source。 */
     private static void sliceInsert(List<ArgValue> target, int start, int stop, List<ArgValue> source) {
         for (int i = start; i < stop; i++) {
             if (target.size() <= start) break;
@@ -737,7 +737,7 @@ public class Parser {
         }
     }
 
-    /** MSB-first bit reader for nested-property payloads（对标 Rust BitReader）。 */
+    /** MSB-first bit reader for nested-property payloads（BitReader）。 */
     private static final class BitReader {
         private final byte[] data;
         private int bitOffset;
@@ -764,7 +764,7 @@ public class Parser {
             return totalBits - bitOffset;
         }
 
-        /** 补位到字节边界并取出剩余字节（对标 Rust 的 align + read_u8_slice）。 */
+        /** 补位到字节边界并取出剩余字节（的 align + read_u8_slice）。 */
         byte[] rest() {
             while (remaining() % 8 != 0) read(1);
             int n = remaining() / 8;

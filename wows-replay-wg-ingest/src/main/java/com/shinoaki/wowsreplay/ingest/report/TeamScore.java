@@ -3,7 +3,7 @@ package com.shinoaki.wowsreplay.ingest.report;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 队伍比分（对标 Rust {@code TeamScore}，report.rs §3）。
+ * 队伍比分（TeamScore，）。
  */
 public record TeamScore(
     @JsonProperty("team_index") int teamIndex,

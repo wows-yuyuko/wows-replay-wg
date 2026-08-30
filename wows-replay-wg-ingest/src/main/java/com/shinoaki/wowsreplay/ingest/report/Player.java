@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
 
 /**
- * 玩家（对标 Rust {@code Player}，report.rs §3）。
+ * 玩家（Player，）。
  * {@code metaId}=战斗内 meta id；{@code dbId}=账号 ID（accountDBID）；{@code entityId}=Avatar 实体 id；
  * {@code initialState}=onArenaStateReceived 竞技场名册快照（null 表示名册未到达/旧格式）。
  */

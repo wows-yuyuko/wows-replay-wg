@@ -5,7 +5,7 @@ import com.shinoaki.wowsreplay.core.model.EntityId;
 import com.shinoaki.wowsreplay.core.model.GameParamId;
 
 /**
- * 建筑实体（对标 Rust {@code BuildingEntity}，report.rs §5.6）。
+ * 建筑实体（BuildingEntity，）。
  */
 public record BuildingEntity(
     @JsonProperty("id") EntityId id,

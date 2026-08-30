@@ -3,7 +3,7 @@ package com.shinoaki.wowsreplay.ingest.report;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 伤害统计条目（对标 Rust {@code DamageStatEntry}，report.rs §5.1）。
+ * 伤害统计条目（DamageStatEntry，）。
  */
 public record DamageStatEntry(
     @JsonProperty("weapon") long weapon,

@@ -84,7 +84,7 @@ public final class PickleReader {
     static {
         for (int op : new int[]{0x80, 0x95, '(', ')', ']', '}', '0', 'a', 'e', 't',
             0x85, 0x86, 0x87, 'K', 'M', 'J', 'I', 'G', 'F', 'U', 'T', 'X', 'S', 'N',
-            'q', 'h', 'j', 'r', 'u', 'c', 'b', 0x81, 0x82, 0x88, 0x89, 0x8a, 0x8b,
+            'q', 'h', 'j', 'r', 's', 'u', 'c', 'b', 0x81, 0x82, 0x88, 0x89, 0x8a, 0x8b,
             'B', 0x8c, 0x8d}) {
             SUPPORTED_FIRST_BYTE[op & 0xFF] = true;
         }
@@ -194,10 +194,12 @@ public final class PickleReader {
                     stack.add(Double.parseDouble(sb.toString()));
                     break;
                 }
-                case 'U': { // SHORT_BINSTRING
+                case 'U': { // SHORT_BINSTRING（1 字节长度，二进制字节串）
                     int len = data[pos++] & 0xFF;
                     if (len < 0 || pos + len > data.length) { stack.add("[invalid]"); break; }
-                    var s = new String(data, pos, len, StandardCharsets.UTF_8);
+                    // 字节保真解码：BINSTRING 语义是字节串（可能含任意二进制），UTF-8 会把非法字节
+                    // 替换成 U+FFFD 导致数据损坏（名册 shipConfigDump 的高位字节因此变成 0xFD）。
+                    var s = new String(data, pos, len, StandardCharsets.ISO_8859_1);
                     pos += len;
                     stack.add(s);
                     break;
@@ -253,6 +255,16 @@ public final class PickleReader {
                 case 'r': { // LONG_BINPUT (4-byte memo key) — 协议 2 中 'r' = LONG_BINPUT（非 SETITEM）
                     int idx = readInt32();
                     memo.put(idx, stack.getLast());
+                    break;
+                }
+                case 's': { // SETITEM (协议 0)：栈上 ... dict, key, value → dict[key]=value
+                    if (stack.size() >= 3) {
+                        var value = stack.removeLast();
+                        var key = stack.removeLast();
+                        @SuppressWarnings("unchecked")
+                        var dict = (Map<Object, Object>) stack.getLast();
+                        dict.put(key, value);
+                    }
                     break;
                 }
                 case 'u': { // SETITEMS

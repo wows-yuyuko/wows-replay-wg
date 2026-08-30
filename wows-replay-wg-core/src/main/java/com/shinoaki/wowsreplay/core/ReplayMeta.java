@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * 从 .wowsreplay 文件开头的 JSON 块解析的元数据。
- * 对标 Rust {@code ReplayMeta} struct.
+ * ReplayMeta struct.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ReplayMeta(

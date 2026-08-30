@@ -19,7 +19,7 @@ import java.util.Map;
  * Layer-2 packet decoder — converts {@link Parser} output into
  * semantically meaningful {@link DecodedPayload} variants.
  *
- * <p>Mirrors Rust {@code PacketDecoder}. Handles EntityMethod → domain event
+ * <p>PacketDecoder. Handles EntityMethod → domain event
  * conversion, pickle blob parsing, and version-dependent field layouts.</p>
  */
 @Slf4j
@@ -503,7 +503,7 @@ public class PacketDecoder {
     // ── Minimap vision ─────────────────────────────────────────────────
 
     /**
-     * Decode {@code updateMinimapVisionInfo}，位布局对标 Rust RawMinimapUpdate：
+     * Decode {@code updateMinimapVisionInfo}，位布局RawMinimapUpdate：
      * <pre>
      * arg0: Array&lt;FixedDict&lt;{vehicleID: i32, packedData: u32}&gt;&gt;
      * packedData (u32 LE):
@@ -547,7 +547,7 @@ public class PacketDecoder {
 
     private DecodedPayload decodeArtilleryShots(EntityId entityId, NamedArgs args) {
         // receiveArtilleryShots (Avatar.def): single Arg = ARRAY<SHOTS_PACK> at args[0].
-        // The avatar is the packet's entity (receiver), mirroring the Rust decoder.
+        // The avatar is the packet's entity (receiver), mirroring the reference decoder.
         AvatarId avatarId = new AvatarId(entityId.value());
         var salvos = new ArrayList<DecodedPayload.ArtillerySalvo>();
         if (!args.isEmpty() && args.get(0) instanceof ArgValue.ArrayVal(List<ArgValue> elements)) {

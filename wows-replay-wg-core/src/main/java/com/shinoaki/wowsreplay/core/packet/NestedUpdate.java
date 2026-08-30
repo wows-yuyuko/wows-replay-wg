@@ -6,7 +6,7 @@ import com.shinoaki.wowsreplay.core.types.ArgValue;
 import java.util.List;
 
 /**
- * 嵌套属性更新的解码结果（对标 Rust {@code nested_property_path::PropertyNesting / UpdateAction}）。
+ * 嵌套属性更新的解码结果（nested_property_path::PropertyNesting / UpdateAction）。
  *
  * <p>路径位（cont + 容器索引）走查完毕后，更新命令作用于路径末端（最后一个 dict 键 / 数组元素）：</p>
  * <ul>

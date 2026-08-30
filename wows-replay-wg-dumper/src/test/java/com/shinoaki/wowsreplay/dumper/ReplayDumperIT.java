@@ -16,13 +16,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ReplayDumper 管线集成测试：单 JSON 装配（meta + report + game_events + space_size + minimap），
- * 对标 Rust replay-dumper 的 Single 模式（docs/replay-dumper-minimap.md §6 / pipeline）。
+ * replay-dumper 的 Single 模式（docs/replay-dumper-minimap.md §6 / pipeline）。
  */
 @Slf4j
 class ReplayDumperIT {
 
     private static final String REPLAY_PATH =
-            "temp/wg_15.6/20260730_013138_PASB720-Rhode-Island_56_AngelWings.wowsreplay";
+            "temp/wg_15.7/20260830_173833_PVSA710-Independencia_22_tierra_del_fuego.wowsreplay";
     private static final String WOWS_DATA_BASE = "temp/wows-data";
 
     private static ReplayFile replay;
@@ -31,8 +31,7 @@ class ReplayDumperIT {
     @BeforeAll
     static void setUp() throws Exception {
         var base = resolve(WOWS_DATA_BASE);
-//        replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
-        replay = ReplayFile.fromFile(new File("C:\\Users\\uuz\\Desktop\\test\\20260815_133529_PRSB729-Respublika_45_Zigzag.wowsreplay").toPath(), base);
+        replay = ReplayFile.fromFile(resolve(REPLAY_PATH), base);
         gameData = GameDataCache.resolveGameDataDir(replay);
         assertNotNull(gameData, "游戏数据未找到");
     }

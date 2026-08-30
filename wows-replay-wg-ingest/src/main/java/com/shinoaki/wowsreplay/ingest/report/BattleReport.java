@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 战斗结束快照（对标 Rust {@code BattleWorld::into_report()} 的输出 {@code BattleReport}，
+ * 战斗结束快照（BattleWorld::into_report 的输出 {@code BattleReport}，
  * report.rs §3）。
  *
  * <p>一次性、消费式装配的结果：所有字段都是独立拥有的拷贝，与实时可变状态解耦。</p>

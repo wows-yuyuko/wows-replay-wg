@@ -5,7 +5,7 @@ import com.shinoaki.wowsreplay.core.data.LangProvider;
 /**
  * 显示用单位后缀（读取 lang.json 的 {@code IDS_KNOT} 等键本地化）。
  *
- * <p>对齐 libwowsinfo {@code wiki/lang.rs} 的 {@code LocalizedUnits}：
+ * <p>对齐 libwowsinfo {@code wiki/} 的 {@code LocalizedUnits}：
  * 拉丁字母单位带前导空格（{@code " knots"}/{@code " s"}），CJK 单位不带
  * （{@code "节"}/{@code "秒"}），便于模板直接拼接数值。</p>
  */

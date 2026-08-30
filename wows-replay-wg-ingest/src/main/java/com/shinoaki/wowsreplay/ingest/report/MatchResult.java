@@ -1,7 +1,7 @@
 package com.shinoaki.wowsreplay.ingest.report;
 
 /**
- * 胜负判定结果，对标 Rust {@code BattleResult}（report.rs §5.4）。
+ * 胜负判定结果，BattleResult。
  */
 public enum MatchResult {
     WIN,

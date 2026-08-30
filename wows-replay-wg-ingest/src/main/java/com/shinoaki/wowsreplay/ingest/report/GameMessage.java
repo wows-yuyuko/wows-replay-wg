@@ -3,7 +3,7 @@ package com.shinoaki.wowsreplay.ingest.report;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 聊天消息（对标 Rust {@code GameMessage}，report.rs §2.1 ChatLog）。
+ * 聊天消息（GameMessage， ChatLog）。
  */
 public record GameMessage(
     @JsonProperty("clock") float clock,

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 玩家船只装载配置解析（对标 Rust {@code wowsunpack::data::ship_config::ShipConfig}）。
+ * 玩家船只装载配置解析（wowsunpack::data::ship_config::ShipConfig）。
  *
  * <p>Vehicle 实体的 {@code shipConfig} 属性是二进制 blob（little-endian，全部 u32）。
  * 布局来自 WG 客户端 {@code ShipConfigFullConverter}（{@code _makeBaseCompactDescription}
@@ -85,7 +85,7 @@ public record ShipConfig(
     @JsonIgnore Long supplyState,
     /** 外观槽位配色方案：(外观/涂装物品 GameParams id, 配色方案 id) 映射表。仅供解析，不输出。 */
     @JsonIgnore List<ColorScheme> colorSchemes,
-    /** 精英经验/舰船经验值（isOwned 与 last_boarded_crew 之间；Rust 参考实现漏读此字段）。仅供解析，不输出。 */
+    /** 精英经验/舰船经验值（isOwned 与 last_boarded_crew 之间；漏读此字段）。仅供解析，不输出。 */
     @JsonIgnore Long exp
 ) {
     /** 外观→配色映射：记录「哪个外观/涂装物品用了哪个配色方案」（第一值为物品 GameParams id，非槽位序号）。 */
@@ -94,7 +94,7 @@ public record ShipConfig(
     /** 尾部前向兼容段：7 个槽位 id（多数为 0，有 battle card / visual customization 时非零）+ 末尾 count。 */
     public record ShipConfigTail(@JsonProperty("slots") List<Long> slots, @JsonProperty("count") Long count) {}
 
-    /** 消耗品（对标 Rust {@code ShipConfig::abilities}）。 */
+    /** 消耗品（ShipConfig::abilities）。 */
     public List<Long> consumables() { return abilities; }
 
     /** 附加舰长信息（来自同一 Vehicle EntityCreate 的 crewModifiersCompactParams），返回新实例。
@@ -106,7 +106,7 @@ public record ShipConfig(
     }
 
     /**
-     * 从二进制 blob 解析；早期版本截断的 blob 在字节耗尽处停止（对标 Rust take_section）。
+     * 从二进制 blob 解析；早期版本截断的 blob 在字节耗尽处停止（take_section）。
      */
     public static ShipConfig parse(byte[] blob, Version version) {
         if (blob == null) return null;

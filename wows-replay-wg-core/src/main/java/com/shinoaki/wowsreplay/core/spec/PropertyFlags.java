@@ -3,7 +3,7 @@ package com.shinoaki.wowsreplay.core.spec;
 /**
  * BigWorld 实体属性可见性标志。
  * 确定属性何时在线路上传输。
- * 对标 Rust {@code entitydefs::Flags}.
+ * entitydefs::Flags.
  */
 public enum PropertyFlags {
     ALL_CLIENTS,

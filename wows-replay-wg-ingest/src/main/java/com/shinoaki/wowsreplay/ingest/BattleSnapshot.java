@@ -8,9 +8,9 @@ import java.util.List;
 /**
  * 战斗结束快照，由 {@link BattleWorld#intoReport()} 产出。
  *
- * <p>对标 Rust {@code wows-battle-world::BattleWorld::into_report()} 的
+ * <p>wows-battle-world::BattleWorld::into_report 的
  * {@code BattleReport}：一个 owned 的、可序列化的终局状态快照，与实时可变状态
- * {@link BattleWorld} 解耦。字段集对齐 Rust report.rs 的 getter。</p>
+ * {@link BattleWorld} 解耦。字段集report.rs 的 getter。</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record BattleSnapshot(

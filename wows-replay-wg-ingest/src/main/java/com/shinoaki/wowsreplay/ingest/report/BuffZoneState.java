@@ -3,7 +3,7 @@ package com.shinoaki.wowsreplay.ingest.report;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 军备竞赛 Buff 掉落区（对标 Rust {@code BuffZoneState}，report.rs §3）。
+ * 军备竞赛 Buff 掉落区（BuffZoneState，）。
  */
 public record BuffZoneState(
     @JsonProperty("entity_id") int entityId,

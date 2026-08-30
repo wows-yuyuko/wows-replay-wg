@@ -126,7 +126,7 @@ class BattleWorldIT {
     }
 
     @Test
-    @DisplayName("BattleWorld 常量兜底: null → 空实现；game_mode 直接取 meta.scenario（对标 Rust report_game_mode）")
+    @DisplayName("BattleWorld 常量兜底: null → 空实现；game_mode 直接取 meta.scenario（report_game_mode）")
     void constantsFallback() {
         var worldNull = new BattleWorld(replay.meta(), version, null);
         assertNotNull(worldNull.constants(), "无 GameConstants 时应用默认空实现");

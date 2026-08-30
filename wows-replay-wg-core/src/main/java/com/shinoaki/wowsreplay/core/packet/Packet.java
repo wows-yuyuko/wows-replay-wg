@@ -7,7 +7,7 @@ import com.shinoaki.wowsreplay.core.model.GameClock;
 /**
  * 完全解码的带类型载荷的回放包。
  *
- * <p>对标 Rust {@code Packet<'replay, 'argtype>}.</p>
+ * <p>Packet<'replay, 'argtype>.</p>
  */
 public record Packet(
     /** 包总大小（来自头部）。 */

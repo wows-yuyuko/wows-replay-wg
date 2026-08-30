@@ -3,7 +3,7 @@ package com.shinoaki.wowsreplay.ingest.report;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 控制点状态（对标 Rust {@code CapturePointState}，report.rs §2.1 CapturePointOrder）。
+ * 控制点状态（CapturePointState， CapturePointOrder）。
  */
 public record CapturePointState(
     @JsonProperty("index") int index,

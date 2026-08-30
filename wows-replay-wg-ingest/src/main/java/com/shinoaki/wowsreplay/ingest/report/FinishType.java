@@ -5,7 +5,7 @@ import com.shinoaki.wowsreplay.core.model.Recognized;
 import com.shinoaki.wowsreplay.core.model.Version;
 
 /**
- * 结束类型枚举（对标 Rust {@code FinishType}，battle.xml FINISH_TYPE）。
+ * 结束类型枚举（FinishType，battle.xml FINISH_TYPE）。
  *
  * <p>枚举常量集是固定的<b>类型契约</b>（战报 {@code finish_type} 的序列化形态）；
  * id→常量 的解析不做本地硬编码布局，而是委托 {@link GameConstants#finishTypeName}

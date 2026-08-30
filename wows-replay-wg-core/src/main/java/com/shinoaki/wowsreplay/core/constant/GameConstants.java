@@ -18,7 +18,7 @@ import java.util.Map;
  *
  * <h2>查找优先级（自上而下）</h2>
  * <ol>
- *   <li><b>本类静态表</b>：规范显示名（对齐 Rust 枚举 Debug 输出），跨版本稳定。
+ *   <li><b>本类静态表</b>：规范显示名（枚举 Debug 输出），跨版本稳定。
  *       版本只<em>新增</em> id 时本表不含该 id → 落到下一步。</li>
  *   <li><b>{@link GameConstantsProvider}</b>（外部 per-version 数据，如 constants.json）：
  *       版本漂移 / 新增 id 的兜底名；未注入时使用 {@link GameConstantsProvider#empty()}。</li>
@@ -26,7 +26,7 @@ import java.util.Map;
  * </ol>
  *
  * <p><b>关于规范名与外部名不一致</b>：外部数据（constants.json）存的是<b>内部枚举标识</b>
- * （如 {@code BASE}、{@code SCORE_ON_TIMEOUT}、{@code DAMAGE_STATS_ENEMY}），而 Rust 战报输出
+ * （如 {@code BASE}、{@code SCORE_ON_TIMEOUT}、{@code DAMAGE_STATS_ENEMY}），而参考实现战报输出
  * 用的是 PascalCase 变体名（{@code BaseCaptured}、{@code ScoreOnTimeout}、{@code Enemy}）。
  * 两者并不一一对应（如外部 {@code BASE} → 显示 {@code BaseCaptured}），因此规范显示名以本类静态表为准，
  * 外部名只用于本表未收录（新增/漂移）的 id 兜底。</p>
@@ -68,7 +68,7 @@ public final class GameConstants {
      *
      * <p>数据源：游戏 {@code Scripts/constants/battle.xml} 的 {@code <enum name="FINISH_TYPE">}
      * （同源 constants.json 的 {@code "FINISH_TYPE"} 段，name→id）。id 与外部一致，但<b>显示名</b>
-     * 采用 Rust {@code FinishType} 枚举变体名（PascalCase），保证与 Rust 战报输出一致。
+     * 采用 FinishType 枚举变体名（PascalCase），保证。
      * 15.6.0 实测取值 0-13，其中 6、7 无定义。5.x 之后 PvE 主线任务新增 10/11。</p>
      *
      * <p>查找链：本表 → {@code provider.finishTypeName} → {@code "FinishType(id v<版本>)"}。</p>
@@ -104,7 +104,7 @@ public final class GameConstants {
      *
      * <p>数据源：constants.json {@code "BATTLE_STAGES"}（同源 common.xml）。
      * 外部名与显示名仅大小写差异（WAITING/BATTLE/RESULTS/FINISHING/ENDED），
-     * 本表取 Rust {@code BattleStage} Debug 形式。对应 BattleLogic {@code battleStage} 属性。</p>
+     * 本表取 BattleStage Debug 形式。对应 BattleLogic {@code battleStage} 属性。</p>
      *
      * <p>查找链：本表 → {@code provider.battleStageName(id, version)} → {@code "Stage(id v<版本>)"}。</p>
      *
