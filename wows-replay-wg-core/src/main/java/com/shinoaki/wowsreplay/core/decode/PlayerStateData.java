@@ -131,11 +131,12 @@ public final class PlayerStateData {
         // 用来把 meta 战舰映射到战斗内玩家（m.id() == player.meta_ship_id()）。
         psd.dbId        = getLong(rawValues, keyMap, KEY_ACCOUNT_DBID);
         psd.metaShipId  = getLong(rawValues, keyMap, KEY_ID);
-        psd.username    = getString(rawValues, keyMap, KEY_NAME);
-        psd.clan        = getString(rawValues, keyMap, KEY_CLAN_TAG);
+        // 文本字段：BINSTRING 字节串（UTF-8 内容）按 ISO-8859-1 保真解码后需还原（中文用户名等）。
+        psd.username    = PickleReader.decodeText(getString(rawValues, keyMap, KEY_NAME));
+        psd.clan        = PickleReader.decodeText(getString(rawValues, keyMap, KEY_CLAN_TAG));
         psd.clanId      = getLong(rawValues, keyMap, KEY_CLAN_ID);
         psd.clanColor   = getLong(rawValues, keyMap, KEY_CLAN_COLOR);
-        psd.realm       = getStringOrNull(rawValues, keyMap, KEY_REALM);
+        psd.realm       = PickleReader.decodeText(getStringOrNull(rawValues, keyMap, KEY_REALM));
         psd.entityId    = (int) getLong(rawValues, keyMap, KEY_SHIP_ID);
         psd.teamId      = getLong(rawValues, keyMap, KEY_TEAM_ID);
         psd.maxHealth   = getLong(rawValues, keyMap, KEY_MAX_HEALTH);
@@ -269,7 +270,10 @@ public final class PlayerStateData {
             var name = nameByIndex.get(e.getKey().intValue());
             if (name != null) {
                 // shipConfigDump 是二进制 blob（BINSTRING 按 ISO-8859-1 解成 String），直接输出 hex
-                out.put(name, KEY_SHIP_CONFIG_DUMP.equals(name) ? toHex(e.getValue()) : e.getValue());
+                Object value = KEY_SHIP_CONFIG_DUMP.equals(name) ? toHex(e.getValue()) : e.getValue();
+                // 其余字符串字段（name/clanTag/realm 等）是 BINSTRING 的 UTF-8 文本，输出前还原
+                if (value instanceof String s) value = PickleReader.decodeText(s);
+                out.put(name, value);
             }
         }
         return out;

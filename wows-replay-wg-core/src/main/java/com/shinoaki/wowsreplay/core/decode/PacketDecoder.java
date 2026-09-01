@@ -309,7 +309,8 @@ public class PacketDecoder {
                 return new ArgValue.FloatVal(d);
             }
             case String s -> {
-                return new ArgValue.StrVal(s);
+                // onGameRoomStateChanged 等文本字段（可能含名字）：还原 BINSTRING UTF-8 字节串
+                return new ArgValue.StrVal(PickleReader.decodeText(s));
             }
             case Boolean b -> {
                 return new ArgValue.BoolVal(b);
@@ -801,7 +802,9 @@ public class PacketDecoder {
     }
 
     static String strFromPickle(Object v) {
-        if (v instanceof String s) return s;
+        // pickle 里的文本（聊天扩展 playerName/clanTag、preBattleInfo 等）若是 BINSTRING 字节串，
+        // 需从 Latin-1 保真解码还原为 UTF-8（中文用户名等），BINUNICODE 文本不受影响。
+        if (v instanceof String s) return PickleReader.decodeText(s);
         return v != null ? v.toString() : "";
     }
 }

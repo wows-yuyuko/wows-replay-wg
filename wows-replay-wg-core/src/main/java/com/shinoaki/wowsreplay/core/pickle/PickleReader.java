@@ -422,7 +422,7 @@ public final class PickleReader {
                         metaShipId = longVal(val);
                         break;
                     case 25: // name
-                        name = val instanceof String s ? s : "";
+                        name = decodeText(val instanceof String s ? s : "");
                         break;
                     case 33: // shipId (= entity_id)
                         entityId = (int) longVal(val);
@@ -442,6 +442,27 @@ public final class PickleReader {
         }
 
         return new ArenaPlayers(entityToDbId, dbIdToName, dbIdToTeam, dbIdToMetaShipId);
+    }
+
+    /**
+     * 还原可能被 Latin-1 字节保真解码破坏的文本（如 BINSTRING 里的 UTF-8 用户名）。
+     *
+     * <p>{@code 'U'}/{@code 'T'}（BINSTRING）语义是字节串：为保真 {@code shipConfigDump} 之类二进制，
+     * 按 ISO-8859-1 解成 String（一字符一字节）。但 WG 客户端把用户名/旗标等文本也以 Python2
+     * {@code str}（字节串）pickle，内容是 UTF-8 —— 中文等非 ASCII 名会被解成 Latin-1 乱码。
+     * 此方法把「合法 UTF-8 字节序列」重新按 UTF-8 解码；非法（真二进制/拉丁文本）则原样保留。
+     * 对已正确解码的 Unicode 文本安全（含 &gt; U+00FF 字符时直接返回，Latin-1 回译字节序列非法时也原样保留）。</p>
+     */
+    public static String decodeText(String s) {
+        if (s == null || s.isEmpty()) return s;
+        byte[] bytes = new byte[s.length()];
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c > 0xFF) return s; // 不可能是 Latin-1 字节串 → 已是正确文本
+            bytes[i] = (byte) c;
+        }
+        var utf8 = new String(bytes, StandardCharsets.UTF_8);
+        return utf8.indexOf('\uFFFD') < 0 ? utf8 : s;
     }
 
     private static long longVal(Object v) {
