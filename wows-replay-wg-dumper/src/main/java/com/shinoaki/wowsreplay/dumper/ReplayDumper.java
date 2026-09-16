@@ -254,10 +254,17 @@ public final class ReplayDumper {
     }
 
     /**
-     * 版本门禁：回放的大版本（major.minor.patch）必须与加载的 game-data 一致，否则拒绝解析
-     * （防止用错版本的游戏数据解码，对应 ReplayVersionMismatchException）。
-     * 末尾 build 号**忽略**——分服（如国服）clientVersionFromExe 的 build 与其他服不一致，
-     * 只按大版本匹配；目录名无法解析版本时跳过门禁。
+     * 版本门禁：回放与加载的 game-data 必须同 {@code major.minor}，否则拒绝解析
+     * （防止用错大版本的游戏数据解码，对应 ReplayVersionMismatchException）。
+     *
+     * <p>放行两种"号不同但内容兼容"的情形，仅告警不拒绝：</p>
+     * <ul>
+     *   <li>末尾 build 号不同——分服（如国服）clientVersionFromExe 的 build 与其他服不一致；</li>
+     *   <li>patch 号不同——分服/补丁进度领先（如国服回放 15.8.1，本地数据只有 15.8.0；
+     *       数据目录由 {@link GameDataCache#resolveGameDataDir} 按同 major.minor 回退选出）。</li>
+     * </ul>
+     *
+     * <p>目录名无法解析版本时跳过门禁。</p>
      */
     private void verifyVersion(ReplayFile replay) throws ReplayVersionMismatchException {
         if (gameDataDir == null) return;
@@ -268,12 +275,15 @@ public final class ReplayDumper {
 
         Version replayVersion = replay.version();
         if (dataVersion.major() != replayVersion.major()
-            || dataVersion.minor() != replayVersion.minor()
-            || dataVersion.patch() != replayVersion.patch()) {
+            || dataVersion.minor() != replayVersion.minor()) {
             throw new ReplayVersionMismatchException(
                     "回放版本与游戏数据不匹配：回放 " + replayVersion + "，数据目录 "
                     + dataDir.getFileName()
-                    + "（拒绝解析，防止 schema 错配；仅 build 号差异不判定为不匹配）");
+                    + "（拒绝解析，防止 schema 错配；仅 patch/build 号差异不判定为不匹配）");
+        }
+        if (dataVersion.patch() != replayVersion.patch()) {
+            log.warn("回放版本 {} 与游戏数据目录 {} 的 patch 号不同（major.minor 一致），按兼容模式继续解析",
+                    replayVersion, dataDir.getFileName());
         }
     }
 
