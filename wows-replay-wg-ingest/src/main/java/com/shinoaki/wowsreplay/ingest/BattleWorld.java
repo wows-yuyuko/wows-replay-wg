@@ -1,8 +1,10 @@
 package com.shinoaki.wowsreplay.ingest;
 
+import com.shinoaki.wowsreplay.core.JsonConstantsProvider;
 import com.shinoaki.wowsreplay.core.JsonMapper;
 import com.shinoaki.wowsreplay.core.ReplayMeta;
 import com.shinoaki.wowsreplay.core.constant.GameConstants;
+import com.shinoaki.wowsreplay.core.data.BattleResultsResolver;
 import com.shinoaki.wowsreplay.core.data.CommanderSkills;
 import com.shinoaki.wowsreplay.core.decode.DecodedPayload;
 import com.shinoaki.wowsreplay.core.decode.PlayerStateData;
@@ -15,6 +17,7 @@ import com.shinoaki.wowsreplay.ingest.report.BattleReport;
 import com.shinoaki.wowsreplay.ingest.report.DamageStatCategory;
 import com.shinoaki.wowsreplay.ingest.report.DamageStatEntry;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 
 import java.util.*;
 
@@ -385,10 +388,45 @@ public class BattleWorld {
     private void handleBattleResults(DecodedPayload.BattleResultsPayload br) {
         battleResultsJson = br.json();
         try {
-            var node = JsonMapper.readTree(br.json());
+            JsonNode node = JsonMapper.readTree(br.json());
+            // 原始 0x22 载荷是紧凑位置数组（commonList=[...]），字段名需经 constants.json 解析
+            // （BattleResultsResolver）。若直接按具名读会落空——这里先解析成具名对象再取字段。
+            if (constants instanceof JsonConstantsProvider jcp) {
+                node = BattleResultsResolver.resolve(node, jcp.root());
+            }
             if (node.has("matchResult")) matchResult = node.get("matchResult").asString();
             if (node.has("finishReason") && finishType == null)
                 finishType = node.get("finishReason").asString();
+
+            // 15.8+ 回放中 onBattleEnd / BattleLogic.battleResult 可能完全缺失（实测 15.8.1），
+            // 此时整局只有 battleStage 属性，胜负无从判定。0x22 BattleResults 是服务端权威结算，
+            // 从已解析的 commonList 兜底取 winner_team_id（0/1=队伍，-1=平局）与 win_type_id（FINISH_REASONS）。
+            if (!matchFinished && node.has("commonList")) {
+                var common = node.get("commonList");
+                if (common.has("winner_team_id") && common.get("winner_team_id").isIntegralNumber()) {
+                    int wt = common.get("winner_team_id").intValue();
+                    if (wt >= -1) {
+                        winningTeam = wt;
+                        matchFinished = true;
+                        if (battleResultClock == 0f && battleEndClock != 0f) battleResultClock = battleEndClock;
+                    }
+                }
+                if (finishTypeId == 0 && common.has("win_type_id")
+                    && common.get("win_type_id").isIntegralNumber()) {
+                    int id = common.get("win_type_id").intValue();
+                    if (id > 0) {
+                        finishTypeId = id;
+                        finishType = gameConstants.finishTypeName(id, version);
+                    }
+                }
+                // 无 onBattleEnd / battleResult 时，battleEndClock/battleResultClock 恒 0，
+                // 时长会退化为 0。用服务端结算的 duration_sec 兜底作正赛结束时钟（战斗起点为 0）。
+                if (battleResultClock == 0f && battleEndClock == 0f
+                    && common.has("duration_sec") && common.get("duration_sec").isIntegralNumber()) {
+                    long dur = common.get("duration_sec").longValue();
+                    if (dur > 0) battleResultClock = (float) dur;
+                }
+            }
         } catch (Exception ignored) {
         }
     }
@@ -1353,8 +1391,9 @@ public class BattleWorld {
         }
 
         // Match result (Win/Loss/Draw) from winning team vs the recording player's team.
-        // battleEndClock != 0 作为"已结束"信号（winningTeam 在战斗结束包时必被设置）。
-        if (matchResult == null && battleEndClock != 0f) {
+        // 触发条件用 matchFinished（onBattleEnd / BattleLogic.battleResult / 0x22 兜底三选一），
+        // 而非 battleEndClock——15.8 实测无 onBattleEnd 包，battleEndClock 恒 0，仅靠 clock 会漏判。
+        if (matchResult == null && matchFinished) {
             int selfTeam = -1;
             for (var pi : players.values()) {
                 if (pi.relation == 0) {
