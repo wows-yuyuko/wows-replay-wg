@@ -49,6 +49,9 @@ public class BattleWorld {
     /** 当前推进时钟（§12.4.4），由 process() 按规则更新。 */
     private GameClock currentClock = GameClock.ZERO;
 
+    /** 录制者阵营缓存（>=0 才缓存；-1 时每次重算，等 arena 名册把 teamId 填齐）。 */
+    private Integer selfTeamIdCache;
+
     // ── Entity state ───────────────────────────────────────────────────
     /** entity_id → EntityState */
     final Map<Integer, EntityState> entities = new LinkedHashMap<>();
@@ -613,15 +616,25 @@ public class BattleWorld {
         // Map entity → player (players 表按战斗内 meta id 索引，与 meta.vehicles[].id 同空间)
         entityToPlayer.put(entityId, new PlayerLink(metaId, psd.username()));
 
+        int teamId = (int) psd.teamId();
+        // relation 只有 meta 名册（录制者视角）里有；arena/spawn 名册没有该字段。
+        // 人机（PVE/PVP 的所有 bot）不再硬编码为 0——0 是"录制者自己"的哨兵值，
+        // 一律填 0 会让全部人机误判成主视角（友军人机还会被 minimap 兜底成敌方），
+        // 故按 teamId 相对录制者阵营推导：0=自己, 1=友军, 2=敌方。
+        int relation = relationForTeam(teamId, metaId);
+
         // Update or create player info
         var existing = players.get(metaId);
         if (existing != null) {
             existing.entityId = entityId;
-            existing.teamId = (int) psd.teamId();
+            existing.teamId = teamId;
             existing.accountId = psd.dbId();
+            // meta 预置的玩家 relation 已正确，但若此前被推导过（理论上不会）以推导值为准会破坏 self，
+            // 故这里只在 relation 未知（<0）时回填。
+            if (existing.relation < 0) existing.relation = relation;
         } else {
-            var pi = new PlayerInfo(psd.username(), entityId, 0); // relation unknown for bots
-            pi.teamId = (int) psd.teamId();
+            var pi = new PlayerInfo(psd.username(), entityId, relation);
+            pi.teamId = teamId;
             pi.accountId = psd.dbId();
             players.put(metaId, pi);
         }
@@ -632,7 +645,7 @@ public class BattleWorld {
         var es = getOrCreateEntity(entityId, "Avatar");
         es.maxHealth = psd.maxHealth();
         es.health = psd.maxHealth(); // seed full HP from arena state
-        es.teamId = (int) psd.teamId();
+        es.teamId = teamId;
         es.isBot = isBot;
         es.metaId = metaId;
         es.playerName = psd.username();
@@ -644,6 +657,87 @@ public class BattleWorld {
                 mp.accountId = psd.dbId();
                 mp.entityId = entityId;
                 break;
+            }
+        }
+        // 名册里没有的战舰（人机/剧情增援）走推导值，避免 es.relation 恒 -1
+        // 被 MinimapExtractor 的 `relation >= 0 ? relation : 2` 一律兜成敌方。
+        if (es.relation < 0) es.relation = relation;
+    }
+
+    /**
+     * 录制者自己所在阵营（用于给人机推导 relation）。
+     *
+     * <p>优先取 meta 名册里 relation==0（录制者）的 teamId；名册缺失时回退到
+     * 已知玩家（非人机）中出现最多的 teamId。都拿不到返回 -1。</p>
+     */
+    private int selfTeamId() {
+        Integer cached = selfTeamIdCache;
+        if (cached != null) return cached;
+        int team = -1;
+        for (var mp : metaPlayers) {
+            if (mp.relation == 0) {
+                var pi = players.get(mp.metaId);
+                if (pi != null && pi.teamId >= 0) { team = pi.teamId; break; }
+            }
+        }
+        if (team < 0) {
+            // 回退：真人玩家中出现最多的 teamId（PVE 里人机 teamId 常与真人不同空间）
+            var counts = new LinkedHashMap<Integer, Integer>();
+            for (var pi : players.values()) {
+                if (pi.teamId >= 0) counts.merge(pi.teamId, 1, Integer::sum);
+            }
+            int best = -1;
+            for (var e : counts.entrySet()) {
+                if (e.getValue() > best) { best = e.getValue(); team = e.getKey(); }
+            }
+        }
+        if (team >= 0) selfTeamIdCache = team; // -1 不缓存：等后续 arena 名册补 teamId 后重算
+        return team;
+    }
+
+    /**
+     * 按阵营推导 relation：录制者自己所在阵营的成员为友军（1），其余为敌方（2）。
+     * meta 名册里已有 relation 的玩家（7 个真人）走原值，只有名册外的人机/增援走这里。
+     */
+    private int relationForTeam(int teamId, long metaId) {
+        // 已知 relation 的玩家（meta 名册成员）保持原值
+        for (var mp : metaPlayers) {
+            if (mp.metaId == metaId) return mp.relation;
+        }
+        if (teamId < 0) return -1;
+        int selfTeam = selfTeamId();
+        if (selfTeam < 0) return -1;
+        return teamId == selfTeam ? 1 : 2;
+    }
+
+    /**
+     * 全量重算 relation（finish 时调用）。
+     *
+     * <p>meta 名册成员保持原值；名册外的玩家（人机、剧情增援）按 teamId 相对
+     * 录制者阵营分类。同时回写对应 entity 的 relation，使 minimap 的 side
+     * 分类（{@code relation >= 0 ? relation : 2}）不再把人机一律兜成敌方。</p>
+     */
+    private void reconcileRelations() {
+        selfTeamIdCache = null; // 重算前失效，避免早期 -1/半成品结果残留
+        Set<Long> rosterMetaIds = new HashSet<>();
+        for (var mp : metaPlayers) rosterMetaIds.add(mp.metaId);
+
+        for (var e : players.entrySet()) {
+            long metaId = e.getKey();
+            var pi = e.getValue();
+            if (!rosterMetaIds.contains(metaId)) {
+                int rel = relationForTeam(pi.teamId, metaId);
+                if (rel >= 0) pi.relation = rel;
+            }
+            var es = entities.get(pi.entityId);
+            if (es != null) {
+                if (rosterMetaIds.contains(metaId)) {
+                    for (var mp : metaPlayers) {
+                        if (mp.metaId == metaId) { es.relation = mp.relation; break; }
+                    }
+                } else if (pi.relation >= 0) {
+                    es.relation = pi.relation;
+                }
             }
         }
     }
@@ -1379,6 +1473,12 @@ public class BattleWorld {
 
     /** Called after all packets have been processed. */
     public void finish() {
+        // 终局补算 relation：人机/增援可能在 arena 名册（携带 teamId）之前就 spawn，
+        // 当时 selfTeamId 还推不出来，relation 会停在 -1（或旧逻辑的 0）。
+        // 这里在全部包处理完后统一按 teamId 相对录制者阵营重算一次，
+        // 保证 players 表与 minimap 的 side 分类都正确。
+        reconcileRelations();
+
         // Played/extra duration, rs: battle start (BattleStage
         // → Waiting) through match end (battleResult clock, else BattleEnd clock).
         // 0 作为"未设置"哨兵（战斗开始/结束时钟实际都远大于 0）。
